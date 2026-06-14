@@ -1,0 +1,19 @@
+# Python build/cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Local configuration and keys (contains sensitive/user-specific settings)
+.config/
+
+# Output directories
+result/
+
+# Temporary data and caches
+MangaStudio_Data/temp/*
+!MangaStudio_Data/temp/.gitkeep
