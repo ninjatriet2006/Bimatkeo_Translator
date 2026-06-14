@@ -530,7 +530,32 @@ class ConfigLoader:
                 return True
             return False
 
-        # 1. Check Python module dependency if required
+        # 1. Check API Key credentials if it's an AI model
+        if field and field.lower() == "ai_translator":
+            AI_KEYS_MAP = {
+                "deepl": ["DEEPL_AUTH_KEY"],
+                "gemini": ["GEMINI_API_KEY"],
+                "openai": ["OPENAI_API_KEY"],
+                "custom_openai": ["CUSTOM_OPENAI_API_KEY", "CUSTOM_OPENAI_API_BASE"],
+                "groq": ["GROQ_API_KEY"],
+                "deepseek": ["DEEPSEEK_API_KEY"],
+                "baidu": ["BAIDU_APP_ID", "BAIDU_SECRET_KEY"],
+                "youdao": ["YOUDAO_APP_KEY", "YOUDAO_SECRET_KEY"],
+                "caiyun": ["CAIYUN_TOKEN"],
+                "sakura": ["SAKURA_API_BASE"],
+            }
+            if model_name in AI_KEYS_MAP:
+                key_names = AI_KEYS_MAP[model_name]
+                configured = False
+                for kn in key_names:
+                    val = self.get_env_var(kn)
+                    if val and val.strip():
+                        configured = True
+                        break
+                if not configured:
+                    return False
+
+        # 2. Check Python module dependency if required
         check_module = rule.get("check_module")
         if check_module:
             modules = [check_module] if isinstance(check_module, str) else check_module
