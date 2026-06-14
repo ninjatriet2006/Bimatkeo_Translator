@@ -1936,7 +1936,7 @@ class TranslatorStudioApp(QMainWindow):
         button.setText("Fetch")
 
     def _get_api_profiles_file_path(self) -> str:
-        base_dir = os.path.expanduser('~/.config/manga-image-translator')
+        base_dir = os.path.join(self.project_base_dir, '.config')
         os.makedirs(base_dir, exist_ok=True)
         return os.path.join(base_dir, 'api_profiles.json')
 

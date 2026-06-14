@@ -21,41 +21,41 @@ class ConfigLoader:
         },
         "ai_translator": {
             "deepl": {
-                "check_file": "manga_translator/translators/deepl.py",
+                "check_file": "app/translators/deepl.py",
                 "check_module": "deepl"
             },
             "gemini": {
-                "check_file": "manga_translator/translators/gemini.py",
+                "check_file": "app/translators/gemini.py",
                 "check_module": "google.genai"
             },
             "deepseek": {
-                "check_file": "manga_translator/translators/deepseek.py"
+                "check_file": "app/translators/deepseek.py"
             },
             "groq": {
-                "check_file": "manga_translator/translators/groq.py",
+                "check_file": "app/translators/groq.py",
                 "check_module": "groq"
             },
             "youdao": {
-                "check_file": "manga_translator/translators/youdao.py"
+                "check_file": "app/translators/youdao.py"
             },
             "baidu": {
-                "check_file": "manga_translator/translators/baidu.py"
+                "check_file": "app/translators/baidu.py"
             },
             "caiyun": {
-                "check_file": "manga_translator/translators/caiyun.py"
+                "check_file": "app/translators/caiyun.py"
             },
             "sakura": {
-                "check_file": "manga_translator/translators/sakura.py"
+                "check_file": "app/translators/sakura.py"
             },
             "papago": {
-                "check_file": "manga_translator/translators/papago.py"
+                "check_file": "app/translators/papago.py"
             },
             "openai": {
-                "check_file": "manga_translator/translators/chatgpt.py",
+                "check_file": "app/translators/openai.py",
                 "check_module": "openai"
             },
             "custom_openai": {
-                "check_file": "manga_translator/translators/custom_openai.py",
+                "check_file": "app/translators/custom_openai.py",
                 "check_module": "openai"
             }
         },
@@ -64,7 +64,7 @@ class ConfigLoader:
             "48px": {"check_file": "models/ocr/ocr_ar_48px.ckpt"},
             "48px_ctc": {"check_file": "models/ocr/ocr-ctc.ckpt"},
             "mocr": {
-                "check_file": "manga_translator/ocr/model_manga_ocr.py",
+                "check_file": "app/ocr/mocr.py",
                 "check_module": "manga_ocr"
             }
         },
@@ -136,6 +136,7 @@ class ConfigLoader:
 
         print("[ConfigLoader] Fetching fresh configuration schema...")
         try:
+            # Fallback: check if the backend engine repository 'manga-image-translator' is cloned as a sibling directory
             sibling_dir = os.path.abspath(os.path.join(self.project_base_dir, "..", "manga-image-translator"))
             env = os.environ.copy()
             if os.path.exists(sibling_dir):
@@ -501,7 +502,7 @@ class ConfigLoader:
         if not isinstance(model_name, str):
             return True
         
-        if model_name.lower() in ["none", "original", "auto", "default"]:
+        if model_name.lower() in ["none", "original", "auto"]:
             return True
 
         # Retrieve check rule: custom from YAML first, then default
@@ -530,32 +531,7 @@ class ConfigLoader:
                 return True
             return False
 
-        # 1. Check API Key credentials if it's an AI model
-        if field and field.lower() == "ai_translator":
-            AI_KEYS_MAP = {
-                "deepl": ["DEEPL_AUTH_KEY"],
-                "gemini": ["GEMINI_API_KEY"],
-                "openai": ["OPENAI_API_KEY"],
-                "custom_openai": ["CUSTOM_OPENAI_API_KEY", "CUSTOM_OPENAI_API_BASE"],
-                "groq": ["GROQ_API_KEY"],
-                "deepseek": ["DEEPSEEK_API_KEY"],
-                "baidu": ["BAIDU_APP_ID", "BAIDU_SECRET_KEY"],
-                "youdao": ["YOUDAO_APP_KEY", "YOUDAO_SECRET_KEY"],
-                "caiyun": ["CAIYUN_TOKEN"],
-                "sakura": ["SAKURA_API_BASE"],
-            }
-            if model_name in AI_KEYS_MAP:
-                key_names = AI_KEYS_MAP[model_name]
-                configured = False
-                for kn in key_names:
-                    val = self.get_env_var(kn)
-                    if val and val.strip():
-                        configured = True
-                        break
-                if not configured:
-                    return False
-
-        # 2. Check Python module dependency if required
+        # 1. Check Python module dependency if required
         check_module = rule.get("check_module")
         if check_module:
             modules = [check_module] if isinstance(check_module, str) else check_module
@@ -582,11 +558,9 @@ class ConfigLoader:
                     "models/esrgan-macos/realesrgan-ncnn-vulkan"
                 ]
             
-            sibling_dir = os.path.abspath(os.path.join(self.project_base_dir, "..", "manga-image-translator"))
             found = False
             for f in files_to_check:
                 paths_to_try = [
-                    os.path.join(sibling_dir, f),
                     os.path.join(self.project_base_dir, f),
                     os.path.abspath(f)
                 ]
