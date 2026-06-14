@@ -1249,21 +1249,6 @@ class TranslatorStudioApp(QMainWindow):
 
         return container
 
-    def _create_font_combobox(self, info: dict) -> QComboBox:
-        """Creates a combobox populated with system and project fonts."""
-        combo_box = SearchableComboBox()
-        font_list = self._get_font_list()
-        combo_box.addItems(font_list)
-
-        # Make the header items non-selectable for better UX
-        for i, item_text in enumerate(font_list):
-            if item_text.startswith("---"):
-                combo_box.model().item(i).setEnabled(False)
-
-        default_font = info.get("default", "Sans-serif")
-        combo_box.setCurrentText(default_font)
-        return combo_box
-
     def _create_entry_with_button(self, info: dict) -> QWidget:
         """Creates a QLineEdit with a QPushButton next to it."""
         container = QWidget()
@@ -1524,26 +1509,6 @@ class TranslatorStudioApp(QMainWindow):
 
         self._refresh_profile_list()  # Initial population of the combobox
         return preset_frame
-
-    def _get_font_list(self) -> list:
-        """Gets a combined list of project and system fonts."""
-        project_fonts = set()
-        for folder in ["fonts", os.path.join("MangaStudio_Data", "fonts")]:
-            fonts_dir = os.path.join(self.project_base_dir, folder)
-            if os.path.isdir(fonts_dir):
-                for f in os.listdir(fonts_dir):
-                    if f.lower().endswith(('.ttf', '.otf')):
-                        project_fonts.add(f)
-        project_fonts_sorted = sorted(list(project_fonts))
-
-        # Use QFontDatabase for a reliable way to get system fonts
-        system_fonts = sorted(QFontDatabase().families())
-
-        final_list = []
-        if project_fonts_sorted:
-            final_list.extend(project_fonts_sorted)
-        final_list.extend(system_fonts)
-        return final_list
 
     def _update_chain_ui_state(self):
         """
@@ -4283,31 +4248,147 @@ class TranslatorStudioApp(QMainWindow):
             if os.path.isdir(fonts_dir):
                 found_any = True
                 for font_file in sorted(os.listdir(fonts_dir)):
-                    if font_file.lower().endswith(('.ttf', '.otf')):
+                    if font_file.lower().endswith(('.ttf', '.otf', '.ttc')):
                         font_path = os.path.join(fonts_dir, font_file)
                         self.font_map[font_file] = font_path
         if not found_any:
             print(f"[WARNING] Fonts directories not found")
 
     def _create_font_combobox(self, info: dict) -> QComboBox:
-        """Creates a combobox populated with fonts from the project's /fonts folder."""
+        """Creates a combobox populated with fonts, and adds an option to download/install new fonts."""
         combo_box = SearchableComboBox()
-        
         font_names = list(self.font_map.keys())
         
-        if font_names:
-            combo_box.addItems(font_names)
-        else:
-            combo_box.addItem("No fonts found in /fonts folder")
-            combo_box.setEnabled(False)
+        default_font = info.get("default", "Sans-serif")
+        if not default_font:
+            default_font = "Sans-serif"
 
-        # Try to set the default font, otherwise select the first one
-        default_font = info.get("default", "")
-        if default_font in font_names:
-            combo_box.setCurrentText(default_font)
-        elif font_names:
-            combo_box.setCurrentIndex(0)
-            
+        # Ensure the default font (or at least some fallback) is always in the list
+        # so the combobox has a valid selectable item and remains enabled.
+        if default_font not in font_names:
+            font_names.insert(0, default_font)
+
+        combo_box.addItems(font_names)
+        combo_box.addItem("📥 Install New Font...")
+
+        combo_box.setCurrentText(default_font)
+        self._last_selected_font = default_font
+
+        def on_combo_text_changed(text):
+            if text != "📥 Install New Font...":
+                self._last_selected_font = text
+            else:
+                self._prompt_font_install(combo_box)
+
+        combo_box.currentTextChanged.connect(on_combo_text_changed)
         return combo_box
+
+    def _prompt_font_install(self, main_font_combo: QComboBox):
+        from PySide6.QtWidgets import QInputDialog
+        installable_fonts = [
+            "Comic Neue",
+            "Bangers",
+            "Patrick Hand",
+            "Architects Daughter",
+            "Kaushan Script",
+            "Kalam",
+            "Chewy",
+            "Fredoka One",
+            "Schoolbell"
+        ]
+        
+        # Determine previous selection to revert to if canceled/failed
+        prev_font = getattr(self, "_last_selected_font", "Sans-serif")
+        
+        font_family, ok = QInputDialog.getItem(
+            self, 
+            "Install Font from Google Fonts", 
+            "Choose a popular comic/manga font to install:", 
+            installable_fonts, 
+            0, 
+            False
+        )
+        
+        if not ok or not font_family:
+            # Revert selection back to previous font
+            main_font_combo.blockSignals(True)
+            main_font_combo.setCurrentText(prev_font)
+            main_font_combo.blockSignals(False)
+            return
+
+        self.log("INFO", f"Initiating download for font family: {font_family}...")
+        main_font_combo.setEnabled(False)
+        fonts_dir = os.path.join(self.project_base_dir, "fonts")
+        
+        from PySide6.QtCore import Signal, QThread
+        class FontDownloadWorker(QThread):
+            finished = Signal(bool, str)
+            def run(self):
+                import urllib.request
+                import urllib.parse
+                import zipfile
+                import io
+                try:
+                    url = f"https://fonts.google.com/download?family={urllib.parse.quote(font_family)}"
+                    req = urllib.request.Request(
+                        url, 
+                        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                    )
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        zip_data = response.read()
+                    
+                    os.makedirs(fonts_dir, exist_ok=True)
+                    with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
+                        extracted_any = False
+                        for file_info in z.infolist():
+                            if file_info.filename.lower().endswith(('.ttf', '.otf', '.ttc')):
+                                filename = os.path.basename(file_info.filename)
+                                if filename:
+                                    dest_path = os.path.join(fonts_dir, filename)
+                                    with z.open(file_info) as source, open(dest_path, "wb") as target:
+                                        target.write(source.read())
+                                    extracted_any = True
+                        if extracted_any:
+                            self.finished.emit(True, font_family)
+                            return
+                    self.finished.emit(False, "No TTF/OTF/TTC files found in the download package.")
+                except Exception as e:
+                    self.finished.emit(False, str(e))
+
+        self._font_worker = FontDownloadWorker()
+        
+        def on_finished(success, message_or_family):
+            main_font_combo.setEnabled(True)
+            if success:
+                self.log("SUCCESS", f"Font '{message_or_family}' successfully installed and loaded!")
+                self._build_font_map()
+                font_names = list(self.font_map.keys())
+                
+                main_font_combo.blockSignals(True)
+                main_font_combo.clear()
+                main_font_combo.addItems(font_names)
+                main_font_combo.addItem("📥 Install New Font...")
+                
+                newly_installed_font = next((fn for fn in font_names if message_or_family.replace(" ", "").lower() in fn.replace("-", "").replace(" ", "").lower()), None)
+                if newly_installed_font:
+                    main_font_combo.setCurrentText(newly_installed_font)
+                    self._last_selected_font = newly_installed_font
+                else:
+                    main_font_combo.setCurrentIndex(0)
+                    self._last_selected_font = font_names[0] if font_names else "Sans-serif"
+                main_font_combo.blockSignals(False)
+                
+                self._on_setting_changed("font_family")
+                QMessageBox.information(self, "Installation Complete", f"Font '{message_or_family}' has been successfully installed and selected!")
+            else:
+                self.log("ERROR", f"Failed to install font: {message_or_family}")
+                main_font_combo.blockSignals(True)
+                main_font_combo.setCurrentText(prev_font)
+                main_font_combo.blockSignals(False)
+                QMessageBox.critical(self, "Installation Failed", f"Could not install '{font_family}'.\n\nError: {message_or_family}")
+            del self._font_worker
+
+        self._font_worker.finished.connect(on_finished)
+        self._font_worker.start()
     
         
