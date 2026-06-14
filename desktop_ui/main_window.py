@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
     QComboBox, QCheckBox, QButtonGroup, QSlider, QLineEdit, QGridLayout,
     QColorDialog, QMessageBox, QListWidget, QListWidgetItem, QFileDialog,
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QTextEdit,
-    QApplication, QMenu, QSizePolicy
+    QApplication, QMenu, QSizePolicy, QDialog
 )
 from PySide6.QtCore import Qt, QSize, QTimer, Signal, QByteArray, QEvent, QPoint
 from PySide6.QtGui import QFont, QCursor, QStandardItemModel, QFontDatabase, QPixmap, QPainter, QColor
@@ -347,6 +347,105 @@ class SearchableComboPopup(QWidget):
                 self.close()
                 return True
         return super().eventFilter(obj, event)
+
+
+class SearchableFontInstallDialog(QDialog):
+    def __init__(self, google_fonts, default_font=None, parent=None):
+        super().__init__(parent)
+        self.google_fonts = google_fonts
+        self.selected_font = None
+        self.init_ui(default_font)
+
+    def init_ui(self, default_font):
+        self.setWindowTitle("Cài đặt Phông chữ từ Google Fonts")
+        self.resize(380, 480)
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        layout.setContentsMargins(15, 15, 15, 15)
+
+        # Label instruction
+        lbl = QLabel("Tìm kiếm hoặc nhập trực tiếp tên phông chữ từ Google Fonts để cài đặt:", self)
+        lbl.setWordWrap(True)
+        layout.addWidget(lbl)
+
+        # Search line edit
+        self.search_edit = QLineEdit(self)
+        self.search_edit.setPlaceholderText("Nhập tên phông chữ (Ví dụ: Bangers, Roboto...)")
+        self.search_edit.textChanged.connect(self.filter_fonts)
+        layout.addWidget(self.search_edit)
+
+        # List widget for popular fonts
+        self.list_widget = QListWidget(self)
+        for font in self.google_fonts:
+            item = QListWidgetItem(font)
+            self.list_widget.addItem(item)
+            
+        self.list_widget.itemDoubleClicked.connect(self.on_item_double_clicked)
+        layout.addWidget(self.list_widget)
+
+        # Buttons layout
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+
+        self.btn_install = QPushButton("Cài đặt", self)
+        self.btn_install.setDefault(True)
+        self.btn_install.clicked.connect(self.on_install_clicked)
+        btn_layout.addWidget(self.btn_install)
+
+        self.btn_cancel = QPushButton("Hủy bỏ", self)
+        self.btn_cancel.clicked.connect(self.reject)
+        btn_layout.addWidget(self.btn_cancel)
+
+        layout.addLayout(btn_layout)
+
+        # If a default font is specified, pre-select it and put its text in the search edit
+        if default_font:
+            # Clean default font name from suffix
+            clean_default = default_font
+            for suffix in ["-Regular", "-Bold", "-Italic", "-BoldItalic"]:
+                if default_font.endswith(suffix):
+                    clean_default = default_font[:-len(suffix)]
+                    break
+            # Or clean from extension
+            if clean_default.lower().endswith(".ttf"):
+                clean_default = clean_default[:-4]
+            # Replace family spacing if it matches one of ours
+            for gf in self.google_fonts:
+                if gf.replace(" ", "").lower() == clean_default.replace(" ", "").lower():
+                    clean_default = gf
+                    break
+            
+            self.search_edit.setText(clean_default)
+            # Find and select the item in the list
+            items = self.list_widget.findItems(clean_default, Qt.MatchFlag.MatchExactly)
+            if items:
+                self.list_widget.setCurrentItem(items[0])
+
+    def filter_fonts(self, text):
+        text = text.lower()
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            item.setHidden(text not in item.text().lower())
+
+    def on_item_double_clicked(self, item):
+        self.selected_font = item.text()
+        self.accept()
+
+    def on_install_clicked(self):
+        curr_item = self.list_widget.currentItem()
+        search_text = self.search_edit.text().strip()
+        
+        # If there is a selected item in list widget and it is NOT hidden by filter
+        if curr_item and not curr_item.isHidden():
+            self.selected_font = curr_item.text()
+        elif search_text:
+            self.selected_font = search_text
+        else:
+            QMessageBox.warning(self, "Lỗi", "Vui lòng nhập hoặc chọn một phông chữ để cài đặt.")
+            return
+            
+        self.accept()
 
 
 class SearchableComboBox(QComboBox):
@@ -4424,7 +4523,11 @@ class TranslatorStudioApp(QMainWindow):
                     print(f"[WARNING] Failed to fetch online metadata for single version check: {e}")
                 self.done.emit("")
         
-        self._single_fetch_worker = SingleVersionFetchWorker()
+        if not hasattr(self, "_active_ver_workers"):
+            self._active_ver_workers = set()
+            
+        worker = SingleVersionFetchWorker()
+        self._active_ver_workers.add(worker)
         
         def on_done(version):
             if version:
@@ -4432,10 +4535,10 @@ class TranslatorStudioApp(QMainWindow):
                 versions[font_family] = version
                 self.config_loader.save_studio_config()
                 print(f"[Config] Updated font version for '{font_family}' to '{version}'")
-            del self._single_fetch_worker
+            self._active_ver_workers.discard(worker)
 
-        self._single_fetch_worker.done.connect(on_done)
-        self._single_fetch_worker.start()
+        worker.done.connect(on_done)
+        worker.start()
 
     def _force_update_current_font(self, main_font_combo: QComboBox):
         """Force updates (re-downloads) the currently selected font family if it is a Google Font."""
@@ -4472,32 +4575,65 @@ class TranslatorStudioApp(QMainWindow):
             def run(self):
                 import urllib.request
                 import urllib.parse
-                import zipfile
-                import io
+                import re
                 try:
-                    url = f"https://fonts.google.com/download?family={urllib.parse.quote(google_family)}"
-                    req = urllib.request.Request(
-                        url, 
-                        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                    )
+                    # Request the CSS first
+                    url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(google_family)}:regular,italic,700,700italic"
+                    req = urllib.request.Request(url, headers={'User-Agent': 'curl/7.81.0'})
                     with urllib.request.urlopen(req, timeout=15) as response:
-                        zip_data = response.read()
+                        css_content = response.read().decode('utf-8')
                     
+                    blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
+                    if not blocks:
+                        url_fallback = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(google_family)}"
+                        req_fb = urllib.request.Request(url_fallback, headers={'User-Agent': 'curl/7.81.0'})
+                        with urllib.request.urlopen(req_fb, timeout=15) as response_fb:
+                            css_content = response_fb.read().decode('utf-8')
+                        blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
+                    
+                    if not blocks:
+                        self.finished.emit(False, "Không tìm thấy cấu hình phông chữ trên Google Fonts.")
+                        return
+
                     os.makedirs(fonts_dir, exist_ok=True)
-                    with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
-                        extracted_any = False
-                        for file_info in z.infolist():
-                            if file_info.filename.lower().endswith(('.ttf', '.otf', '.ttc')):
-                                filename = os.path.basename(file_info.filename)
-                                if filename:
-                                    dest_path = os.path.join(fonts_dir, filename)
-                                    with z.open(file_info) as source, open(dest_path, "wb") as target:
-                                        target.write(source.read())
-                                    extracted_any = True
-                        if extracted_any:
-                            self.finished.emit(True, google_family)
-                            return
-                    self.finished.emit(False, "Không tìm thấy tệp font phù hợp trong gói tải về.")
+                    extracted_any = False
+                    
+                    for block in blocks:
+                        url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
+                        if url_match:
+                            ttf_url = url_match.group(1).strip()
+                            style_match = re.search(r'font-style:\s*([^;]+);', block)
+                            weight_match = re.search(r'font-weight:\s*([^;]+);', block)
+                            
+                            style = style_match.group(1).strip() if style_match else "normal"
+                            weight = weight_match.group(1).strip() if weight_match else "400"
+                            
+                            clean_name = google_family.replace(" ", "")
+                            if weight == "700" and style == "italic":
+                                suffix = "-BoldItalic"
+                            elif weight == "700":
+                                suffix = "-Bold"
+                            elif style == "italic":
+                                suffix = "-Italic"
+                            else:
+                                suffix = "-Regular"
+                            
+                            filename = f"{clean_name}{suffix}.ttf"
+                            dest_path = os.path.join(fonts_dir, filename)
+                            
+                            # Download the TTF file directly
+                            req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
+                            with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
+                                font_data = res_ttf.read()
+                            
+                            with open(dest_path, "wb") as f:
+                                f.write(font_data)
+                            extracted_any = True
+                            
+                    if extracted_any:
+                        self.finished.emit(True, google_family)
+                    else:
+                        self.finished.emit(False, "Không tìm thấy tệp font phù hợp để tải về.")
                 except Exception as e:
                     self.finished.emit(False, str(e))
 
@@ -4544,23 +4680,12 @@ class TranslatorStudioApp(QMainWindow):
             return
         self._font_install_active = True
 
-        from PySide6.QtWidgets import QInputDialog
         prev_font = getattr(self, "_last_selected_font", "Sans-serif")
         
-        default_index = 0
-        if pre_selected_font in self.GOOGLE_FONTS:
-            default_index = self.GOOGLE_FONTS.index(pre_selected_font)
-
-        font_family, ok = QInputDialog.getItem(
-            self, 
-            "Install Font from Google Fonts", 
-            "Choose a popular comic/manga font to install:", 
-            self.GOOGLE_FONTS, 
-            default_index, 
-            False
-        )
-        
-        if not ok or not font_family:
+        dialog = SearchableFontInstallDialog(self.GOOGLE_FONTS, default_font=pre_selected_font or prev_font, parent=self)
+        if dialog.exec() == QDialog.Accepted and dialog.selected_font:
+            font_family = dialog.selected_font
+        else:
             self._font_install_active = False
             # Revert selection back to previous font
             main_font_combo.blockSignals(True)
@@ -4572,38 +4697,71 @@ class TranslatorStudioApp(QMainWindow):
         main_font_combo.setEnabled(False)
         fonts_dir = os.path.join(self.project_base_dir, "fonts")
         
-        from PySide6.QtCore import Signal, QThread
         class FontDownloadWorker(QThread):
             finished = Signal(bool, str)
             def run(self):
                 import urllib.request
                 import urllib.parse
-                import zipfile
-                import io
+                import re
                 try:
-                    url = f"https://fonts.google.com/download?family={urllib.parse.quote(font_family)}"
-                    req = urllib.request.Request(
-                        url, 
-                        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                    )
+                    # Request the CSS first
+                    url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(font_family)}:regular,italic,700,700italic"
+                    req = urllib.request.Request(url, headers={'User-Agent': 'curl/7.81.0'})
                     with urllib.request.urlopen(req, timeout=15) as response:
-                        zip_data = response.read()
+                        css_content = response.read().decode('utf-8')
                     
+                    blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
+                    if not blocks:
+                        # Fallback: try requesting without weight modifiers
+                        url_fallback = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(font_family)}"
+                        req_fb = urllib.request.Request(url_fallback, headers={'User-Agent': 'curl/7.81.0'})
+                        with urllib.request.urlopen(req_fb, timeout=15) as response_fb:
+                            css_content = response_fb.read().decode('utf-8')
+                        blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
+                    
+                    if not blocks:
+                        self.finished.emit(False, "Không tìm thấy cấu hình phông chữ trên Google Fonts.")
+                        return
+
                     os.makedirs(fonts_dir, exist_ok=True)
-                    with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
-                        extracted_any = False
-                        for file_info in z.infolist():
-                            if file_info.filename.lower().endswith(('.ttf', '.otf', '.ttc')):
-                                filename = os.path.basename(file_info.filename)
-                                if filename:
-                                    dest_path = os.path.join(fonts_dir, filename)
-                                    with z.open(file_info) as source, open(dest_path, "wb") as target:
-                                        target.write(source.read())
-                                    extracted_any = True
-                        if extracted_any:
-                            self.finished.emit(True, font_family)
-                            return
-                    self.finished.emit(False, "No TTF/OTF/TTC files found in the download package.")
+                    extracted_any = False
+                    
+                    for block in blocks:
+                        url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
+                        if url_match:
+                            ttf_url = url_match.group(1).strip()
+                            style_match = re.search(r'font-style:\s*([^;]+);', block)
+                            weight_match = re.search(r'font-weight:\s*([^;]+);', block)
+                            
+                            style = style_match.group(1).strip() if style_match else "normal"
+                            weight = weight_match.group(1).strip() if weight_match else "400"
+                            
+                            clean_name = font_family.replace(" ", "")
+                            if weight == "700" and style == "italic":
+                                suffix = "-BoldItalic"
+                            elif weight == "700":
+                                suffix = "-Bold"
+                            elif style == "italic":
+                                suffix = "-Italic"
+                            else:
+                                suffix = "-Regular"
+                            
+                            filename = f"{clean_name}{suffix}.ttf"
+                            dest_path = os.path.join(fonts_dir, filename)
+                            
+                            # Download the TTF file directly
+                            req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
+                            with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
+                                font_data = res_ttf.read()
+                            
+                            with open(dest_path, "wb") as f:
+                                f.write(font_data)
+                            extracted_any = True
+                            
+                    if extracted_any:
+                        self.finished.emit(True, font_family)
+                    else:
+                        self.finished.emit(False, "Không tải được tệp .ttf nào từ Google Fonts.")
                 except Exception as e:
                     self.finished.emit(False, str(e))
 
@@ -4844,16 +5002,25 @@ class TranslatorStudioApp(QMainWindow):
                 main_font_combo.blockSignals(False)
                 
                 self._on_setting_changed("font_family")
+                
+                info_msg = f"Đã cập nhật thành công {len(success_updates)} phông chữ lên phiên bản mới nhất!"
+                if error_msg:
+                    formatted_err = error_msg.replace("; ", "\n- ")
+                    info_msg += f"\n\nMột số phông chữ tải thất bại:\n- {formatted_err}"
                 QMessageBox.information(
                     self,
                     "Cập nhật Hoàn tất",
-                    f"Đã cập nhật thành công {len(success_updates)} phông chữ lên phiên bản mới nhất!"
+                    info_msg
                 )
             else:
+                detailed_msg = "Không có phông chữ nào được cập nhật thành công hoặc thao tác đã bị hủy."
+                if error_msg:
+                    formatted_err = error_msg.replace("; ", "\n- ")
+                    detailed_msg += f"\n\nChi tiết lỗi:\n- {formatted_err}"
                 QMessageBox.warning(
                     self,
                     "Cập nhật Hoàn tất",
-                    "Không có phông chữ nào được cập nhật thành công hoặc thao tác đã bị hủy."
+                    detailed_msg
                 )
             del self._bulk_worker
 
@@ -4911,35 +5078,70 @@ class BulkFontDownloadWorker(QThread):
     def run(self):
         import urllib.request
         import urllib.parse
-        import zipfile
-        import io
+        import re
         
         success_updates = {}
+        failed_errors = []
         total = len(self.updates_to_download)
         for idx, (family, _, online_ver) in enumerate(self.updates_to_download):
             self.progress.emit(idx + 1, total, family)
             try:
-                url = f"https://fonts.google.com/download?family={urllib.parse.quote(family)}"
-                req = urllib.request.Request(
-                    url, 
-                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                )
+                # Request the CSS first
+                url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(family)}:regular,italic,700,700italic"
+                req = urllib.request.Request(url, headers={'User-Agent': 'curl/7.81.0'})
                 with urllib.request.urlopen(req, timeout=15) as response:
-                    zip_data = response.read()
+                    css_content = response.read().decode('utf-8')
                 
-                with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
+                blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
+                if not blocks:
+                    url_fallback = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(family)}"
+                    req_fb = urllib.request.Request(url_fallback, headers={'User-Agent': 'curl/7.81.0'})
+                    with urllib.request.urlopen(req_fb, timeout=15) as response_fb:
+                        css_content = response_fb.read().decode('utf-8')
+                    blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
+                
+                if blocks:
                     extracted_any = False
-                    for file_info in z.infolist():
-                        if file_info.filename.lower().endswith(('.ttf', '.otf', '.ttc')):
-                            filename = os.path.basename(file_info.filename)
-                            if filename:
-                                dest_path = os.path.join(self.fonts_dir, filename)
-                                with z.open(file_info) as source, open(dest_path, "wb") as target:
-                                    target.write(source.read())
-                                extracted_any = True
+                    for block in blocks:
+                        url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
+                        if url_match:
+                            ttf_url = url_match.group(1).strip()
+                            style_match = re.search(r'font-style:\s*([^;]+);', block)
+                            weight_match = re.search(r'font-weight:\s*([^;]+);', block)
+                            
+                            style = style_match.group(1).strip() if style_match else "normal"
+                            weight = weight_match.group(1).strip() if weight_match else "400"
+                            
+                            clean_name = family.replace(" ", "")
+                            if weight == "700" and style == "italic":
+                                suffix = "-BoldItalic"
+                            elif weight == "700":
+                                suffix = "-Bold"
+                            elif style == "italic":
+                                suffix = "-Italic"
+                            else:
+                                suffix = "-Regular"
+                            
+                            filename = f"{clean_name}{suffix}.ttf"
+                            dest_path = os.path.join(self.fonts_dir, filename)
+                            
+                            req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
+                            with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
+                                font_data = res_ttf.read()
+                            
+                            with open(dest_path, "wb") as f:
+                                f.write(font_data)
+                            extracted_any = True
+                            
                     if extracted_any:
                         success_updates[family] = online_ver
+                    else:
+                        failed_errors.append(f"{family} (Không tìm thấy liên kết tệp ttf)")
+                else:
+                    failed_errors.append(f"{family} (Không tải được cấu hình từ Google CSS API)")
             except Exception as e:
                 print(f"[ERROR] Failed to download/update '{family}': {e}")
+                failed_errors.append(f"{family} ({str(e)})")
         
-        self.finished.emit(True, success_updates, "")
+        error_msg = "; ".join(failed_errors)
+        self.finished.emit(True, success_updates, error_msg)
