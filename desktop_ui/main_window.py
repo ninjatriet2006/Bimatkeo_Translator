@@ -252,12 +252,20 @@ class SearchableComboPopup(QWidget):
         self.current_visible_mappings = []
         selected_row = -1
         
+        is_font_combo = self.combo.findText("📥 Install New Font...") != -1
+        
         for text, is_enabled, orig_index, user_data in self.items_data:
             if search_text in text.lower():
                 item = QListWidgetItem(text)
                 if not is_enabled:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
                     item.setForeground(QColor("#888888"))
+                elif is_font_combo and text not in ["📥 Install New Font...", "🔄 Update All Fonts..."]:
+                    if self.main_win and hasattr(self.main_win, "_get_google_font_family_from_filename"):
+                        is_google = self.main_win._get_google_font_family_from_filename(text) is not None
+                        if not is_google:
+                            item.setForeground(QColor("#FFC107"))
+                            item.setToolTip("Custom font (manual copy, not from Google Fonts)")
                 elif "(Not Setup)" in text:
                     item.setForeground(QColor("#a8a8a8"))
                     item.setToolTip("Model weights not found. Check model configs.")
@@ -393,7 +401,11 @@ class TranslatorStudioApp(QMainWindow):
         "Kalam",
         "Chewy",
         "Fredoka One",
-        "Schoolbell"
+        "Schoolbell",
+        "Noto Sans JP",
+        "Noto Sans SC",
+        "Noto Sans KR",
+        "ZCOOL KuaiLe"
     ]
 
     def __init__(self):
@@ -3880,6 +3892,7 @@ class TranslatorStudioApp(QMainWindow):
                 }}
             """
             self.setStyleSheet(minimal_style)
+            self.theme_colors = {}
             self.log("INFO", "Reverted to default Qt theme.")
             return
 
@@ -3888,6 +3901,7 @@ class TranslatorStudioApp(QMainWindow):
             return
 
         colors = theme_data["style"].get("colors", {})
+        self.theme_colors = colors
         # Get all colors with fallbacks
         bg_main = colors.get("background_main", "#2d2d2d")
         bg_frame = colors.get("background_frame", "#2d2d2d")
@@ -4267,8 +4281,9 @@ class TranslatorStudioApp(QMainWindow):
             print(f"[WARNING] Fonts directories not found")
 
     def _create_font_combobox(self, info: dict) -> QWidget:
-        """Creates a widget container holding a SearchableComboBox and a Force Update button next to it."""
+        """Creates a widget container holding a SearchableComboBox and action buttons next to it."""
         from PySide6.QtWidgets import QHBoxLayout, QPushButton
+        from PySide6.QtGui import QColor
         container = QWidget()
         layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -4292,18 +4307,29 @@ class TranslatorStudioApp(QMainWindow):
         combo_box.setCurrentText(default_font)
         self._last_selected_font = default_font
 
+        # Style custom fonts in yellow/amber
+        self._style_custom_fonts_in_combobox(combo_box)
+
         layout.addWidget(combo_box, stretch=1)
 
-        # Force Update button
+        # Force Update button (for Google Fonts)
         update_btn = QPushButton("🔄")
         update_btn.setFixedSize(30, 30)
         update_btn.setToolTip("Force update the currently selected font from Google Fonts")
         update_btn.clicked.connect(lambda: self._force_update_current_font(combo_box))
         layout.addWidget(update_btn)
 
-        # Initially set visibility based on whether default_font is a Google Font
+        # Find Similar button (for Non-Google Fonts)
+        find_similar_btn = QPushButton("🔍")
+        find_similar_btn.setFixedSize(30, 30)
+        find_similar_btn.setToolTip("Find similar font on Google Fonts")
+        find_similar_btn.clicked.connect(lambda: self._find_similar_font(combo_box))
+        layout.addWidget(find_similar_btn)
+
+        # Set initial visibility based on whether default_font is a Google Font
         is_google = self._get_google_font_family_from_filename(default_font) is not None
         update_btn.setVisible(is_google)
+        find_similar_btn.setVisible(not is_google)
 
         def on_combo_text_changed(text):
             if text == "📥 Install New Font...":
@@ -4312,9 +4338,10 @@ class TranslatorStudioApp(QMainWindow):
                 self._check_and_update_all_fonts(combo_box)
             else:
                 self._last_selected_font = text
-                # Hide/show the update button based on whether it is a Google Font
+                # Toggle buttons visibility based on whether it is a Google Font
                 is_google = self._get_google_font_family_from_filename(text) is not None
                 update_btn.setVisible(is_google)
+                find_similar_btn.setVisible(not is_google)
                 self._on_setting_changed('font_family')
 
         combo_box.currentTextChanged.connect(on_combo_text_changed)
@@ -4328,6 +4355,16 @@ class TranslatorStudioApp(QMainWindow):
             if clean_gf in clean_fn:
                 return gf
         return None
+
+    def _style_custom_fonts_in_combobox(self, combo_box: QComboBox):
+        """Styles custom (non-Google) fonts in the combobox items with yellow/amber foreground color."""
+        from PySide6.QtGui import QColor
+        for i in range(combo_box.count()):
+            text = combo_box.itemText(i)
+            if text not in ["📥 Install New Font...", "🔄 Update All Fonts..."]:
+                is_google = self._get_google_font_family_from_filename(text) is not None
+                if not is_google:
+                    combo_box.setItemData(i, QColor("#FFC107"), Qt.ItemDataRole.ForegroundRole)
 
     def _get_installed_google_fonts(self) -> dict:
         """Scans the current font map and maps Google Font Family Name -> list of local font filenames."""
@@ -4456,6 +4493,7 @@ class TranslatorStudioApp(QMainWindow):
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
                 main_font_combo.addItem("🔄 Update All Fonts...")
+                self._style_custom_fonts_in_combobox(main_font_combo)
 
                 newly_installed_font = next((fn for fn in font_names if message_or_family.replace(" ", "").lower() in fn.replace("-", "").replace(" ", "").lower()), None)
                 if newly_installed_font:
@@ -4475,7 +4513,7 @@ class TranslatorStudioApp(QMainWindow):
         self._font_worker.finished.connect(on_finished)
         self._font_worker.start()
 
-    def _prompt_font_install(self, main_font_combo: QComboBox):
+    def _prompt_font_install(self, main_font_combo: QComboBox, pre_selected_font=None):
         """Allows user to select and download a new Google Font family in a background thread."""
         if getattr(self, "_font_install_active", False):
             return
@@ -4484,12 +4522,16 @@ class TranslatorStudioApp(QMainWindow):
         from PySide6.QtWidgets import QInputDialog
         prev_font = getattr(self, "_last_selected_font", "Sans-serif")
         
+        default_index = 0
+        if pre_selected_font in self.GOOGLE_FONTS:
+            default_index = self.GOOGLE_FONTS.index(pre_selected_font)
+
         font_family, ok = QInputDialog.getItem(
             self, 
             "Install Font from Google Fonts", 
             "Choose a popular comic/manga font to install:", 
             self.GOOGLE_FONTS, 
-            0, 
+            default_index, 
             False
         )
         
@@ -4557,6 +4599,7 @@ class TranslatorStudioApp(QMainWindow):
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
                 main_font_combo.addItem("🔄 Update All Fonts...")
+                self._style_custom_fonts_in_combobox(main_font_combo)
                 
                 newly_installed_font = next((fn for fn in font_names if message_or_family.replace(" ", "").lower() in fn.replace("-", "").replace(" ", "").lower()), None)
                 if newly_installed_font:
@@ -4579,6 +4622,42 @@ class TranslatorStudioApp(QMainWindow):
 
         self._font_worker.finished.connect(on_finished)
         self._font_worker.start()
+
+    def _find_similar_font(self, main_font_combo: QComboBox):
+        """Recommends similar Google Fonts when a custom/manual copy font is selected."""
+        current_font = main_font_combo.currentText()
+        if not current_font or current_font == "No fonts found in /fonts folder":
+            return
+            
+        clean_fn = current_font.lower()
+        recommendations = []
+        reason = ""
+        
+        if any(x in clean_fn for x in ["comic", "anime", "ace", "shanns", "hand", "kalam", "chewy", "bell", "daugh"]):
+            recommendations = ["Comic Neue", "Bangers", "Patrick Hand", "Architects Daughter"]
+            reason = "phông chữ viết tay truyện tranh / Manga Cartoon"
+        elif any(x in clean_fn for x in ["gothic", "msyh", "msgothic", "cjk", "jp", "sc", "tc", "kr", "sans", "mono"]):
+            recommendations = ["Noto Sans JP", "Noto Sans SC", "Noto Sans KR", "ZCOOL KuaiLe"]
+            reason = "phông chữ không chân (Sans-serif) hoặc phông chữ đa ngôn ngữ CJK"
+        else:
+            recommendations = ["Comic Neue", "Bangers", "Fredoka One", "Schoolbell"]
+            reason = "phông chữ truyện tranh phổ biến"
+
+        # Format message
+        msg = f"Phông chữ đang chọn '{current_font}' là phông chữ tự thêm bên ngoài.\n\n"
+        msg += f"Gợi ý các phông chữ tương tự có sẵn trên Google Fonts ({reason}):\n"
+        for r in recommendations:
+            msg += f" • {r}\n"
+        msg += "\nBạn có muốn mở hộp thoại cài đặt để tải và sử dụng các phông chữ này không?"
+
+        reply = QMessageBox.question(
+            self,
+            "Tìm phông chữ tương tự trên Google Fonts",
+            msg,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self._prompt_font_install(main_font_combo, pre_selected_font=recommendations[0])
 
     def _check_and_update_all_fonts(self, main_font_combo: QComboBox):
         """Scans all installed Google Fonts, checks jsdelivr metadata for updates, and prompts to download."""
@@ -4707,6 +4786,7 @@ class TranslatorStudioApp(QMainWindow):
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
                 main_font_combo.addItem("🔄 Update All Fonts...")
+                self._style_custom_fonts_in_combobox(main_font_combo)
                 
                 prev_font = getattr(self, "_last_selected_font", "Sans-serif")
                 if prev_font in font_names:
