@@ -4668,21 +4668,40 @@ class TranslatorStudioApp(QMainWindow):
             recommendations = ["Comic Neue", "Bangers", "Fredoka One", "Schoolbell"]
             reason = "phông chữ truyện tranh phổ biến"
 
-        # Format message
+        # Check which of these are already installed
+        installed_google = self._get_installed_google_fonts()
+        to_install = []
+        
         msg = f"Phông chữ đang chọn '{current_font}' là phông chữ tự thêm bên ngoài.\n\n"
         msg += f"Gợi ý các phông chữ tương tự có sẵn trên Google Fonts ({reason}):\n"
         for r in recommendations:
-            msg += f" • {r}\n"
-        msg += "\nBạn có muốn mở hộp thoại cài đặt để tải và sử dụng các phông chữ này không?"
+            if r in installed_google:
+                msg += f" • {r} (Đã cài đặt)\n"
+            else:
+                msg += f" • {r}\n"
+                to_install.append(r)
 
-        reply = QMessageBox.question(
-            self,
-            "Tìm phông chữ tương tự trên Google Fonts",
-            msg,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if reply == QMessageBox.StandardButton.Yes:
-            self._prompt_font_install(main_font_combo, pre_selected_font=recommendations[0])
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Tìm phông chữ tương tự trên Google Fonts")
+        msg_box.setText(msg)
+        msg_box.setIcon(QMessageBox.Icon.Question)
+
+        install_all_btn = None
+        if to_install:
+            install_all_btn = msg_box.addButton(f"Tải {len(to_install)} gợi ý chưa cài", QMessageBox.ButtonRole.AcceptRole)
+        
+        open_dialog_btn = msg_box.addButton("Mở hộp cài đặt từng font", QMessageBox.ButtonRole.YesRole)
+        cancel_btn = msg_box.addButton("Hủy bỏ", QMessageBox.ButtonRole.RejectRole)
+
+        msg_box.exec()
+        clicked_button = msg_box.clickedButton()
+
+        if clicked_button == install_all_btn and to_install:
+            updates = [(r, "Chưa cài đặt", "latest") for r in to_install]
+            self._download_updates(updates, main_font_combo)
+        elif clicked_button == open_dialog_btn:
+            pre_sel = to_install[0] if to_install else recommendations[0]
+            self._prompt_font_install(main_font_combo, pre_selected_font=pre_sel)
 
     def _check_and_update_all_fonts(self, main_font_combo: QComboBox):
         """Scans all installed Google Fonts, checks jsdelivr metadata for updates, and prompts to download."""
@@ -4801,6 +4820,10 @@ class TranslatorStudioApp(QMainWindow):
                 for fam, ver in success_updates.items():
                     versions[fam] = ver
                 self.config_loader.save_studio_config()
+                
+                # Fetch actual online versions asynchronously for newly installed/updated fonts
+                for fam in success_updates.keys():
+                    self._save_font_version_from_online_metadata(fam)
                 
                 self.log("SUCCESS", f"Đã cập nhật thành công {len(success_updates)} phông chữ!")
                 self._build_font_map()
