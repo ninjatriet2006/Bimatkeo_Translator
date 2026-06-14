@@ -128,6 +128,13 @@ class SearchableComboPopup(QWidget):
         super().__init__(None, Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
         self.combo = combo
         
+        # Store main window reference
+        self.main_win = None
+        for widget in QApplication.instance().topLevelWidgets():
+            if isinstance(widget, QMainWindow):
+                self.main_win = widget
+                break
+        
         # Main layout
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
