@@ -205,7 +205,6 @@ class SearchableComboPopup(QWidget):
                 padding: 5px;
                 border-radius: 2px;
                 background-color: transparent;
-                color: {txt};
                 border: none;
             }}
             QListWidget::item:hover {{
@@ -3876,6 +3875,7 @@ class TranslatorStudioApp(QMainWindow):
         if theme_name == "Default Qt":
             minimal_style = f"""
                 QWidget {{ font-size: {font_size}; }}
+                QComboBox[warning="true"] {{ color: #FFC107; }}
                 QPushButton {{
                     background-color: #f0f0f0;
                     color: #000000;
@@ -3962,6 +3962,9 @@ class TranslatorStudioApp(QMainWindow):
                 background-color: {bg_main};
                 border: 1px solid {border};
                 padding: 2px;
+            }}
+            QComboBox[warning="true"] {{
+                color: #FFC107;
             }}
             QComboBox::drop-down {{ border: none; }}
             /* QComboBox::down-arrow {{ image: url(./path/to/your/arrow.png); }} */
@@ -4349,6 +4352,13 @@ class TranslatorStudioApp(QMainWindow):
                 is_google = self._get_google_font_family_from_filename(text) is not None
                 update_btn.setVisible(is_google)
                 find_similar_btn.setVisible(not is_google)
+                
+                # Update warning property on the combobox widget
+                is_warning = not is_google and text not in ["📥 Install New Font...", "🔄 Update All Fonts..."]
+                combo_box.setProperty("warning", "true" if is_warning else "false")
+                combo_box.style().unpolish(combo_box)
+                combo_box.style().polish(combo_box)
+                
                 self._on_setting_changed('font_family')
 
         combo_box.currentTextChanged.connect(on_combo_text_changed)
@@ -4372,6 +4382,14 @@ class TranslatorStudioApp(QMainWindow):
                 is_google = self._get_google_font_family_from_filename(text) is not None
                 if not is_google:
                     combo_box.setItemData(i, QColor("#FFC107"), Qt.ItemDataRole.ForegroundRole)
+                    
+        # Update dynamic warning property for the collapsed combobox view styling
+        curr_text = combo_box.currentText()
+        is_google_curr = self._get_google_font_family_from_filename(curr_text) is not None
+        is_warn = not is_google_curr and curr_text not in ["📥 Install New Font...", "🔄 Update All Fonts..."]
+        combo_box.setProperty("warning", "true" if is_warn else "false")
+        combo_box.style().unpolish(combo_box)
+        combo_box.style().polish(combo_box)
 
     def _get_installed_google_fonts(self) -> dict:
         """Scans the current font map and maps Google Font Family Name -> list of local font filenames."""
