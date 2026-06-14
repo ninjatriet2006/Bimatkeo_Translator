@@ -4301,6 +4301,10 @@ class TranslatorStudioApp(QMainWindow):
         update_btn.clicked.connect(lambda: self._force_update_current_font(combo_box))
         layout.addWidget(update_btn)
 
+        # Initially set visibility based on whether default_font is a Google Font
+        is_google = self._get_google_font_family_from_filename(default_font) is not None
+        update_btn.setVisible(is_google)
+
         def on_combo_text_changed(text):
             if text == "📥 Install New Font...":
                 self._prompt_font_install(combo_box)
@@ -4308,6 +4312,10 @@ class TranslatorStudioApp(QMainWindow):
                 self._check_and_update_all_fonts(combo_box)
             else:
                 self._last_selected_font = text
+                # Hide/show the update button based on whether it is a Google Font
+                is_google = self._get_google_font_family_from_filename(text) is not None
+                update_btn.setVisible(is_google)
+                self._on_setting_changed('font_family')
 
         combo_box.currentTextChanged.connect(on_combo_text_changed)
         return container
@@ -4371,18 +4379,16 @@ class TranslatorStudioApp(QMainWindow):
         """Force updates (re-downloads) the currently selected font family if it is a Google Font."""
         current_font = main_font_combo.currentText()
         if not current_font or current_font == "No fonts found in /fonts folder":
-            QMessageBox.warning(self, "Cập nhật Phông chữ", "Không tìm thấy phông chữ nào để cập nhật.")
             return
 
         google_family = self._get_google_font_family_from_filename(current_font)
         if not google_family:
-            QMessageBox.information(
-                self, 
-                "Cập nhật Phông chữ", 
-                f"Phông chữ '{current_font}' không thuộc danh sách Google Fonts tự động cập nhật được.\n\n"
-                "Chỉ các phông chữ được tải trực tiếp từ Google Fonts (như Comic Neue, Bangers, v.v.) mới có thể tự động cập nhật."
-            )
             return
+
+        # Prevent double execution
+        if getattr(self, "_font_install_active", False):
+            return
+        self._font_install_active = True
 
         reply = QMessageBox.question(
             self,
@@ -4391,6 +4397,7 @@ class TranslatorStudioApp(QMainWindow):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.No:
+            self._font_install_active = False
             return
 
         self.log("INFO", f"Đang cập nhật bắt buộc phông chữ: {google_family}...")
@@ -4435,6 +4442,7 @@ class TranslatorStudioApp(QMainWindow):
         self._font_worker = FontDownloadWorker()
 
         def on_finished(success, message_or_family):
+            self._font_install_active = False
             main_font_combo.setEnabled(True)
             if success:
                 self.log("SUCCESS", f"Đã cập nhật thành công phông chữ '{message_or_family}'!")
@@ -4469,9 +4477,11 @@ class TranslatorStudioApp(QMainWindow):
 
     def _prompt_font_install(self, main_font_combo: QComboBox):
         """Allows user to select and download a new Google Font family in a background thread."""
+        if getattr(self, "_font_install_active", False):
+            return
+        self._font_install_active = True
+
         from PySide6.QtWidgets import QInputDialog
-        
-        # Determine previous selection to revert to if canceled/failed
         prev_font = getattr(self, "_last_selected_font", "Sans-serif")
         
         font_family, ok = QInputDialog.getItem(
@@ -4484,6 +4494,7 @@ class TranslatorStudioApp(QMainWindow):
         )
         
         if not ok or not font_family:
+            self._font_install_active = False
             # Revert selection back to previous font
             main_font_combo.blockSignals(True)
             main_font_combo.setCurrentText(prev_font)
@@ -4532,6 +4543,7 @@ class TranslatorStudioApp(QMainWindow):
         self._font_worker = FontDownloadWorker()
         
         def on_finished(success, message_or_family):
+            self._font_install_active = False
             main_font_combo.setEnabled(True)
             if success:
                 self.log("SUCCESS", f"Font '{message_or_family}' successfully installed and loaded!")
@@ -4570,6 +4582,10 @@ class TranslatorStudioApp(QMainWindow):
 
     def _check_and_update_all_fonts(self, main_font_combo: QComboBox):
         """Scans all installed Google Fonts, checks jsdelivr metadata for updates, and prompts to download."""
+        if getattr(self, "_bulk_update_active", False):
+            return
+        self._bulk_update_active = True
+
         main_font_combo.setEnabled(False)
         self.log("INFO", "Đang quét danh sách phông chữ Google Fonts đã cài đặt...")
         
@@ -4577,6 +4593,7 @@ class TranslatorStudioApp(QMainWindow):
         installed_families = list(installed_google_fonts.keys())
         
         if not installed_families:
+            self._bulk_update_active = False
             main_font_combo.setEnabled(True)
             QMessageBox.information(
                 self,
@@ -4601,6 +4618,7 @@ class TranslatorStudioApp(QMainWindow):
         self._check_worker = CheckAllFontsWorker(installed_families, local_versions)
         
         def on_check_finished(success, updates, error_msg):
+            self._bulk_update_active = False
             progress_dialog.close()
             main_font_combo.setEnabled(True)
             
