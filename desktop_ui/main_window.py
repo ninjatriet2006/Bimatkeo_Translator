@@ -432,7 +432,7 @@ class TranslatorStudioApp(QMainWindow):
         self.translated_pixmap_item = None
         self.is_panning = False
         self.last_pan_pos = None
-        self.temp_dir = os.path.join(self.project_base_dir, "MangaStudio_Data", "temp")
+        self.temp_dir = os.path.join(self.project_base_dir, "temp")
         self.detected_vram_gb = 0
         try:
             python_exe = getattr(self, 'config_loader', None) and getattr(self.config_loader, 'python_executable', None) or sys.executable
@@ -449,7 +449,7 @@ class TranslatorStudioApp(QMainWindow):
             print(f"[WARNING] Could not detect VRAM. Automatic mode will default to Safe. Error: {e}")
 
         # --- Pipeline for backend processing (CORRECTED LINE) ---
-        temp_dir = os.path.join(self.project_base_dir, "MangaStudio_Data", "temp")
+        temp_dir = os.path.join(self.project_base_dir, "temp")
         self.pipeline = Pipeline(self, self.config_loader.python_executable, temp_dir)
 
         self._initialize_app()
@@ -1527,17 +1527,21 @@ class TranslatorStudioApp(QMainWindow):
 
     def _get_font_list(self) -> list:
         """Gets a combined list of project and system fonts."""
-        project_fonts = []
-        fonts_dir = os.path.join(self.project_base_dir, "fonts")
-        if os.path.isdir(fonts_dir):
-            project_fonts = sorted([f for f in os.listdir(fonts_dir) if f.lower().endswith(('.ttf', '.otf'))])
+        project_fonts = set()
+        for folder in ["fonts", os.path.join("MangaStudio_Data", "fonts")]:
+            fonts_dir = os.path.join(self.project_base_dir, folder)
+            if os.path.isdir(fonts_dir):
+                for f in os.listdir(fonts_dir):
+                    if f.lower().endswith(('.ttf', '.otf')):
+                        project_fonts.add(f)
+        project_fonts_sorted = sorted(list(project_fonts))
 
         # Use QFontDatabase for a reliable way to get system fonts
         system_fonts = sorted(QFontDatabase().families())
 
         final_list = []
-        if project_fonts:
-            final_list.extend(project_fonts)
+        if project_fonts_sorted:
+            final_list.extend(project_fonts_sorted)
         final_list.extend(system_fonts)
         return final_list
 
@@ -1645,30 +1649,27 @@ class TranslatorStudioApp(QMainWindow):
                 self._on_setting_changed(key)
         
         elif key == "gpt_config":
-            configs_dir = os.path.join(self.project_base_dir, "MangaStudio_Data", "gpt_configs")
-            os.makedirs(configs_dir, exist_ok=True)
-            config_path, _ = QFileDialog.getOpenFileName(self, "Select GPT Config File", configs_dir, "YAML Files (*.yaml *.yml);;All Files (*)")
-            if config_path:
-                file_name = os.path.basename(config_path)
-                associated_widget.setText(file_name)
+            from PySide6.QtWidgets import QInputDialog
+            gpt_configs = self.config_loader.studio_config.get("gpt_configs", {})
+            cfg_list = sorted(list(gpt_configs.keys()))
+            if not cfg_list:
+                QMessageBox.information(self, "No GPT Config", "No embedded GPT configurations found in studio_config.yaml.")
+                return
+            selected_cfg, ok = QInputDialog.getItem(self, "Select GPT Configuration", "Choose an embedded config:", cfg_list, 0, False)
+            if ok and selected_cfg:
+                associated_widget.setText(selected_cfg)
                 self._on_setting_changed(key)
         
         elif key in ["pre_dict_path", "post_dict_path"]:
-            # --- NEW DICTIONARY LOGIC ---
-            dicts_dir = os.path.join(self.project_base_dir, "MangaStudio_Data", "dicts")
-            os.makedirs(dicts_dir, exist_ok=True)
-            
-            file_path, _ = QFileDialog.getOpenFileName(
-                self, 
-                "Select Dictionary File", 
-                dicts_dir, 
-                "Text Files (*.txt);;All Files (*)"
-            )
-            
-            if file_path:
-                # We only want the relative path from the project base directory
-                relative_path = os.path.relpath(file_path, self.project_base_dir)
-                associated_widget.setText(relative_path.replace("\\", "/")) # Use forward slashes for consistency
+            from PySide6.QtWidgets import QInputDialog
+            dicts = self.config_loader.studio_config.get("dicts", {})
+            dict_list = sorted(list(dicts.keys()))
+            if not dict_list:
+                QMessageBox.information(self, "No Dictionary", "No embedded dictionaries found in studio_config.yaml.")
+                return
+            selected_dict, ok = QInputDialog.getItem(self, "Select Dictionary", "Choose an embedded dictionary:", dict_list, 0, False)
+            if ok and selected_dict:
+                associated_widget.setText(selected_dict)
                 self._on_setting_changed(key)
 
         elif key == "ai_model":
@@ -2309,11 +2310,9 @@ class TranslatorStudioApp(QMainWindow):
         self._update_translator_visibility()
 
     def _refresh_profile_list(self):
-        """Reloads the list of profiles from the directory and updates the combobox."""
-        profiles_dir = os.path.join(self.project_base_dir, "MangaStudio_Data", "profiles")
-        os.makedirs(profiles_dir, exist_ok=True)
+        """Reloads the list of profiles from the unified config and updates the combobox."""
         try:
-            profiles = sorted([f.replace(".json", "") for f in os.listdir(profiles_dir) if f.endswith(".json")])
+            profiles = sorted(list(self.config_loader.studio_config.setdefault("profiles", {}).keys()))
             self.profile_combobox.clear()
             if profiles:
                 self.profile_combobox.addItems(profiles)
@@ -2323,16 +2322,14 @@ class TranslatorStudioApp(QMainWindow):
             print(f"[ERROR] Failed to refresh profiles: {e}")
 
     def _save_profile(self):
-        """Saves the current settings dictionary as a profile."""
+        """Saves the current settings dictionary as a profile in the unified config."""
         name = self.profile_name_entry.text().strip()
         if not name:
             QMessageBox.warning(self, "Warning", "Please enter a profile name.")
             return
 
-        profiles_dir = os.path.join(self.project_base_dir, "MangaStudio_Data", "profiles")
-        path = os.path.join(profiles_dir, f"{name}.json")
-
-        if os.path.exists(path):
+        profiles = self.config_loader.studio_config.setdefault("profiles", {})
+        if name in profiles:
             reply = QMessageBox.question(self, "Confirm Overwrite", f"Profile '{name}' already exists. Overwrite it?",
                                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                          QMessageBox.StandardButton.No)
@@ -2340,11 +2337,8 @@ class TranslatorStudioApp(QMainWindow):
                 return
 
         try:
-            with open(path, 'w', encoding='utf-8') as f:
-                # Save the current_settings dictionary to the JSON file
-                import json
-                json.dump(self.current_settings, f, indent=4)
-
+            profiles[name] = copy.deepcopy(self.current_settings)
+            self.config_loader.save_studio_config()
             self._refresh_profile_list()
             self.profile_combobox.setCurrentText(name)
             print(f"Profile '{name}' saved successfully.")
@@ -2352,21 +2346,19 @@ class TranslatorStudioApp(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to save profile: {e}")
 
     def _load_profile(self):
-        """Loads a profile and applies its settings, ensuring the UI remains enabled."""
+        """Loads a profile from the unified config and applies its settings, ensuring the UI remains enabled."""
         name = self.profile_combobox.currentText()
         if not name or name == "No profiles found":
             return
 
-        path = os.path.join(self.project_base_dir, "MangaStudio_Data", "profiles", f"{name}.json")
-        if not os.path.exists(path):
-            QMessageBox.critical(self, "Error", f"Profile file not found: {name}.json")
+        profiles = self.config_loader.studio_config.setdefault("profiles", {})
+        if name not in profiles:
+            QMessageBox.critical(self, "Error", f"Profile not found in config: {name}")
             self._refresh_profile_list()
             return
 
         try:
-            with open(path, 'r', encoding='utf-8') as f:
-                import json
-                loaded_settings = json.load(f)
+            loaded_settings = copy.deepcopy(profiles[name])
 
             # Update the settings for the currently selected job (if any)
             job_index = self._get_selected_job_index()
@@ -2400,7 +2392,7 @@ class TranslatorStudioApp(QMainWindow):
         self._set_settings_panel_enabled(True)
 
     def _delete_profile(self):
-        """Deletes the selected profile."""
+        """Deletes the selected profile from the unified config."""
         name = self.profile_combobox.currentText()
         if not name or name == "No profiles found":
             return
@@ -2411,11 +2403,11 @@ class TranslatorStudioApp(QMainWindow):
         if reply == QMessageBox.StandardButton.No:
             return
 
-        profiles_dir = os.path.join(self.project_base_dir, "MangaStudio_Data", "profiles")
-        path = os.path.join(profiles_dir, f"{name}.json")
+        profiles = self.config_loader.studio_config.setdefault("profiles", {})
         try:
-            if os.path.exists(path):
-                os.remove(path)
+            if name in profiles:
+                del profiles[name]
+                self.config_loader.save_studio_config()
                 print(f"Profile '{name}' deleted.")
                 self._refresh_profile_list()
         except Exception as e:
@@ -3385,6 +3377,44 @@ class TranslatorStudioApp(QMainWindow):
             if key == 'font_family':
                 continue
 
+            # Intercept embedded dicts and gpt_config and dump to temp files for backend subprocess
+            if key in ["pre_dict_path", "post_dict_path"]:
+                dict_name = value
+                if "/" in dict_name or "\\" in dict_name or dict_name.endswith(".txt"):
+                    dict_base = os.path.splitext(os.path.basename(dict_name))[0]
+                else:
+                    dict_base = dict_name
+                
+                dicts = self.config_loader.studio_config.get("dicts", {})
+                if dict_base in dicts:
+                    os.makedirs(self.temp_dir, exist_ok=True)
+                    temp_file_path = os.path.join(self.temp_dir, f"temp_{dict_base}.txt")
+                    try:
+                        with open(temp_file_path, "w", encoding="utf-8") as f:
+                            f.write(dicts[dict_base])
+                        value = temp_file_path
+                    except Exception as e:
+                        print(f"[ERROR] Failed to write temp dict {dict_base}: {e}")
+            
+            elif key == "gpt_config":
+                cfg_name = value
+                if "/" in cfg_name or "\\" in cfg_name or cfg_name.endswith(".yaml") or cfg_name.endswith(".yml"):
+                    cfg_base = os.path.splitext(os.path.basename(cfg_name))[0]
+                else:
+                    cfg_base = cfg_name
+                
+                gpt_configs = self.config_loader.studio_config.get("gpt_configs", {})
+                if cfg_base in gpt_configs:
+                    os.makedirs(self.temp_dir, exist_ok=True)
+                    temp_file_path = os.path.join(self.temp_dir, f"temp_{cfg_base}.yaml")
+                    import yaml
+                    try:
+                        with open(temp_file_path, "w", encoding="utf-8") as f:
+                            yaml.dump(gpt_configs[cfg_base], f, allow_unicode=True, default_flow_style=False)
+                        value = temp_file_path
+                    except Exception as e:
+                        print(f"[ERROR] Failed to write temp GPT config {cfg_base}: {e}")
+
             group = prop_info.get("group", "")
             if "General & Translator" in group:
                 target_dict = final_config.setdefault("translator", {})
@@ -3752,40 +3782,26 @@ class TranslatorStudioApp(QMainWindow):
         event.accept()
 
     def _load_app_state(self):
-        """Loads application state (window geometry, last directory) from a config file."""
-        self.app_settings_path = os.path.join(self.project_base_dir, "MangaStudio_Data", "studio_config.json")
+        """Loads application state (window geometry, last directory) from the unified config."""
         try:
-            if os.path.exists(self.app_settings_path):
-                with open(self.app_settings_path, 'r', encoding='utf-8') as f:
-                    settings = json.load(f)
+            settings = self.config_loader.studio_config
+            # Restore window geometry
+            geometry_hex = settings.get("window_geometry")
+            if geometry_hex:
+                self.restoreGeometry(QByteArray.fromHex(geometry_hex.encode('utf-8')))
 
-                # Restore window geometry
-                geometry_hex = settings.get("window_geometry")
-                if geometry_hex:
-                    self.restoreGeometry(QByteArray.fromHex(geometry_hex.encode('utf-8')))
-
-                # Restore last used directory
-                self.last_selected_directory = settings.get("last_directory")
-                print("[INFO] Application state loaded.")
+            # Restore last used directory
+            self.last_selected_directory = settings.get("last_directory")
+            print("[INFO] Application state loaded.")
         except Exception as e:
             print(f"[WARNING] Could not load app settings: {e}")
 
     def _save_app_state(self):
-        """Saves the current application state to a config file."""
-        if not hasattr(self, 'app_settings_path'):
-            self.app_settings_path = os.path.join(self.project_base_dir, "MangaStudio_Data", "studio_config.json")
-
-        settings = {
-            # Convert QByteArray to a JSON-compatible hex string
-            "window_geometry": self.saveGeometry().toHex().data().decode('utf-8'),
-            "last_directory": getattr(self, 'last_selected_directory', None)
-        }
-        try:
-            with open(self.app_settings_path, 'w', encoding='utf-8') as f:
-                json.dump(settings, f, indent=4)
-            print("[INFO] Application state saved.")
-        except Exception as e:
-            print(f"[ERROR] Could not save app settings: {e}")
+        """Saves the current application state to the unified config."""
+        self.config_loader.studio_config["window_geometry"] = self.saveGeometry().toHex().data().decode('utf-8')
+        self.config_loader.studio_config["last_directory"] = getattr(self, 'last_selected_directory', None)
+        self.config_loader.save_studio_config()
+        print("[INFO] Application state saved.")
 
     def _create_theme_manager_widget(self) -> QWidget:
         """Creates the UI component for theme selection."""
@@ -3828,7 +3844,7 @@ class TranslatorStudioApp(QMainWindow):
     def _load_themes(self):
         """Scans the themes directory and populates the theme combobox."""
         self.available_themes.clear()
-        themes_dir = os.path.join(self.project_base_dir, "MangaStudio_Data", "themes")
+        themes_dir = os.path.join(self.project_base_dir, "themes")
 
         # Add a special option to revert to the default style
         self.available_themes["Default Qt"] = {"name": "Default Qt", "style": {}}
@@ -4261,17 +4277,17 @@ class TranslatorStudioApp(QMainWindow):
     def _build_font_map(self):
         """Scans the project's /fonts folder to create a name-to-filepath map."""
         self.font_map = {}
-        fonts_dir = os.path.join(self.project_base_dir, "fonts")
-        
-        if not os.path.isdir(fonts_dir):
-            print(f"[WARNING] Fonts directory not found at: {fonts_dir}")
-            return
-
-        for font_file in sorted(os.listdir(fonts_dir)):
-            if font_file.lower().endswith(('.ttf', '.otf')):
-                font_path = os.path.join(fonts_dir, font_file)
-                # Use the filename as the key
-                self.font_map[font_file] = font_path
+        found_any = False
+        for folder in ["fonts", os.path.join("MangaStudio_Data", "fonts")]:
+            fonts_dir = os.path.join(self.project_base_dir, folder)
+            if os.path.isdir(fonts_dir):
+                found_any = True
+                for font_file in sorted(os.listdir(fonts_dir)):
+                    if font_file.lower().endswith(('.ttf', '.otf')):
+                        font_path = os.path.join(fonts_dir, font_file)
+                        self.font_map[font_file] = font_path
+        if not found_any:
+            print(f"[WARNING] Fonts directories not found")
 
     def _create_font_combobox(self, info: dict) -> QComboBox:
         """Creates a combobox populated with fonts from the project's /fonts folder."""

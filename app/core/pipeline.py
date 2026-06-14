@@ -190,7 +190,7 @@ if __name__ == "__main__":
         print(f"[LOG:{prefix}] {message}", flush=True)
         
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    temp_dir = os.path.join(project_root, "MangaStudio_Data", "temp")
+    temp_dir = os.path.join(project_root, "temp")
     pipeline = Pipeline(None, sys.executable, temp_dir)
     
     if args.test_image:

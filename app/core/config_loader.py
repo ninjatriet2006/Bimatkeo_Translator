@@ -4,16 +4,25 @@ import subprocess
 import sys
 import re
 
-
 class ConfigLoader:
     def __init__(self, project_base_dir):
         self.project_base_dir = project_base_dir
         self.python_executable = self._find_python_executable()
-        self.cache_path = os.path.join(self.project_base_dir, "MangaStudio_Data", "temp", "schema_cache.json")
+        self.cache_path = os.path.join(self.project_base_dir, "temp", "schema_cache.json")
+        self.studio_config_path = os.path.join(self.project_base_dir, ".config", "studio_config.yaml")
+
+        import yaml
+        self.studio_config = {}
+        if os.path.exists(self.studio_config_path):
+            try:
+                with open(self.studio_config_path, "r", encoding="utf-8") as f:
+                    self.studio_config = yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"[ConfigLoader] Error loading studio_config.yaml: {e}")
 
         self.backend_schema = self._load_backend_schema()
         self.ui_map = self._load_ui_map()
-        self.tasks_config = self._load_tasks_config() # This line is correct
+        self.tasks_config = self._load_tasks_config()
 
         if not self.backend_schema:
             raise RuntimeError("Failed to load backend configuration schema.")
@@ -21,6 +30,14 @@ class ConfigLoader:
         # The data is built and stored directly as attributes, not through getter methods
         self.factory_defaults = self._parse_factory_defaults()
         self.full_config_data = self._build_full_config_data()
+
+    def save_studio_config(self):
+        import yaml
+        try:
+            with open(self.studio_config_path, "w", encoding="utf-8") as f:
+                yaml.dump(self.studio_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        except Exception as e:
+            print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
 
     def _find_python_executable(self):
         venv_path_win = os.path.join(self.project_base_dir, 'venv', 'Scripts', 'python.exe')
@@ -38,6 +55,9 @@ class ConfigLoader:
         return sys.executable
 
     def _load_backend_schema(self):
+        if hasattr(self, 'studio_config') and self.studio_config and "schema_cache" in self.studio_config:
+            return self.studio_config["schema_cache"]
+
         if os.path.exists(self.cache_path):
             try:
                 with open(self.cache_path, 'r', encoding='utf-8') as f:
@@ -53,9 +73,8 @@ class ConfigLoader:
             schema_data = self._parse_schema_output(result.stdout)
             if schema_data is None:
                 raise ValueError("Schema command did not return valid JSON.")
-            os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
-            with open(self.cache_path, 'w', encoding='utf-8') as f:
-                json.dump(schema_data, f, indent=4)
+            self.studio_config["schema_cache"] = schema_data
+            self.save_studio_config()
             return schema_data
         except Exception as e:
             print(f"[ERROR] Could not fetch schema: {e}")
@@ -81,6 +100,8 @@ class ConfigLoader:
         return ansi_escape.sub('', text)
 
     def _load_ui_map(self):
+        if hasattr(self, 'studio_config') and self.studio_config and "ui_map" in self.studio_config:
+            return self.studio_config["ui_map"]
         map_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'ui_map.json')
         try:
             with open(map_path, 'r', encoding='utf-8') as f:
@@ -90,7 +111,9 @@ class ConfigLoader:
             return {}
 
     def _load_tasks_config(self):
-        """Loads the special tasks configuration from tasks.json."""
+        """Loads the special tasks configuration."""
+        if hasattr(self, 'studio_config') and self.studio_config and "tasks" in self.studio_config:
+            return self.studio_config["tasks"]
         tasks_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'tasks.json')
         try:
             with open(tasks_path, 'r', encoding='utf-8') as f:
@@ -121,10 +144,8 @@ class ConfigLoader:
         properties = self.backend_schema.get("properties", {})
 
         for prop_key, prop_value in properties.items():
-            # This handles nested defaults (e.g., from 'detector', 'render')
             if "default" in prop_value and isinstance(prop_value.get("default"), dict):
                 defaults.update(prop_value["default"])
-            # This handles simple root-level properties (e.g., 'kernel_size')
             elif "default" in prop_value:
                 defaults[prop_key] = prop_value["default"]
         return defaults
@@ -155,7 +176,6 @@ class ConfigLoader:
             merged_info = ui_info.copy()
             merged_info['key'] = key
 
-            # Use the already parsed factory default
             merged_info['default'] = self.factory_defaults.get(key)
 
             # Add enum values (for dropdowns) if they exist

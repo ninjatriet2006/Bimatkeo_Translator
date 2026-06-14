@@ -93,7 +93,18 @@ class ConfigLoader:
     def __init__(self, project_base_dir):
         self.project_base_dir = project_base_dir
         self.python_executable = self._find_python_executable()
-        self.cache_path = os.path.join(self.project_base_dir, "MangaStudio_Data", "temp", "schema_cache.json")
+        self.cache_path = os.path.join(self.project_base_dir, "temp", "schema_cache.json")
+        self.studio_config_path = os.path.join(self.project_base_dir, ".config", "studio_config.yaml")
+
+        # Load studio_config.yaml early
+        import yaml
+        self.studio_config = {}
+        if os.path.exists(self.studio_config_path):
+            try:
+                with open(self.studio_config_path, "r", encoding="utf-8") as f:
+                    self.studio_config = yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"[ConfigLoader] Error loading studio_config.yaml: {e}")
 
         self.backend_schema = self._load_backend_schema()
         if not self.backend_schema:
@@ -109,6 +120,14 @@ class ConfigLoader:
         self.factory_defaults = self._parse_factory_defaults()
         self.full_config_data = self._build_full_config_data()
         self.languages = self._load_backend_languages()
+
+    def save_studio_config(self):
+        import yaml
+        try:
+            with open(self.studio_config_path, "w", encoding="utf-8") as f:
+                yaml.dump(self.studio_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        except Exception as e:
+            print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
 
     def _find_python_executable(self):
         venv_path_win = os.path.join(self.project_base_dir, 'venv', 'Scripts', 'python.exe')
@@ -126,7 +145,12 @@ class ConfigLoader:
         return sys.executable
 
     def _load_backend_schema(self):
-        # 1. Try loading static schema file from project directory first
+        # 1. Try loading from studio_config.yaml
+        if hasattr(self, 'studio_config') and self.studio_config and "schema_cache" in self.studio_config:
+            print("[ConfigLoader] Loading schema from studio_config.yaml...")
+            return self.studio_config["schema_cache"]
+
+        # 2. Try loading static schema file from project directory first (legacy cache)
         static_path = os.path.join(self.project_base_dir, "MangaStudio_Data", "schema_cache.json")
         if os.path.exists(static_path):
             try:
@@ -136,7 +160,7 @@ class ConfigLoader:
             except Exception:
                 pass
 
-        # 2. Try loading from temp cache directory
+        # 3. Try loading from temp cache directory
         if os.path.exists(self.cache_path):
             try:
                 with open(self.cache_path, 'r', encoding='utf-8') as f:
@@ -158,9 +182,8 @@ class ConfigLoader:
             schema_data = self._parse_schema_output(result.stdout)
             if schema_data is None:
                 raise ValueError("Schema command did not return valid JSON.")
-            os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
-            with open(self.cache_path, 'w', encoding='utf-8') as f:
-                json.dump(schema_data, f, indent=4)
+            self.studio_config["schema_cache"] = schema_data
+            self.save_studio_config()
             return schema_data
         except Exception as e:
             print(f"[ERROR] Could not fetch schema: {e}")
@@ -186,6 +209,8 @@ class ConfigLoader:
         return ansi_escape.sub('', text)
 
     def _load_ui_map(self):
+        if hasattr(self, 'studio_config') and self.studio_config and "ui_map" in self.studio_config:
+            return self.studio_config["ui_map"]
         map_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'ui_map.json')
         try:
             with open(map_path, 'r', encoding='utf-8') as f:
@@ -196,6 +221,8 @@ class ConfigLoader:
 
     def _load_tasks_config(self):
         """Loads the special tasks configuration from tasks.json."""
+        if hasattr(self, 'studio_config') and self.studio_config and "tasks" in self.studio_config:
+            return self.studio_config["tasks"]
         tasks_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'tasks.json')
         try:
             with open(tasks_path, 'r', encoding='utf-8') as f:
