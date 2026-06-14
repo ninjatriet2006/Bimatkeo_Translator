@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
     QApplication, QMenu, QSizePolicy, QDialog
 )
 from PySide6.QtCore import Qt, QSize, QTimer, Signal, QByteArray, QEvent, QPoint
-from PySide6.QtGui import QFont, QCursor, QStandardItemModel, QFontDatabase, QPixmap, QPainter, QColor
+from PySide6.QtGui import QFont, QCursor, QStandardItemModel, QFontDatabase, QPixmap, QPainter, QColor, QPalette
 
 from PIL import Image
 
@@ -126,6 +126,8 @@ class DynamicHeightListWidget(QListWidget):
 class SearchableComboPopup(QWidget):
     def __init__(self, combo, parent=None):
         super().__init__(None, Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        self.setObjectName("SearchableComboPopup")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.combo = combo
         
         # Store main window reference
@@ -176,17 +178,18 @@ class SearchableComboPopup(QWidget):
             accent = colors.get("accent", "#3a7ebf")
             hover = colors.get("primary_button_hover", "#444444")
         else:
-            bg = "#2c2c2c"
-            bg_input = "#1e1e1e"
-            txt = "#dce4ee"
-            border = "#555555"
-            accent = "#3a7ebf"
-            hover = "#444444"
+            # Fallback to system palette for Default Qt (which should be light/system matching)
+            palette = QApplication.palette()
+            bg = palette.color(QPalette.ColorRole.Window).name()
+            bg_input = palette.color(QPalette.ColorRole.Base).name()
+            txt = palette.color(QPalette.ColorRole.WindowText).name()
+            border = palette.color(QPalette.ColorRole.Mid).name()
+            accent = palette.color(QPalette.ColorRole.Highlight).name()
+            hover = palette.color(QPalette.ColorRole.Button).lighter(105).name()
             
         self.setStyleSheet(f"""
-            QWidget {{
+            #SearchableComboPopup {{
                 background-color: {bg};
-                color: {txt};
                 border: 1px solid {border};
                 border-radius: 4px;
             }}
@@ -199,6 +202,7 @@ class SearchableComboPopup(QWidget):
             }}
             QListWidget {{
                 background-color: {bg};
+                color: {txt};
                 border: none;
             }}
             QListWidget::item {{
@@ -206,9 +210,11 @@ class SearchableComboPopup(QWidget):
                 border-radius: 2px;
                 background-color: transparent;
                 border: none;
+                color: {txt};
             }}
             QListWidget::item:hover {{
                 background-color: {hover};
+                color: {txt};
             }}
             QListWidget::item:selected {{
                 background-color: {accent};
@@ -221,12 +227,12 @@ class SearchableComboPopup(QWidget):
                 margin: 0px;
             }}
             QScrollBar::handle:vertical {{
-                background: #555555;
+                background: {border};
                 min-height: 20px;
                 border-radius: 4px;
             }}
             QScrollBar::handle:vertical:hover {{
-                background: #888888;
+                background: {accent};
             }}
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
                 border: none;
@@ -3961,6 +3967,38 @@ class TranslatorStudioApp(QMainWindow):
 
         self.theme_combobox.addItems(sorted(self.available_themes.keys()))
 
+    def _get_themed_arrow_icon_path(self, color_hex: str, theme_name: str) -> str:
+        """Generates a themed down-arrow PNG icon and returns its absolute path."""
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        temp_dir = os.path.join(base_dir, "temp")
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        img_path = os.path.join(temp_dir, f"arrow_{theme_name.replace(' ', '_')}.png")
+        if os.path.exists(img_path):
+            return img_path.replace("\\", "/")
+            
+        try:
+            from PIL import Image, ImageDraw
+            img = Image.new("RGBA", (12, 12), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            
+            hex_str = color_hex.lstrip('#')
+            if len(hex_str) == 3:
+                hex_str = "".join([c*2 for c in hex_str])
+            r = int(hex_str[0:2], 16)
+            g = int(hex_str[2:4], 16)
+            b = int(hex_str[4:6], 16)
+            color = (r, g, b, 255)
+            
+            draw.line([(2, 4), (6, 8)], fill=color, width=2)
+            draw.line([(6, 8), (10, 4)], fill=color, width=2)
+            
+            img.save(img_path, format="PNG")
+        except Exception as e:
+            print(f"Error generating arrow icon: {e}")
+            
+        return img_path.replace("\\", "/")
+
     def _apply_theme(self, theme_name: str):
         """
         Applies the selected theme's stylesheet to the entire application,
@@ -4019,6 +4057,7 @@ class TranslatorStudioApp(QMainWindow):
         border = colors.get("border", "#555555")
         accent = colors.get("accent", "#4a9fcf")
         indicator = colors.get("checkbox_indicator", "#dce4ee")
+        arrow_icon_path = self._get_themed_arrow_icon_path(txt_main, theme_name)
 
         style_sheet = f"""
             /* --- GLOBAL --- */
@@ -4059,14 +4098,34 @@ class TranslatorStudioApp(QMainWindow):
             /* --- COMBOBOX & LINEEDIT --- */
             QComboBox, QLineEdit {{
                 background-color: {bg_main};
+                color: {txt_main};
                 border: 1px solid {border};
-                padding: 2px;
+                border-radius: 3px;
+                padding: 4px;
+            }}
+            QComboBox {{
+                padding-right: 24px;
             }}
             QComboBox[warning="true"] {{
                 color: #FFC107;
             }}
-            QComboBox::drop-down {{ border: none; }}
-            /* QComboBox::down-arrow {{ image: url(./path/to/your/arrow.png); }} */
+            QComboBox::drop-down {{
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 20px;
+                border: none;
+            }}
+            QComboBox::down-arrow {{
+                image: url({arrow_icon_path});
+                width: 12px;
+                height: 12px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {bg_main};
+                color: {txt_main};
+                border: 1px solid {border};
+                selection-background-color: {accent};
+            }}
 
             /* --- CHECKBOX --- */
             QCheckBox::indicator {{

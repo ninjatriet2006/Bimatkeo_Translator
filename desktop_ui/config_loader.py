@@ -210,14 +210,24 @@ class ConfigLoader:
 
     def _load_ui_map(self):
         if hasattr(self, 'studio_config') and self.studio_config and "ui_map" in self.studio_config:
-            return self.studio_config["ui_map"]
-        map_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'ui_map.json')
-        try:
-            with open(map_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"[ERROR] UI map loading failed: {e}")
-            return {}
+            ui_map = self.studio_config["ui_map"]
+        else:
+            map_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'ui_map.json')
+            try:
+                with open(map_path, 'r', encoding='utf-8') as f:
+                    ui_map = json.load(f)
+            except Exception as e:
+                print(f"[ERROR] UI map loading failed: {e}")
+                ui_map = {}
+                
+        # Programmatically override output_format to always use dropdown (optionmenu)
+        if isinstance(ui_map, dict) and "output_format" in ui_map:
+            if isinstance(ui_map["output_format"], dict):
+                ui_map["output_format"]["widget"] = "optionmenu"
+                if "options" in ui_map["output_format"]:
+                    ui_map["output_format"].pop("options", None)
+                    
+        return ui_map
 
     def _load_tasks_config(self):
         """Loads the special tasks configuration from tasks.json."""
@@ -349,6 +359,11 @@ class ConfigLoader:
         except ImportError:
             STATIC_LANGUAGES = {"Auto-Detect": "auto"}
         return STATIC_LANGUAGES
+    def _get_yaml_filename(self, field: str) -> str:
+        field_lower = field.lower()
+        if field_lower in ["alignment", "direction", "inpainting_precision", "renderer"]:
+            return f"config_{field_lower}.yaml"
+        return f"model_{field_lower}.yaml"
 
     def _initialize_and_repair_config(self):
         """
@@ -435,9 +450,22 @@ class ConfigLoader:
             except Exception:
                 pass
 
-        # For each enum field, ensure .config/model_<field>.yaml exists and is repaired
+        # For each enum field, ensure config files exist and are repaired
         for field, schema_choices in enum_fields.items():
-            model_yaml_path = os.path.join(config_dir, f"model_{field.lower()}.yaml")
+            filename = self._get_yaml_filename(field)
+            model_yaml_path = os.path.join(config_dir, filename)
+            
+            # Migrate old model_<field>.yaml to config_<field>.yaml if it exists
+            if filename.startswith("config_"):
+                old_yaml_path = os.path.join(config_dir, f"model_{field.lower()}.yaml")
+                if os.path.exists(old_yaml_path):
+                    try:
+                        if os.path.exists(model_yaml_path):
+                            os.remove(model_yaml_path)
+                        os.rename(old_yaml_path, model_yaml_path)
+                        print(f"[ConfigLoader] Migrated model_{field.lower()}.yaml to {filename}")
+                    except Exception as e:
+                        print(f"[ConfigLoader] Error migrating model_{field.lower()}.yaml to {filename}: {e}")
             
             loaded_models = []
             if os.path.exists(model_yaml_path):
@@ -457,7 +485,7 @@ class ConfigLoader:
                         elif isinstance(item, dict) and "name" in item:
                             loaded_models.append(item)
                 except Exception as e:
-                    print(f"[ConfigLoader] Error reading model_{field.lower()}.yaml: {e}")
+                    print(f"[ConfigLoader] Error reading {filename}: {e}")
 
             # Create a dictionary of existing models by name to preserve checks
             existing_by_name = {}
@@ -491,12 +519,13 @@ class ConfigLoader:
                 with open(model_yaml_path, 'w', encoding='utf-8') as f:
                     yaml.dump({"models": repaired_models}, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
             except Exception as e:
-                print(f"[ConfigLoader] Error writing model_{field.lower()}.yaml: {e}")
+                print(f"[ConfigLoader] Error writing {filename}: {e}")
 
     def _load_custom_models(self, field):
-        """Loads custom models list from .config/model_<field>.yaml if it exists."""
+        """Loads custom models list from .config/model_<field>.yaml (or config_<field>.yaml) if it exists."""
         import yaml
-        model_yaml_path = os.path.join(self.project_base_dir, ".config", f"model_{field.lower()}.yaml")
+        filename = self._get_yaml_filename(field)
+        model_yaml_path = os.path.join(self.project_base_dir, ".config", filename)
         try:
             if os.path.exists(model_yaml_path):
                 with open(model_yaml_path, 'r', encoding='utf-8') as f:

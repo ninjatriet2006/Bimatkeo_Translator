@@ -101,14 +101,24 @@ class ConfigLoader:
 
     def _load_ui_map(self):
         if hasattr(self, 'studio_config') and self.studio_config and "ui_map" in self.studio_config:
-            return self.studio_config["ui_map"]
-        map_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'ui_map.json')
-        try:
-            with open(map_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"[ERROR] UI map loading failed: {e}")
-            return {}
+            ui_map = self.studio_config["ui_map"]
+        else:
+            map_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'ui_map.json')
+            try:
+                with open(map_path, 'r', encoding='utf-8') as f:
+                    ui_map = json.load(f)
+            except Exception as e:
+                print(f"[ERROR] UI map loading failed: {e}")
+                ui_map = {}
+                
+        # Programmatically override output_format to always use dropdown (optionmenu)
+        if isinstance(ui_map, dict) and "output_format" in ui_map:
+            if isinstance(ui_map["output_format"], dict):
+                ui_map["output_format"]["widget"] = "optionmenu"
+                if "options" in ui_map["output_format"]:
+                    ui_map["output_format"].pop("options", None)
+                    
+        return ui_map
 
     def _load_tasks_config(self):
         """Loads the special tasks configuration."""
