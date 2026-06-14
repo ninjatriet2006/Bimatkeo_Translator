@@ -7,33 +7,78 @@ import re
 class ConfigLoader:
     _DEFAULT_CHECKS = {
         "offline_translator": {
-            "sugoi": {"check_file": "models/translators/sugoi"},
-            "m2m100": {"check_file": "models/translators/m2m_100"},
-            "m2m100_big": {"check_file": "models/translators/m2m_100"},
-            "nllb": {"check_file": "models/translators/m2m_100"},
-            "nllb_big": {"check_file": "models/translators/m2m_100"},
-            "mbart50": {"check_file": "models/translators/m2m_100"},
-            "jparacrawl": {"check_file": "models/translators/jparacrawl"},
-            "jparacrawl_big": {"check_file": "models/translators/jparacrawl"},
-            "qwen2": {"check_file": "models/translators/qwen2"},
-            "qwen2_big": {"check_file": "models/translators/qwen2"},
+            "sugoi": {"check_file": "models/translators/sugoi/spm.ja.nopretok.model"},
+            "m2m100": {"check_file": "models/translators/m2m_100/m2m100_12b/sentencepiece.model"},
+            "m2m100_big": {"check_file": "models/translators/m2m_100/m2m100_12b/model.bin"},
+            "nllb": {"check_file": "models/translators/m2m_100/m2m100_12b/sentencepiece.model"},
+            "nllb_big": {"check_file": "models/translators/m2m_100/m2m100_12b/model.bin"},
+            "mbart50": {"check_file": "models/translators/m2m_100/m2m100_12b/sentencepiece.model"},
+            "jparacrawl": {"check_file": "models/translators/jparacrawl/spm.ja.nopretok.model"},
+            "jparacrawl_big": {"check_file": "models/translators/jparacrawl/spm.ja.nopretok.model"},
+            "qwen2": {"check_file": "models/translators/qwen2/qwen2_1.5b/model.bin"},
+            "qwen2_big": {"check_file": "models/translators/qwen2/qwen2_1.5b/model.bin"},
+            "offline": {"check_file": "models/translators/m2m_100/m2m100_12b/sentencepiece.model"},
+        },
+        "ai_translator": {
+            "deepl": {
+                "check_file": "manga_translator/translators/deepl.py",
+                "check_module": "deepl"
+            },
+            "gemini": {
+                "check_file": "manga_translator/translators/gemini.py",
+                "check_module": "google.genai"
+            },
+            "deepseek": {
+                "check_file": "manga_translator/translators/deepseek.py"
+            },
+            "groq": {
+                "check_file": "manga_translator/translators/groq.py",
+                "check_module": "groq"
+            },
+            "youdao": {
+                "check_file": "manga_translator/translators/youdao.py"
+            },
+            "baidu": {
+                "check_file": "manga_translator/translators/baidu.py"
+            },
+            "caiyun": {
+                "check_file": "manga_translator/translators/caiyun.py"
+            },
+            "sakura": {
+                "check_file": "manga_translator/translators/sakura.py"
+            },
+            "papago": {
+                "check_file": "manga_translator/translators/papago.py"
+            },
+            "openai": {
+                "check_file": "manga_translator/translators/chatgpt.py",
+                "check_module": "openai"
+            },
+            "custom_openai": {
+                "check_file": "manga_translator/translators/custom_openai.py",
+                "check_module": "openai"
+            }
         },
         "ocr": {
             "32px": {"check_file": "models/ocr/alphabet-all-v7.txt"},
             "48px": {"check_file": "models/ocr/ocr_ar_48px.ckpt"},
-            "48px_ctc": {"check_file": "models/ocr/ocr_ar_48px.ckpt"},
+            "48px_ctc": {"check_file": "models/ocr/ocr-ctc.ckpt"},
+            "mocr": {
+                "check_file": "manga_translator/ocr/model_manga_ocr.py",
+                "check_module": "manga_ocr"
+            }
         },
         "detector": {
-            "default": {"check_file": "models/detector/dbnet"},
-            "dbconvnext": {"check_file": "models/detector/dbnet"},
+            "default": {"check_file": "models/detection/detect-20241225.ckpt"},
+            "dbconvnext": {"check_file": "models/detection/dbnet_convnext.ckpt"},
             "ctd": {"check_file": "models/detection/detect-20241225.ckpt"},
-            "craft": {"check_file": "models/detector/craft"},
-            "paddle": {"check_file": "models/detector/paddle"},
+            "craft": {"check_file": "models/detector/craft/craft_mlt_25k.pth"},
+            "paddle": {"check_file": "models/detector/paddle/det.onnx"},
         },
         "inpainter": {
             "default": {"check_file": "models/inpainting/lama_large_512px.ckpt"},
             "lama_large": {"check_file": "models/inpainting/lama_large_512px.ckpt"},
-            "lama_mpe": {"check_file": "models/inpainting/lama_large_512px.ckpt"},
+            "lama_mpe": {"check_file": "models/inpainting/inpainting_lama_mpe.ckpt"},
         },
         "upscaler": {
             "waifu2x": {"check_file": "models/waifu2x-linux/waifu2x-ncnn-vulkan"},
@@ -43,6 +88,7 @@ class ConfigLoader:
             "mc2": {"check_file": "models/manga-colorization-v2/generator.zip"},
         }
     }
+
 
     def __init__(self, project_base_dir):
         self.project_base_dir = project_base_dir
@@ -386,12 +432,14 @@ class ConfigLoader:
             repaired_models = []
             for item in schema_choices:
                 name = str(item)
-                if name in existing_by_name:
+                field_key = field.lower()
+                has_default = (field_key in self._DEFAULT_CHECKS and name in self._DEFAULT_CHECKS[field_key])
+                
+                if name in existing_by_name and not has_default:
                     repaired_models.append(existing_by_name[name])
                 else:
                     model_entry = {"name": name}
-                    field_key = field.lower()
-                    if field_key in self._DEFAULT_CHECKS and name in self._DEFAULT_CHECKS[field_key]:
+                    if has_default:
                         model_entry.update(self._DEFAULT_CHECKS[field_key][name])
                     repaired_models.append(model_entry)
             
@@ -444,7 +492,8 @@ class ConfigLoader:
             if isinstance(item, dict) and "name" in item:
                 name = item["name"]
                 self._model_checks[field_key][name] = {
-                    "check_file": item.get("check_file")
+                    "check_file": item.get("check_file"),
+                    "check_module": item.get("check_module")
                 }
 
     def check_model_existence(self, model_name, field=None):
@@ -477,8 +526,21 @@ class ConfigLoader:
                         break
         
         if not rule:
-            return True
+            if field and field.lower() == "ai_translator":
+                return True
+            return False
 
+        # 1. Check Python module dependency if required
+        check_module = rule.get("check_module")
+        if check_module:
+            modules = [check_module] if isinstance(check_module, str) else check_module
+            for module_name in modules:
+                try:
+                    __import__(module_name)
+                except ImportError:
+                    return False
+
+        # 2. Check physical files/weights dependency
         check_file = rule.get("check_file")
         if check_file:
             files_to_check = [check_file]
@@ -503,13 +565,25 @@ class ConfigLoader:
                     os.path.join(self.project_base_dir, f),
                     os.path.abspath(f)
                 ]
-                if any(os.path.exists(p) for p in paths_to_try):
-                    found = True
+                for p in paths_to_try:
+                    if os.path.exists(p):
+                        if os.path.isdir(p):
+                            try:
+                                if len(os.listdir(p)) > 0:
+                                    found = True
+                                    break
+                            except Exception:
+                                pass
+                        else:
+                            found = True
+                            break
+                if found:
                     break
             if not found:
                 return False
 
         return True
+
 
     def _load_keys_file(self):
         """Loads variables from the keys.yaml file in the .config directory into a dict."""

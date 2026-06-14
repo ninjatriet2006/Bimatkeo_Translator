@@ -1090,7 +1090,7 @@ class TranslatorStudioApp(QMainWindow):
             if key in ["offline_translator", "ai_translator"]:
                 # Simple list of choices for split dropdowns, but check setup
                 for val in values:
-                    exists = self.config_loader.check_model_existence(val)
+                    exists = self.config_loader.check_model_existence(val, field=key)
                     display_name = val
                     if not exists:
                         display_name = f"{val} (Not Setup)"
@@ -1104,8 +1104,9 @@ class TranslatorStudioApp(QMainWindow):
                     item_index = combo_box.count()
                     combo_box.addItem(group_name)
                     combo_box.model().item(item_index).setEnabled(False)
+                    field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
                     for t in translators:
-                        exists = self.config_loader.check_model_existence(t)
+                        exists = self.config_loader.check_model_existence(t, field=field_name)
                         display_name = t
                         if not exists:
                             display_name = f"{t} (Not Setup)"
@@ -1116,7 +1117,7 @@ class TranslatorStudioApp(QMainWindow):
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))
         else:
             for val in values:
-                exists = self.config_loader.check_model_existence(val)
+                exists = self.config_loader.check_model_existence(val, field=key)
                 display_name = val
                 if not exists:
                     display_name = f"{val} (Not Setup)"
@@ -1337,8 +1338,9 @@ class TranslatorStudioApp(QMainWindow):
             item_index = translator_combo.count()
             translator_combo.addItem(group_name)
             translator_combo.model().item(item_index).setEnabled(False)
+            field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
             for t in translators:
-                exists = self.config_loader.check_model_existence(t)
+                exists = self.config_loader.check_model_existence(t, field=field_name)
                 display_name = t
                 if not exists:
                     display_name = f"{t} (Not Setup)"
