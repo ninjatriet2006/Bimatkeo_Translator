@@ -126,6 +126,17 @@ class ConfigLoader:
         return sys.executable
 
     def _load_backend_schema(self):
+        # 1. Try loading static schema file from project directory first
+        static_path = os.path.join(self.project_base_dir, "MangaStudio_Data", "schema_cache.json")
+        if os.path.exists(static_path):
+            try:
+                with open(static_path, 'r', encoding='utf-8') as f:
+                    print("[ConfigLoader] Loading static schema cache...")
+                    return json.load(f)
+            except Exception:
+                pass
+
+        # 2. Try loading from temp cache directory
         if os.path.exists(self.cache_path):
             try:
                 with open(self.cache_path, 'r', encoding='utf-8') as f:
@@ -537,8 +548,11 @@ class ConfigLoader:
             modules = [check_module] if isinstance(check_module, str) else check_module
             for module_name in modules:
                 try:
-                    __import__(module_name)
-                except ImportError:
+                    cmd = [self.python_executable, "-c", f"import {module_name}"]
+                    res = subprocess.run(cmd, capture_output=True, timeout=5)
+                    if res.returncode != 0:
+                        return False
+                except Exception:
                     return False
 
         # 2. Check physical files/weights dependency

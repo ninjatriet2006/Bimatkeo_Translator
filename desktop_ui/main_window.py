@@ -435,12 +435,16 @@ class TranslatorStudioApp(QMainWindow):
         self.temp_dir = os.path.join(self.project_base_dir, "MangaStudio_Data", "temp")
         self.detected_vram_gb = 0
         try:
-            import torch
-            if torch.cuda.is_available():
-                # Get total memory in bytes and convert to gigabytes
-                mem_bytes = torch.cuda.get_device_properties(0).total_memory
-                self.detected_vram_gb = mem_bytes / (1024**3)
-                print(f"[INFO] Detected {self.detected_vram_gb:.2f} GB of VRAM.")
+            python_exe = getattr(self, 'config_loader', None) and getattr(self.config_loader, 'python_executable', None) or sys.executable
+            cmd = [python_exe, "-c", "import torch; print(torch.cuda.get_device_properties(0).total_memory if torch.cuda.is_available() else 0)"]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                val = result.stdout.strip()
+                if val.isdigit():
+                    mem_bytes = int(val)
+                    self.detected_vram_gb = mem_bytes / (1024**3)
+                    if self.detected_vram_gb > 0:
+                        print(f"[INFO] Detected {self.detected_vram_gb:.2f} GB of VRAM via subprocess.")
         except Exception as e:
             print(f"[WARNING] Could not detect VRAM. Automatic mode will default to Safe. Error: {e}")
 
