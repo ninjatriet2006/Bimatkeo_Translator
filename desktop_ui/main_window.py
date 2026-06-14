@@ -384,6 +384,18 @@ class TranslatorStudioApp(QMainWindow):
     models_fetched_signal = Signal(list, object)
     fetch_finished_signal = Signal(object)
 
+    GOOGLE_FONTS = [
+        "Comic Neue",
+        "Bangers",
+        "Patrick Hand",
+        "Architects Daughter",
+        "Kaushan Script",
+        "Kalam",
+        "Chewy",
+        "Fredoka One",
+        "Schoolbell"
+    ]
+
     def __init__(self):
         super().__init__()
         self.project_base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -2624,8 +2636,8 @@ class TranslatorStudioApp(QMainWindow):
                         return int(value.replace("x", ""))
                 return value
             return None  # Return None if no button is checked
-        elif widget_type in ["api_profile_selector", "api_group_selector", "ai_model_selector"]:
-            combo = widget.findChild(QComboBox)
+        elif widget_type in ["api_profile_selector", "api_group_selector", "ai_model_selector", "combobox_fonts"]:
+            combo = widget.findChild(QComboBox) if not isinstance(widget, QComboBox) else widget
             return combo.currentText() if combo else None
         elif key == "language_checkbox_grid":
             checkbox_dict = self.widget_references.get(key, {})
@@ -2725,8 +2737,8 @@ class TranslatorStudioApp(QMainWindow):
             entry = widget.findChild(QLineEdit)
             if entry:
                 entry.setText(str(value))
-        elif widget_type in ["api_profile_selector", "api_group_selector"]:
-            combo = widget.findChild(QComboBox)
+        elif widget_type in ["api_profile_selector", "api_group_selector", "combobox_fonts"]:
+            combo = widget.findChild(QComboBox) if not isinstance(widget, QComboBox) else widget
             if combo:
                 combo.blockSignals(True)
                 combo.setCurrentText(str(value))
@@ -4254,8 +4266,14 @@ class TranslatorStudioApp(QMainWindow):
         if not found_any:
             print(f"[WARNING] Fonts directories not found")
 
-    def _create_font_combobox(self, info: dict) -> QComboBox:
-        """Creates a combobox populated with fonts, and adds an option to download/install new fonts."""
+    def _create_font_combobox(self, info: dict) -> QWidget:
+        """Creates a widget container holding a SearchableComboBox and a Force Update button next to it."""
+        from PySide6.QtWidgets import QHBoxLayout, QPushButton
+        container = QWidget()
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+
         combo_box = SearchableComboBox()
         font_names = list(self.font_map.keys())
         
@@ -4264,38 +4282,194 @@ class TranslatorStudioApp(QMainWindow):
             default_font = "Sans-serif"
 
         # Ensure the default font (or at least some fallback) is always in the list
-        # so the combobox has a valid selectable item and remains enabled.
         if default_font not in font_names:
             font_names.insert(0, default_font)
 
         combo_box.addItems(font_names)
         combo_box.addItem("📥 Install New Font...")
+        combo_box.addItem("🔄 Update All Fonts...")
 
         combo_box.setCurrentText(default_font)
         self._last_selected_font = default_font
 
+        layout.addWidget(combo_box, stretch=1)
+
+        # Force Update button
+        update_btn = QPushButton("🔄")
+        update_btn.setFixedSize(30, 30)
+        update_btn.setToolTip("Force update the currently selected font from Google Fonts")
+        update_btn.clicked.connect(lambda: self._force_update_current_font(combo_box))
+        layout.addWidget(update_btn)
+
         def on_combo_text_changed(text):
-            if text != "📥 Install New Font...":
-                self._last_selected_font = text
-            else:
+            if text == "📥 Install New Font...":
                 self._prompt_font_install(combo_box)
+            elif text == "🔄 Update All Fonts...":
+                self._check_and_update_all_fonts(combo_box)
+            else:
+                self._last_selected_font = text
 
         combo_box.currentTextChanged.connect(on_combo_text_changed)
-        return combo_box
+        return container
+
+    def _get_google_font_family_from_filename(self, filename: str) -> str:
+        """Checks if the filename matches any of our known Google Fonts and returns the family name."""
+        clean_fn = filename.replace("-", "").replace(" ", "").lower()
+        for gf in self.GOOGLE_FONTS:
+            clean_gf = gf.replace(" ", "").lower()
+            if clean_gf in clean_fn:
+                return gf
+        return None
+
+    def _get_installed_google_fonts(self) -> dict:
+        """Scans the current font map and maps Google Font Family Name -> list of local font filenames."""
+        installed_google_fonts = {}
+        for filename in self.font_map.keys():
+            google_family = self._get_google_font_family_from_filename(filename)
+            if google_family:
+                installed_google_fonts.setdefault(google_family, []).append(filename)
+        return installed_google_fonts
+
+    def _save_font_version_from_online_metadata(self, font_family: str):
+        """Fetches the latest online version of a single font family and saves it in config."""
+        from PySide6.QtCore import Signal, QThread
+        class SingleVersionFetchWorker(QThread):
+            done = Signal(str)
+            def run(self):
+                import urllib.request
+                import json
+                try:
+                    url = "https://cdn.jsdelivr.net/npm/google-font-metadata/data/google-fonts-v2.json"
+                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=5) as response:
+                        data = json.loads(response.read().decode('utf-8'))
+                    key = font_family.lower().replace(" ", "-")
+                    if key not in data:
+                        key = font_family.lower().replace(" ", "")
+                    if key in data:
+                        version = data[key].get("version", "")
+                        self.done.emit(version)
+                        return
+                except Exception as e:
+                    print(f"[WARNING] Failed to fetch online metadata for single version check: {e}")
+                self.done.emit("")
+        
+        self._single_fetch_worker = SingleVersionFetchWorker()
+        
+        def on_done(version):
+            if version:
+                versions = self.config_loader.studio_config.setdefault("font_versions", {})
+                versions[font_family] = version
+                self.config_loader.save_studio_config()
+                print(f"[Config] Updated font version for '{font_family}' to '{version}'")
+            del self._single_fetch_worker
+
+        self._single_fetch_worker.done.connect(on_done)
+        self._single_fetch_worker.start()
+
+    def _force_update_current_font(self, main_font_combo: QComboBox):
+        """Force updates (re-downloads) the currently selected font family if it is a Google Font."""
+        current_font = main_font_combo.currentText()
+        if not current_font or current_font == "No fonts found in /fonts folder":
+            QMessageBox.warning(self, "Cập nhật Phông chữ", "Không tìm thấy phông chữ nào để cập nhật.")
+            return
+
+        google_family = self._get_google_font_family_from_filename(current_font)
+        if not google_family:
+            QMessageBox.information(
+                self, 
+                "Cập nhật Phông chữ", 
+                f"Phông chữ '{current_font}' không thuộc danh sách Google Fonts tự động cập nhật được.\n\n"
+                "Chỉ các phông chữ được tải trực tiếp từ Google Fonts (như Comic Neue, Bangers, v.v.) mới có thể tự động cập nhật."
+            )
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Xác nhận Cập nhật",
+            f"Bạn có muốn tải lại và cập nhật bắt buộc phông chữ '{google_family}' từ Google Fonts không?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.No:
+            return
+
+        self.log("INFO", f"Đang cập nhật bắt buộc phông chữ: {google_family}...")
+        main_font_combo.setEnabled(False)
+        fonts_dir = os.path.join(self.project_base_dir, "fonts")
+
+        from PySide6.QtCore import Signal, QThread
+        class FontDownloadWorker(QThread):
+            finished = Signal(bool, str)
+            def run(self):
+                import urllib.request
+                import urllib.parse
+                import zipfile
+                import io
+                try:
+                    url = f"https://fonts.google.com/download?family={urllib.parse.quote(google_family)}"
+                    req = urllib.request.Request(
+                        url, 
+                        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                    )
+                    with urllib.request.urlopen(req, timeout=15) as response:
+                        zip_data = response.read()
+                    
+                    os.makedirs(fonts_dir, exist_ok=True)
+                    with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
+                        extracted_any = False
+                        for file_info in z.infolist():
+                            if file_info.filename.lower().endswith(('.ttf', '.otf', '.ttc')):
+                                filename = os.path.basename(file_info.filename)
+                                if filename:
+                                    dest_path = os.path.join(fonts_dir, filename)
+                                    with z.open(file_info) as source, open(dest_path, "wb") as target:
+                                        target.write(source.read())
+                                    extracted_any = True
+                        if extracted_any:
+                            self.finished.emit(True, google_family)
+                            return
+                    self.finished.emit(False, "Không tìm thấy tệp font phù hợp trong gói tải về.")
+                except Exception as e:
+                    self.finished.emit(False, str(e))
+
+        self._font_worker = FontDownloadWorker()
+
+        def on_finished(success, message_or_family):
+            main_font_combo.setEnabled(True)
+            if success:
+                self.log("SUCCESS", f"Đã cập nhật thành công phông chữ '{message_or_family}'!")
+                self._build_font_map()
+                font_names = list(self.font_map.keys())
+
+                self._save_font_version_from_online_metadata(google_family)
+
+                main_font_combo.blockSignals(True)
+                main_font_combo.clear()
+                main_font_combo.addItems(font_names)
+                main_font_combo.addItem("📥 Install New Font...")
+                main_font_combo.addItem("🔄 Update All Fonts...")
+
+                newly_installed_font = next((fn for fn in font_names if message_or_family.replace(" ", "").lower() in fn.replace("-", "").replace(" ", "").lower()), None)
+                if newly_installed_font:
+                    main_font_combo.setCurrentText(newly_installed_font)
+                    self._last_selected_font = newly_installed_font
+                else:
+                    main_font_combo.setCurrentText(current_font)
+                main_font_combo.blockSignals(False)
+
+                self._on_setting_changed("font_family")
+                QMessageBox.information(self, "Cập nhật Thành công", f"Phông chữ '{message_or_family}' đã được cập nhật lên bản mới nhất!")
+            else:
+                self.log("ERROR", f"Cập nhật phông chữ thất bại: {message_or_family}")
+                QMessageBox.critical(self, "Cập nhật Thất bại", f"Không thể cập nhật '{google_family}'.\n\nLỗi: {message_or_family}")
+            del self._font_worker
+
+        self._font_worker.finished.connect(on_finished)
+        self._font_worker.start()
 
     def _prompt_font_install(self, main_font_combo: QComboBox):
+        """Allows user to select and download a new Google Font family in a background thread."""
         from PySide6.QtWidgets import QInputDialog
-        installable_fonts = [
-            "Comic Neue",
-            "Bangers",
-            "Patrick Hand",
-            "Architects Daughter",
-            "Kaushan Script",
-            "Kalam",
-            "Chewy",
-            "Fredoka One",
-            "Schoolbell"
-        ]
         
         # Determine previous selection to revert to if canceled/failed
         prev_font = getattr(self, "_last_selected_font", "Sans-serif")
@@ -4304,7 +4478,7 @@ class TranslatorStudioApp(QMainWindow):
             self, 
             "Install Font from Google Fonts", 
             "Choose a popular comic/manga font to install:", 
-            installable_fonts, 
+            self.GOOGLE_FONTS, 
             0, 
             False
         )
@@ -4364,10 +4538,13 @@ class TranslatorStudioApp(QMainWindow):
                 self._build_font_map()
                 font_names = list(self.font_map.keys())
                 
+                self._save_font_version_from_online_metadata(font_family)
+
                 main_font_combo.blockSignals(True)
                 main_font_combo.clear()
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
+                main_font_combo.addItem("🔄 Update All Fonts...")
                 
                 newly_installed_font = next((fn for fn in font_names if message_or_family.replace(" ", "").lower() in fn.replace("-", "").replace(" ", "").lower()), None)
                 if newly_installed_font:
@@ -4390,5 +4567,233 @@ class TranslatorStudioApp(QMainWindow):
 
         self._font_worker.finished.connect(on_finished)
         self._font_worker.start()
-    
+
+    def _check_and_update_all_fonts(self, main_font_combo: QComboBox):
+        """Scans all installed Google Fonts, checks jsdelivr metadata for updates, and prompts to download."""
+        main_font_combo.setEnabled(False)
+        self.log("INFO", "Đang quét danh sách phông chữ Google Fonts đã cài đặt...")
         
+        installed_google_fonts = self._get_installed_google_fonts()
+        installed_families = list(installed_google_fonts.keys())
+        
+        if not installed_families:
+            main_font_combo.setEnabled(True)
+            QMessageBox.information(
+                self,
+                "Kiểm tra Cập nhật",
+                "Không tìm thấy phông chữ Google Fonts nào trong thư mục 'fonts/' để kiểm tra cập nhật."
+            )
+            # Revert selection back to previous font
+            prev_font = getattr(self, "_last_selected_font", "Sans-serif")
+            main_font_combo.blockSignals(True)
+            main_font_combo.setCurrentText(prev_font)
+            main_font_combo.blockSignals(False)
+            return
+
+        local_versions = self.config_loader.studio_config.get("font_versions", {})
+        
+        progress_dialog = QMessageBox(self)
+        progress_dialog.setWindowTitle("Đang kiểm tra")
+        progress_dialog.setText("Đang tải dữ liệu phiên bản phông chữ từ Google Fonts...")
+        progress_dialog.setStandardButtons(QMessageBox.StandardButton.NoButton)
+        progress_dialog.show()
+        
+        self._check_worker = CheckAllFontsWorker(installed_families, local_versions)
+        
+        def on_check_finished(success, updates, error_msg):
+            progress_dialog.close()
+            main_font_combo.setEnabled(True)
+            
+            # Revert selection back to previous font immediately so the menu item is not left selected
+            prev_font = getattr(self, "_last_selected_font", "Sans-serif")
+            main_font_combo.blockSignals(True)
+            main_font_combo.setCurrentText(prev_font)
+            main_font_combo.blockSignals(False)
+
+            if not success:
+                self.log("ERROR", f"Không thể kiểm tra phiên bản phông chữ trực tuyến: {error_msg}")
+                QMessageBox.critical(
+                    self,
+                    "Kiểm tra Thất bại",
+                    f"Không thể kết nối tới máy chủ cập nhật để kiểm tra phiên bản.\n\nChi tiết lỗi: {error_msg}"
+                )
+                return
+
+            if not updates:
+                QMessageBox.information(
+                    self,
+                    "Kiểm tra Hoàn tất",
+                    "Tất cả phông chữ Google Fonts của bạn đã ở phiên bản mới nhất!"
+                )
+                return
+
+            # Display updates list and ask confirmation
+            msg = "Tìm thấy các phông chữ có thể cập nhật:\n\n"
+            for family, local_ver, online_ver in updates:
+                msg += f"• {family}: {local_ver} ➔ {online_ver}\n"
+            msg += "\nBạn có muốn tải và cập nhật các phông chữ này không?"
+
+            reply = QMessageBox.question(
+                self,
+                "Có bản cập nhật mới",
+                msg,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply == QMessageBox.StandardButton.No:
+                return
+
+            self._download_updates(updates, main_font_combo)
+            del self._check_worker
+
+        self._check_worker.finished.connect(on_check_finished)
+        self._check_worker.start()
+
+    def _download_updates(self, updates, main_font_combo):
+        """Downloads the updates list in a background thread with progress dialog."""
+        from PySide6.QtWidgets import QProgressDialog
+        from PySide6.QtCore import Qt
+        
+        progress = QProgressDialog("Bắt đầu cập nhật các phông chữ...", "Hủy", 0, len(updates), self)
+        progress.setWindowTitle("Đang cập nhật Phông chữ")
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setMinimumDuration(0)
+        progress.show()
+        
+        main_font_combo.setEnabled(False)
+        fonts_dir = os.path.join(self.project_base_dir, "fonts")
+        
+        self._bulk_worker = BulkFontDownloadWorker(updates, fonts_dir)
+        progress.canceled.connect(self._bulk_worker.terminate)
+        
+        def on_progress(current, total, family):
+            progress.setValue(current - 1)
+            progress.setLabelText(f"Đang tải ({current}/{total}): {family}...")
+            
+        def on_finished(success, success_updates, error_msg):
+            progress.setValue(len(updates))
+            progress.close()
+            main_font_combo.setEnabled(True)
+            
+            if success_updates:
+                versions = self.config_loader.studio_config.setdefault("font_versions", {})
+                for fam, ver in success_updates.items():
+                    versions[fam] = ver
+                self.config_loader.save_studio_config()
+                
+                self.log("SUCCESS", f"Đã cập nhật thành công {len(success_updates)} phông chữ!")
+                self._build_font_map()
+                font_names = list(self.font_map.keys())
+                
+                main_font_combo.blockSignals(True)
+                main_font_combo.clear()
+                main_font_combo.addItems(font_names)
+                main_font_combo.addItem("📥 Install New Font...")
+                main_font_combo.addItem("🔄 Update All Fonts...")
+                
+                prev_font = getattr(self, "_last_selected_font", "Sans-serif")
+                if prev_font in font_names:
+                    main_font_combo.setCurrentText(prev_font)
+                else:
+                    main_font_combo.setCurrentIndex(0)
+                main_font_combo.blockSignals(False)
+                
+                self._on_setting_changed("font_family")
+                QMessageBox.information(
+                    self,
+                    "Cập nhật Hoàn tất",
+                    f"Đã cập nhật thành công {len(success_updates)} phông chữ lên phiên bản mới nhất!"
+                )
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Cập nhật Hoàn tất",
+                    "Không có phông chữ nào được cập nhật thành công hoặc thao tác đã bị hủy."
+                )
+            del self._bulk_worker
+
+        self._bulk_worker.progress.connect(on_progress)
+        self._bulk_worker.finished.connect(on_finished)
+        self._bulk_worker.start()
+
+
+# Helper classes for background threads
+from PySide6.QtCore import Signal, QThread
+
+class CheckAllFontsWorker(QThread):
+    finished = Signal(bool, list, str) # success, list of updates, error_msg
+    
+    def __init__(self, installed_families, local_versions):
+        super().__init__()
+        self.installed_families = installed_families
+        self.local_versions = local_versions
+
+    def run(self):
+        import urllib.request
+        import json
+        try:
+            url = "https://cdn.jsdelivr.net/npm/google-font-metadata/data/google-fonts-v2.json"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=15) as response:
+                data = json.loads(response.read().decode('utf-8'))
+            
+            updates_needed = []
+            for family in self.installed_families:
+                key = family.lower().replace(" ", "-")
+                if key not in data:
+                    key = family.lower().replace(" ", "")
+                
+                if key in data:
+                    online_ver = data[key].get("version", "")
+                    local_ver = self.local_versions.get(family, None)
+                    if not local_ver or local_ver != online_ver:
+                        updates_needed.append((family, local_ver or "Chưa đăng ký", online_ver))
+            
+            self.finished.emit(True, updates_needed, "")
+        except Exception as e:
+            self.finished.emit(False, [], str(e))
+
+
+class BulkFontDownloadWorker(QThread):
+    progress = Signal(int, int, str) # current, total, family_name
+    finished = Signal(bool, dict, str) # success, success_updates, error_msg
+    
+    def __init__(self, updates_to_download, fonts_dir):
+        super().__init__()
+        self.updates_to_download = updates_to_download
+        self.fonts_dir = fonts_dir
+
+    def run(self):
+        import urllib.request
+        import urllib.parse
+        import zipfile
+        import io
+        
+        success_updates = {}
+        total = len(self.updates_to_download)
+        for idx, (family, _, online_ver) in enumerate(self.updates_to_download):
+            self.progress.emit(idx + 1, total, family)
+            try:
+                url = f"https://fonts.google.com/download?family={urllib.parse.quote(family)}"
+                req = urllib.request.Request(
+                    url, 
+                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                )
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    zip_data = response.read()
+                
+                with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
+                    extracted_any = False
+                    for file_info in z.infolist():
+                        if file_info.filename.lower().endswith(('.ttf', '.otf', '.ttc')):
+                            filename = os.path.basename(file_info.filename)
+                            if filename:
+                                dest_path = os.path.join(self.fonts_dir, filename)
+                                with z.open(file_info) as source, open(dest_path, "wb") as target:
+                                    target.write(source.read())
+                                extracted_any = True
+                    if extracted_any:
+                        success_updates[family] = online_ver
+            except Exception as e:
+                print(f"[ERROR] Failed to download/update '{family}': {e}")
+        
+        self.finished.emit(True, success_updates, "")
