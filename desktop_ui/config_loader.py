@@ -94,7 +94,27 @@ class ConfigLoader:
         self.project_base_dir = project_base_dir
         self.python_executable = self._find_python_executable()
         self.cache_path = os.path.join(self.project_base_dir, "temp", "schema_cache.json")
-        self.studio_config_path = os.path.join(self.project_base_dir, ".config", "studio_config.yaml")
+        
+        # Ensure directories exist and migrate old root files early
+        config_dir = os.path.join(self.project_base_dir, ".config")
+        configs_dir = os.path.join(config_dir, "configs")
+        models_dir = os.path.join(config_dir, "models")
+        os.makedirs(configs_dir, exist_ok=True)
+        os.makedirs(models_dir, exist_ok=True)
+
+        root_configs = ["keys.yaml", "studio_config.yaml", "supporttargetlang.yaml", "api_profiles.json"]
+        for f in root_configs:
+            old_path = os.path.join(config_dir, f)
+            new_path = os.path.join(configs_dir, f)
+            if os.path.exists(old_path):
+                try:
+                    if os.path.exists(new_path):
+                        os.remove(new_path)
+                    os.rename(old_path, new_path)
+                except Exception:
+                    pass
+
+        self.studio_config_path = os.path.join(configs_dir, "studio_config.yaml")
 
         # Load studio_config.yaml early
         import yaml
@@ -337,9 +357,9 @@ class ConfigLoader:
         return self.ui_map.get("__tab_order__", [])
 
     def _load_backend_languages(self):
-        """Loads languages dynamically from .config/supporttargetlang.yaml, falling back to constants if unavailable."""
+        """Loads languages dynamically from .config/configs/supporttargetlang.yaml, falling back to constants if unavailable."""
         import yaml
-        yaml_path = os.path.join(self.project_base_dir, ".config", "supporttargetlang.yaml")
+        yaml_path = os.path.join(self.project_base_dir, ".config", "configs", "supporttargetlang.yaml")
         try:
             if os.path.exists(yaml_path):
                 with open(yaml_path, 'r', encoding='utf-8') as f:
@@ -362,8 +382,8 @@ class ConfigLoader:
     def _get_yaml_filename(self, field: str) -> str:
         field_lower = field.lower()
         if field_lower in ["alignment", "direction", "inpainting_precision", "renderer"]:
-            return f"config_{field_lower}.yaml"
-        return f"model_{field_lower}.yaml"
+            return os.path.join("configs", f"config_{field_lower}.yaml")
+        return os.path.join("models", f"model_{field_lower}.yaml")
 
     def _initialize_and_repair_config(self):
         """
@@ -372,11 +392,12 @@ class ConfigLoader:
         """
         import yaml
         config_dir = os.path.join(self.project_base_dir, ".config")
-        os.makedirs(config_dir, exist_ok=True)
+        os.makedirs(os.path.join(config_dir, "configs"), exist_ok=True)
+        os.makedirs(os.path.join(config_dir, "models"), exist_ok=True)
 
         # 1. Repair supporttargetlang.yaml
-        lang_yaml_path = os.path.join(config_dir, "supporttargetlang.yaml")
-        old_lang_path = os.path.join(config_dir, "lang.yaml")
+        lang_yaml_path = os.path.join(config_dir, "configs", "supporttargetlang.yaml")
+        old_lang_path = os.path.join(config_dir, "configs", "lang.yaml")
         
         try:
             from desktop_ui.constants import LANGUAGES as STATIC_LANGUAGES
@@ -455,17 +476,20 @@ class ConfigLoader:
             filename = self._get_yaml_filename(field)
             model_yaml_path = os.path.join(config_dir, filename)
             
-            # Migrate old model_<field>.yaml to config_<field>.yaml if it exists
-            if filename.startswith("config_"):
-                old_yaml_path = os.path.join(config_dir, f"model_{field.lower()}.yaml")
-                if os.path.exists(old_yaml_path):
+            # Check if file exists at the old root .config/ directory, migrate if needed
+            root_filename = os.path.basename(filename)
+            possible_old_names = [root_filename, f"model_{field.lower()}.yaml", f"config_{field.lower()}.yaml"]
+            for old_name in possible_old_names:
+                old_path = os.path.join(config_dir, old_name)
+                if os.path.exists(old_path) and old_path != model_yaml_path:
                     try:
                         if os.path.exists(model_yaml_path):
                             os.remove(model_yaml_path)
-                        os.rename(old_yaml_path, model_yaml_path)
-                        print(f"[ConfigLoader] Migrated model_{field.lower()}.yaml to {filename}")
+                        os.rename(old_path, model_yaml_path)
+                        print(f"[ConfigLoader] Migrated {old_name} to {filename}")
+                        break
                     except Exception as e:
-                        print(f"[ConfigLoader] Error migrating model_{field.lower()}.yaml to {filename}: {e}")
+                        print(f"[ConfigLoader] Error migrating {old_name} to {filename}: {e}")
             
             loaded_models = []
             if os.path.exists(model_yaml_path):
@@ -658,7 +682,7 @@ class ConfigLoader:
         """Loads variables from the keys.yaml file in the .config directory into a dict."""
         import yaml
         keys = {}
-        keys_path = os.path.join(self.project_base_dir, ".config", "keys.yaml")
+        keys_path = os.path.join(self.project_base_dir, ".config", "configs", "keys.yaml")
         if os.path.exists(keys_path):
             try:
                 with open(keys_path, 'r', encoding='utf-8') as f:

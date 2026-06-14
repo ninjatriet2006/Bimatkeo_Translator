@@ -39,7 +39,7 @@ def get_provider_credentials(provider: str) -> dict:
     # Try to load from keys.yaml first
     keys_vars = {}
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    keys_path = os.path.join(base_dir, ".config", "keys.yaml")
+    keys_path = os.path.join(base_dir, ".config", "configs", "keys.yaml")
     if os.path.exists(keys_path):
         try:
             with open(keys_path, 'r', encoding='utf-8') as f:
@@ -2041,7 +2041,7 @@ class TranslatorStudioApp(QMainWindow):
         button.setText("Fetch")
 
     def _get_api_profiles_file_path(self) -> str:
-        base_dir = os.path.join(self.project_base_dir, '.config')
+        base_dir = os.path.join(self.project_base_dir, '.config', 'configs')
         os.makedirs(base_dir, exist_ok=True)
         return os.path.join(base_dir, 'api_profiles.json')
 
@@ -4326,8 +4326,8 @@ class TranslatorStudioApp(QMainWindow):
         return container
 
     def _handle_create_keys_file(self):
-        """Checks for, creates, and opens the keys.yaml file in the .config directory."""
-        keys_dir = os.path.join(self.project_base_dir, ".config")
+        """Checks for, creates, and opens the keys.yaml file in the .config/configs directory."""
+        keys_dir = os.path.join(self.project_base_dir, ".config", "configs")
         os.makedirs(keys_dir, exist_ok=True)
         keys_path = os.path.join(keys_dir, "keys.yaml")
         self.log("INFO", f"Managing keys.yaml file at: {keys_path}")

@@ -16,7 +16,7 @@ class Pipeline:
 
     def _get_subprocess_env(self, project_base_dir):
         env = os.environ.copy()
-        keys_path = os.path.join(project_base_dir, ".config", "keys.yaml")
+        keys_path = os.path.join(project_base_dir, ".config", "configs", "keys.yaml")
         if os.path.exists(keys_path):
             try:
                 import yaml

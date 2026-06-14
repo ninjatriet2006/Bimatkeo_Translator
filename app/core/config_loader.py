@@ -9,7 +9,7 @@ class ConfigLoader:
         self.project_base_dir = project_base_dir
         self.python_executable = self._find_python_executable()
         self.cache_path = os.path.join(self.project_base_dir, "temp", "schema_cache.json")
-        self.studio_config_path = os.path.join(self.project_base_dir, ".config", "studio_config.yaml")
+        self.studio_config_path = os.path.join(self.project_base_dir, ".config", "configs", "studio_config.yaml")
 
         import yaml
         self.studio_config = {}
