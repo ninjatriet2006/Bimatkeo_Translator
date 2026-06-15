@@ -232,6 +232,7 @@ class JobRunnerMixin:
         job_index = self._get_selected_job_index()
         if job_index is not None:
             settings_source = self.job_queue[job_index]['settings']
+        else:
             settings_source = self.config_loader.get_factory_defaults()
             if hasattr(self.config_loader, 'app_language'):
                 settings_source['app_language'] = self.config_loader.app_language
