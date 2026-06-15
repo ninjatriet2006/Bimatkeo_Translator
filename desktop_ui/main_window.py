@@ -76,9 +76,11 @@ def get_provider_credentials(provider: str) -> dict:
 # Core non-UI imports remain the same
 from .pipeline_client import Pipeline
 from .config_loader import ConfigLoader
-from .constants import (
-    LANGUAGES, TRANSLATOR_GROUPS, TRANSLATOR_CAPABILITIES, LOG_COLORS
-)
+# Dynamic configuration mapping placeholders
+LANGUAGES = {}
+TRANSLATOR_GROUPS = {}
+TRANSLATOR_CAPABILITIES = {}
+LOG_COLORS = {}
 
 
 class DynamicHeightListWidget(QListWidget):
@@ -534,7 +536,7 @@ class TranslatorStudioApp(QMainWindow):
         offline_info = self.config_loader.full_config_data.get('offline_translator')
         ai_info = self.config_loader.full_config_data.get('ai_translator')
 
-        global TRANSLATOR_GROUPS
+        global TRANSLATOR_GROUPS, TRANSLATOR_CAPABILITIES, LOG_COLORS
         TRANSLATOR_GROUPS.clear()
         
         offline_list = offline_info.get('values', []) if offline_info else []
@@ -544,6 +546,19 @@ class TranslatorStudioApp(QMainWindow):
         TRANSLATOR_GROUPS["--- OFFLINE MODELS (No API Key) ---"] = offline_list
         TRANSLATOR_GROUPS["--- API-BASED (Requires Setup) ---"] = api_list
         TRANSLATOR_GROUPS["--- OTHER ACTIONS ---"] = other_list
+
+        # Update TRANSLATOR_CAPABILITIES dynamically from the dynamic YAML config loader
+        if hasattr(self.config_loader, 'translator_capabilities'):
+            TRANSLATOR_CAPABILITIES.clear()
+            TRANSLATOR_CAPABILITIES.update(self.config_loader.translator_capabilities)
+
+        # Update LOG_COLORS dynamically from the dynamic YAML config loader
+        if hasattr(self.config_loader, 'log_colors'):
+            LOG_COLORS.clear()
+            LOG_COLORS.update(self.config_loader.log_colors)
+
+        self.original_offline_translators = list(offline_list)
+        self.original_ai_translators = list(api_list)
 
         self._load_app_state()
         self._build_font_map()
@@ -1224,7 +1239,13 @@ class TranslatorStudioApp(QMainWindow):
         elif key == "ai_translator":
             values = TRANSLATOR_GROUPS.get("--- API-BASED (Requires Setup) ---", values)
 
-        if info.get("widget") == "optionmenu_separators" or key in ["offline_translator", "ai_translator"]:
+        if info.get("widget") == "optionmenu_languages":
+            # Populate languages excluding Auto-Detect
+            for name, code in sorted(LANGUAGES.items()):
+                if code != "auto":
+                    combo_box.addItem(name, code)
+            self._set_combobox_value_by_data(combo_box, str(info.get("default")))
+        elif info.get("widget") == "optionmenu_separators" or key in ["offline_translator", "ai_translator"]:
             # If it's the main translator selectors or has separators
             if key in ["offline_translator", "ai_translator"]:
                 # Simple list of choices for split dropdowns, but check setup
@@ -1456,41 +1477,28 @@ class TranslatorStudioApp(QMainWindow):
         layout = QHBoxLayout(step_widget)
         layout.setContentsMargins(5, 5, 5, 5)
 
-        translator_combo = NoScrollComboBox()
-        # Populate with translators from TRANSLATOR_GROUPS constant
-        for group_name, translators in TRANSLATOR_GROUPS.items():
-            item_index = translator_combo.count()
-            translator_combo.addItem(group_name)
-            translator_combo.model().item(item_index).setEnabled(False)
-            field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
-            for t in translators:
-                exists = self.config_loader.check_model_existence(t, field=field_name)
-                display_name = t
-                if not exists:
-                    display_name = f"{t} (Not Setup)"
-                translator_combo.addItem(display_name, t)
-                if not exists:
-                    last_idx = translator_combo.count() - 1
-                    translator_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-
         lang_combo = NoScrollComboBox()
-        # Populate with languages from LANGUAGES constant
-        lang_combo.addItems(list(LANGUAGES.keys()))
+        # Populate with languages from LANGUAGES constant (excluding 'auto' since it is target lang)
+        lang_items = [name for name, code in LANGUAGES.items() if code != 'auto']
+        lang_combo.addItems(sorted(lang_items))
 
-        layout.addWidget(QLabel("Translate with:"))
-        layout.addWidget(translator_combo)
-        layout.addWidget(QLabel("to"))
+        translator_combo = NoScrollComboBox()
+
+        layout.addWidget(QLabel("Translate to:"))
         layout.addWidget(lang_combo)
+        layout.addWidget(QLabel("with:"))
+        layout.addWidget(translator_combo)
 
         # Store combo boxes in the widget's properties for later access
         step_widget.translator_combo = translator_combo
         step_widget.lang_combo = lang_combo
 
-        translator_combo.currentTextChanged.connect(
-            lambda text, lc=lang_combo: self._filter_language_dropdown(text, lc)
+        # Connect language dropdown change to filter translator models
+        lang_combo.currentTextChanged.connect(
+            lambda text, tc=translator_combo: self._filter_chain_step_translator_dropdown(text, tc)
         )
         # Trigger it once to set the initial state
-        self._filter_language_dropdown(translator_combo.currentText(), lang_combo)
+        self._filter_chain_step_translator_dropdown(lang_combo.currentText(), translator_combo)
 
         handler = lambda: self._on_setting_changed('translator_chain')
         translator_combo.currentTextChanged.connect(handler)
@@ -1569,11 +1577,11 @@ class TranslatorStudioApp(QMainWindow):
                 self.chain_list_widget.addItem(list_item)
                 self.chain_list_widget.setItemWidget(list_item, step_widget)
 
-                # Set the combobox values based on the loaded data
-                self._set_combobox_value_by_data(step_widget.translator_combo, translator_name)
+                # Set the combobox values based on the loaded data: set language first (which filters translator options), then set translator
                 lang_name = code_to_lang_name.get(lang_code, "")
                 if lang_name:
                     step_widget.lang_combo.setCurrentText(lang_name)
+                self._set_combobox_value_by_data(step_widget.translator_combo, translator_name)
 
         self.chain_list_widget.updateGeometry()
 
@@ -2604,6 +2612,8 @@ class TranslatorStudioApp(QMainWindow):
                 widget.currentTextChanged.connect(self._on_translator_changed)
                 if key == 'ai_translator':
                     widget.currentTextChanged.connect(self._sync_ai_credentials)
+            elif key == 'target_lang':
+                widget.currentTextChanged.connect(self._on_target_lang_changed)
         elif isinstance(widget, QCheckBox):
             # For QCheckBox, stateChanged sends the state, which we can ignore with *args
             widget.stateChanged.connect(handler)
@@ -2678,12 +2688,161 @@ class TranslatorStudioApp(QMainWindow):
         """Handles changes in the main translator selection."""
         if translator_name and " (Not Setup)" in translator_name:
             translator_name = translator_name.split(" (Not Setup)")[0]
-        # Filter the main target language dropdown
-        lang_combo = self.setting_widgets.get('target_lang')
-        self._filter_language_dropdown(translator_name, lang_combo)
 
         # Update the tooltip
         self._update_translator_tooltip(translator_name)
+
+    def _filter_translator_dropdowns(self, target_lang_name: str):
+        """
+        Filters the offline_translator and ai_translator dropdowns based on the selected target language.
+        """
+        if not target_lang_name:
+            return
+
+        target_code = LANGUAGES.get(target_lang_name)
+        if not target_code:
+            return
+
+        def supports_target(translator_name):
+            if translator_name in ["none", "original"]:
+                return True
+            capabilities = TRANSLATOR_CAPABILITIES.get(translator_name, {'__any__': '__all__'})
+            if capabilities.get('__any__') == '__all__':
+                return True
+            for source_lang, target_langs in capabilities.items():
+                if target_code in target_langs:
+                    return True
+            return False
+
+        # Filter offline_translator
+        offline_combo = self.setting_widgets.get('offline_translator')
+        if offline_combo:
+            current_val = offline_combo.currentData()
+            offline_combo.blockSignals(True)
+            offline_combo.clear()
+            filtered_offline = [t for t in self.original_offline_translators if supports_target(t)]
+            for val in filtered_offline:
+                exists = self.config_loader.check_model_existence(val, field='offline_translator')
+                display_name = val
+                if not exists:
+                    display_name = f"{val} (Not Setup)"
+                offline_combo.addItem(display_name, val)
+                if not exists:
+                    last_idx = offline_combo.count() - 1
+                    offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+            
+            # Restore selection or fallback
+            restored = False
+            for i in range(offline_combo.count()):
+                if offline_combo.itemData(i) == current_val:
+                    offline_combo.setCurrentIndex(i)
+                    restored = True
+                    break
+            if not restored and offline_combo.count() > 0:
+                offline_combo.setCurrentIndex(0)
+            offline_combo.blockSignals(False)
+            self._on_setting_changed('offline_translator')
+
+        # Filter ai_translator
+        ai_combo = self.setting_widgets.get('ai_translator')
+        if ai_combo:
+            current_val = ai_combo.currentData()
+            ai_combo.blockSignals(True)
+            ai_combo.clear()
+            filtered_ai = [t for t in self.original_ai_translators if supports_target(t)]
+            for val in filtered_ai:
+                exists = self.config_loader.check_model_existence(val, field='ai_translator')
+                display_name = val
+                if not exists:
+                    display_name = f"{val} (Not Setup)"
+                ai_combo.addItem(display_name, val)
+                if not exists:
+                    last_idx = ai_combo.count() - 1
+                    ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+            
+            # Restore selection or fallback
+            restored = False
+            for i in range(ai_combo.count()):
+                if ai_combo.itemData(i) == current_val:
+                    ai_combo.setCurrentIndex(i)
+                    restored = True
+                    break
+            if not restored and ai_combo.count() > 0:
+                ai_combo.setCurrentIndex(0)
+            ai_combo.blockSignals(False)
+            self._on_setting_changed('ai_translator')
+
+        # Update the UI visibility and tooltip for the active translator
+        self._update_translator_visibility()
+        active_translator = self._get_active_translator_name()
+        self._update_translator_tooltip(active_translator)
+
+    def _filter_chain_step_translator_dropdown(self, target_lang_name: str, translator_combo: QComboBox):
+        """
+        Filters the translator_combo in a translator chain step based on the selected target language.
+        """
+        if not target_lang_name:
+            return
+        
+        target_code = LANGUAGES.get(target_lang_name)
+        if not target_code:
+            return
+
+        def supports_target(translator_name):
+            if translator_name in ["none", "original"]:
+                return True
+            capabilities = TRANSLATOR_CAPABILITIES.get(translator_name, {'__any__': '__all__'})
+            if capabilities.get('__any__') == '__all__':
+                return True
+            for source_lang, target_langs in capabilities.items():
+                if target_code in target_langs:
+                    return True
+            return False
+
+        # Get current selected translator in the step
+        current_val = translator_combo.currentData()
+        translator_combo.blockSignals(True)
+        translator_combo.clear()
+
+        # Get all models from translator groups
+        for group_name, translators in TRANSLATOR_GROUPS.items():
+            filtered_translators = [t for t in translators if supports_target(t)]
+            if not filtered_translators:
+                continue
+            # Add group header item (disabled)
+            item_index = translator_combo.count()
+            translator_combo.addItem(group_name)
+            translator_combo.model().item(item_index).setEnabled(False)
+            
+            field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
+            for t in filtered_translators:
+                exists = self.config_loader.check_model_existence(t, field=field_name)
+                display_name = t
+                if not exists:
+                    display_name = f"{t} (Not Setup)"
+                translator_combo.addItem(display_name, t)
+                if not exists:
+                    last_idx = translator_combo.count() - 1
+                    translator_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+        
+        # Restore selection or fallback
+        restored = False
+        for i in range(translator_combo.count()):
+            if translator_combo.itemData(i) == current_val:
+                translator_combo.setCurrentIndex(i)
+                restored = True
+                break
+        if not restored and translator_combo.count() > 0:
+            # Find first enabled item
+            for i in range(translator_combo.count()):
+                if translator_combo.model().item(i).isEnabled():
+                    translator_combo.setCurrentIndex(i)
+                    break
+        translator_combo.blockSignals(False)
+
+    def _on_target_lang_changed(self, target_lang_name: str):
+        """Handles changes in the target language selection."""
+        self._filter_translator_dropdowns(target_lang_name)
 
     def _filter_language_dropdown(self, translator_name: str, lang_combo: QComboBox):
         """
@@ -2739,6 +2898,9 @@ class TranslatorStudioApp(QMainWindow):
 
         if isinstance(widget, QComboBox):
             if widget_type == "optionmenu_languages":
+                val = widget.currentData()
+                if val is not None:
+                    return val
                 return LANGUAGES.get(widget.currentText(), "auto")
             val = widget.currentData()
             if val is not None:
@@ -2801,9 +2963,17 @@ class TranslatorStudioApp(QMainWindow):
 
         if isinstance(widget, QComboBox):
             if widget_type == "optionmenu_languages":
-                display_name = next((k for k, v in LANGUAGES.items() if v == value), None)
-                if display_name:
-                    widget.setCurrentText(display_name)
+                index = -1
+                for i in range(widget.count()):
+                    if widget.itemData(i) == value:
+                        index = i
+                        break
+                if index != -1:
+                    widget.setCurrentIndex(index)
+                else:
+                    display_name = next((k for k, v in LANGUAGES.items() if v == value), None)
+                    if display_name:
+                        widget.setCurrentText(display_name)
             else:
                 index = -1
                 for i in range(widget.count()):
@@ -3171,6 +3341,10 @@ class TranslatorStudioApp(QMainWindow):
                     widget.findChild(QSlider).blockSignals(False)
                     
         self._update_translator_visibility()
+        # Filter translator dropdowns based on the loaded target language
+        target_lang_widget = self.setting_widgets.get('target_lang')
+        if target_lang_widget:
+            self._filter_translator_dropdowns(target_lang_widget.currentText())
 
     def _get_selected_job_index(self) -> int | None:
         """Finds the index in job_queue for the currently selected job_id."""
@@ -3551,7 +3725,7 @@ class TranslatorStudioApp(QMainWindow):
         translator_dict = final_config.setdefault("translator", {})
         category = settings.get('translator_category', 'Offline')
         if category == 'Offline':
-            translator_dict['translator'] = settings.get('offline_translator', 'sugoi')
+            translator_dict['translator'] = settings.get('offline_translator', 'none')
         else:
             translator_dict['translator'] = settings.get('ai_translator', 'gemini')
 

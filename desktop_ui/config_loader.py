@@ -126,6 +126,22 @@ class ConfigLoader:
             except Exception as e:
                 print(f"[ConfigLoader] Error loading studio_config.yaml: {e}")
 
+        # Expose attributes from translator capabilities YAML
+        capabilities_data = self._load_translator_capabilities()
+        self.languages = self._load_backend_languages()
+        
+        self.translator_groups = capabilities_data.get("TRANSLATOR_GROUPS", {})
+        self.log_colors = capabilities_data.get("LOG_COLORS", {
+            "ERROR": "#E74C3C",
+            "SUCCESS": "#2ECC71",
+            "PIPELINE": "#5DADE2",
+            "WARNING": "#F39C12",
+            "INFO": "white",
+            "DEBUG": "gray",
+            "RAW": "gray"
+        })
+        self.translator_capabilities = capabilities_data.get("TRANSLATOR_CAPABILITIES", {})
+
         self.backend_schema = self._load_backend_schema()
         if not self.backend_schema:
             raise RuntimeError("Failed to load backend configuration schema.")
@@ -139,7 +155,6 @@ class ConfigLoader:
         # The data is built and stored directly as attributes, not through getter methods
         self.factory_defaults = self._parse_factory_defaults()
         self.full_config_data = self._build_full_config_data()
-        self.languages = self._load_backend_languages()
 
     def save_studio_config(self):
         import yaml
@@ -356,6 +371,104 @@ class ConfigLoader:
     def get_tab_order(self):
         return self.ui_map.get("__tab_order__", [])
 
+    def _load_translator_capabilities(self):
+        """Loads translator capabilities and groups dynamically from translator_capabilities.yaml, falling back to defaults if unavailable."""
+        import yaml
+        yaml_path = os.path.join(self.project_base_dir, ".config", "configs", "translator_capabilities.yaml")
+        
+        default_capabilities = {
+            "TRANSLATOR_GROUPS": {
+                "--- OFFLINE MODELS (No API Key) ---": [
+                    "sugoi", "m2m100", "m2m100_big", "nllb", "nllb_big", "mbart50",
+                    "jparacrawl", "jparacrawl_big", "qwen2", "qwen2_big", "offline"
+                ],
+                "--- API-BASED (Requires Setup) ---": [
+                    "deepl", "gemini", "deepseek", "groq", "youdao", "baidu",
+                    "caiyun", "sakura", "papago", "openai", "custom_openai"
+                ],
+                "--- OTHER ACTIONS ---": [
+                    "original",
+                    "none"
+                ]
+            },
+            "TRANSLATOR_CAPABILITIES": {
+                "deepl": {"__any__": "__all__"},
+                "gemini": {"__any__": "__all__"},
+                "deepseek": {"__any__": "__all__"},
+                "groq": {"__any__": "__all__"},
+                "youdao": {"__any__": "__all__"},
+                "baidu": {"__any__": "__all__"},
+                "caiyun": {"__any__": "__all__"},
+                "openai": {"__any__": "__all__"},
+                "custom_openai": {"__any__": "__all__"},
+                "papago": {
+                    "KOR": ["ENG", "JPN", "CHS", "CHT", "FRA", "DEU", "RUS", "ESP", "ITA", "VIE", "THA", "IND"],
+                    "JPN": ["ENG", "KOR", "CHS", "CHT"],
+                    "CHS": ["ENG", "KOR", "JPN"],
+                    "CHT": ["ENG", "KOR", "JPN"],
+                    "ENG": ["KOR", "JPN", "CHS", "CHT", "FRA", "DEU", "ESP", "ITA"],
+                    "FRA": ["ENG", "KOR"],
+                    "ESP": ["ENG", "KOR"],
+                    "ITA": ["ENG", "KOR"],
+                    "DEU": ["ENG", "KOR"]
+                },
+                "sakura": {
+                    "JPN": ["CHS", "CHT"],
+                    "CHS": ["JPN"],
+                    "CHT": ["JPN"]
+                },
+                "sugoi": {
+                    "JPN": ["ENG"]
+                },
+                "jparacrawl": {
+                    "JPN": ["ENG"]
+                },
+                "jparacrawl_big": {
+                    "JPN": ["ENG"]
+                },
+                "nllb": {"__any__": "__all__"},
+                "nllb_big": {"__any__": "__all__"},
+                "m2m100": {"__any__": "__all__"},
+                "m2m100_big": {"__any__": "__all__"},
+                "mbart50": {"__any__": "__all__"},
+                "qwen2": {"__any__": "__all__"},
+                "qwen2_big": {"__any__": "__all__"},
+                "offline": {"__any__": "__all__"},
+                "original": {},
+                "none": {}
+            },
+            "LOG_COLORS": {
+                "ERROR": "#E74C3C",
+                "SUCCESS": "#2ECC71",
+                "PIPELINE": "#5DADE2",
+                "WARNING": "#F39C12",
+                "INFO": "white",
+                "DEBUG": "gray",
+                "RAW": "gray"
+            }
+        }
+        
+        if not os.path.exists(yaml_path):
+            try:
+                os.makedirs(os.path.dirname(yaml_path), exist_ok=True)
+                with open(yaml_path, 'w', encoding='utf-8') as f:
+                    yaml.dump(default_capabilities, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                print("[ConfigLoader] Created default translator_capabilities.yaml")
+            except Exception as e:
+                print(f"[ConfigLoader] Error creating translator_capabilities.yaml: {e}")
+                return default_capabilities
+
+        try:
+            with open(yaml_path, 'r', encoding='utf-8') as f:
+                loaded = yaml.safe_load(f)
+            if isinstance(loaded, dict) and "TRANSLATOR_GROUPS" in loaded and "TRANSLATOR_CAPABILITIES" in loaded:
+                print("[ConfigLoader] Loaded translator capabilities dynamically from translator_capabilities.yaml.")
+                return loaded
+        except Exception as e:
+            print(f"[ConfigLoader] Error loading translator_capabilities.yaml: {e}")
+            
+        return default_capabilities
+
     def _load_backend_languages(self):
         """Loads languages dynamically from .config/configs/supporttargetlang.yaml, falling back to constants if unavailable."""
         import yaml
@@ -373,12 +486,35 @@ class ConfigLoader:
         except Exception as e:
             print(f"[ConfigLoader] Error loading supporttargetlang.yaml: {e}")
 
-        # Fallback to static constants if YAML load failed
-        try:
-            from desktop_ui.constants import LANGUAGES as STATIC_LANGUAGES
-        except ImportError:
-            STATIC_LANGUAGES = {"Auto-Detect": "auto"}
-        return STATIC_LANGUAGES
+        # Fallback to a basic default dictionary if YAML load failed (no constants.py fallback)
+        return {
+            "Auto-Detect": "auto",
+            "English": "ENG",
+            "Turkish": "TRK",
+            "Japanese": "JPN",
+            "Korean": "KOR",
+            "Simplified Chinese": "CHS",
+            "Traditional Chinese": "CHT",
+            "Spanish": "ESP",
+            "French": "FRA",
+            "German": "DEU",
+            "Russian": "RUS",
+            "Portuguese (Brazilian)": "PTB",
+            "Italian": "ITA",
+            "Polish": "POL",
+            "Dutch": "NLD",
+            "Czech": "CSY",
+            "Hungarian": "HUN",
+            "Romanian": "ROM",
+            "Ukrainian": "UKR",
+            "Vietnamese": "VIN",
+            "Arabic": "ARA",
+            "Serbian": "SRP",
+            "Croatian": "HRV",
+            "Thai": "THA",
+            "Indonesian": "IND",
+            "Filipino (Tagalog)": "FIL"
+        }
     def _get_yaml_filename(self, field: str) -> str:
         field_lower = field.lower()
         if field_lower in ["alignment", "direction", "inpainting_precision", "renderer"]:
@@ -399,11 +535,19 @@ class ConfigLoader:
         lang_yaml_path = os.path.join(config_dir, "configs", "supporttargetlang.yaml")
         old_lang_path = os.path.join(config_dir, "configs", "lang.yaml")
         
-        try:
-            from desktop_ui.constants import LANGUAGES as STATIC_LANGUAGES
-            default_langs = {str(v): str(k) for k, v in STATIC_LANGUAGES.items()}
-        except Exception:
-            default_langs = {"auto": "Auto-Detect", "ENG": "English"}
+        # Reconstruct defaults from the languages dictionary directly
+        if hasattr(self, 'languages') and self.languages:
+            default_langs = {str(v): str(k) for k, v in self.languages.items()}
+        else:
+            default_langs = {
+                "auto": "Auto-Detect", "ENG": "English", "TRK": "Turkish", "JPN": "Japanese",
+                "KOR": "Korean", "CHS": "Simplified Chinese", "CHT": "Traditional Chinese",
+                "ESP": "Spanish", "FRA": "French", "DEU": "German", "RUS": "Russian",
+                "PTB": "Portuguese (Brazilian)", "ITA": "Italian", "POL": "Polish",
+                "NLD": "Dutch", "CSY": "Czech", "HUN": "Hungarian", "ROM": "Romanian",
+                "UKR": "Ukrainian", "VIN": "Vietnamese", "ARA": "Arabic", "SRP": "Serbian",
+                "HRV": "Croatian", "THA": "Thai", "IND": "Indonesian", "FIL": "Filipino (Tagalog)"
+            }
 
         loaded_langs = {}
         read_path = lang_yaml_path if os.path.exists(lang_yaml_path) else old_lang_path
@@ -455,13 +599,9 @@ class ConfigLoader:
         if 'translator' in enum_fields:
             del enum_fields['translator']
 
-        try:
-            from desktop_ui.constants import TRANSLATOR_GROUPS
-        except ImportError:
-            TRANSLATOR_GROUPS = {}
-
-        enum_fields['offline_translator'] = TRANSLATOR_GROUPS.get("--- OFFLINE MODELS (No API Key) ---", [])
-        enum_fields['ai_translator'] = TRANSLATOR_GROUPS.get("--- API-BASED (Requires Setup) ---", [])
+        translator_groups = self.translator_capabilities.get("TRANSLATOR_GROUPS", {})
+        enum_fields['offline_translator'] = translator_groups.get("--- OFFLINE MODELS (No API Key) ---", [])
+        enum_fields['ai_translator'] = translator_groups.get("--- API-BASED (Requires Setup) ---", [])
 
         # Delete old model_translator.yaml if it exists
         old_translator_yaml = os.path.join(config_dir, "model_translator.yaml")

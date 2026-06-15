@@ -372,7 +372,7 @@
                             "$ref": "#/$defs/Translator"
                         }
                     ],
-                    "default": "sugoi"
+                    "default": "none"
                 },
                 "target_lang": {
                     "default": "ENG",
@@ -552,7 +552,7 @@
                 }
             ],
             "default": {
-                "translator": "sugoi",
+                "translator": "none",
                 "target_lang": "ENG",
                 "no_text_lang_skip": false,
                 "skip_lang": null,
