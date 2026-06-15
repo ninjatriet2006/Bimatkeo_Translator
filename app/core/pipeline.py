@@ -15,6 +15,82 @@ class Pipeline:
         self.process = None
         self._stopped_by_user = False
 
+    def _preprocess_config(self, config_dict):
+        """Pre-processes the configuration dictionary by:
+        1. Reading skip_languages.yaml and converting set-to-true languages to a comma-separated string translator.skip_lang.
+        2. Reading dict_profiles.yaml, getting the selected profile's dictionaries/prompts, writing them to temp files, and setting their paths in the config.
+        """
+        import yaml
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        # 1. Process skip languages
+        skip_yaml_path = os.path.join(project_root, ".config", "configs", "skip_languages.yaml")
+        skip_lang_str = ""
+        if os.path.exists(skip_yaml_path):
+            try:
+                with open(skip_yaml_path, "r", encoding="utf-8") as f:
+                    skip_data = yaml.safe_load(f)
+                if isinstance(skip_data, dict):
+                    enabled_langs = [code for code, enabled in skip_data.items() if enabled is True]
+                    skip_lang_str = ",".join(enabled_langs)
+            except Exception as e:
+                print(f"[Pipeline Preprocess] Error reading skip_languages.yaml: {e}")
+        
+        translator_dict = config_dict.setdefault("translator", {})
+        translator_dict["skip_lang"] = skip_lang_str
+
+        # 2. Process dict profiles
+        dict_profiles_path = os.path.join(project_root, ".config", "configs", "dict_profiles.yaml")
+        if os.path.exists(dict_profiles_path):
+            try:
+                with open(dict_profiles_path, "r", encoding="utf-8") as f:
+                    dict_data = yaml.safe_load(f)
+                
+                selected_profile = translator_dict.get("dict_profile", "example")
+                profile_data = {}
+                if isinstance(dict_data, dict):
+                    # Check if 'profiles' key exists
+                    profiles_dict = dict_data.get("profiles", {})
+                    if isinstance(profiles_dict, dict) and selected_profile in profiles_dict:
+                        profile_data = profiles_dict[selected_profile]
+                    elif selected_profile in dict_data:
+                        profile_data = dict_data[selected_profile]
+                    
+                    # Fallback to 'example' if selected not found
+                    if not profile_data:
+                        if isinstance(profiles_dict, dict) and "example" in profiles_dict:
+                            profile_data = profiles_dict["example"]
+                        elif "example" in dict_data:
+                            profile_data = dict_data["example"]
+
+                if profile_data:
+                    temp_dir = self.temp_dir
+                    os.makedirs(temp_dir, exist_ok=True)
+
+                    # Write pre_dict
+                    pre_dict_content = profile_data.get("pre_dict", "")
+                    pre_dict_path = os.path.join(temp_dir, f"pre_dict_{selected_profile}.txt")
+                    with open(pre_dict_path, "w", encoding="utf-8") as f:
+                        f.write(pre_dict_content)
+                    config_dict["pre_dict_path"] = pre_dict_path
+
+                    # Write post_dict
+                    post_dict_content = profile_data.get("post_dict", "")
+                    post_dict_path = os.path.join(temp_dir, f"post_dict_{selected_profile}.txt")
+                    with open(post_dict_path, "w", encoding="utf-8") as f:
+                        f.write(post_dict_content)
+                    config_dict["post_dict_path"] = post_dict_path
+
+                    # Write gpt_config
+                    gpt_config_data = profile_data.get("gpt_config", {})
+                    gpt_config_path = os.path.join(temp_dir, f"gpt_config_{selected_profile}.yaml")
+                    with open(gpt_config_path, "w", encoding="utf-8") as f:
+                        yaml.dump(gpt_config_data, f, allow_unicode=True, default_flow_style=False)
+                    config_dict["gpt_config"] = gpt_config_path
+                
+            except Exception as e:
+                print(f"[Pipeline Preprocess] Error processing dict profiles: {e}")
+
     def _extract_env_overrides(self, config_dict):
         # Decoupled from manga_translator.translators.keys
         return {}
@@ -65,6 +141,7 @@ class Pipeline:
 
     def run(self, job, output_path, config_dict, log_callback, is_verbose=False, output_format='png'):
         """Runs the mock pipeline for a batch of files asynchronously."""
+        self._preprocess_config(config_dict)
         source_path = job['source_path']
         log_callback("PIPELINE", f"Starting mock pipeline for job '{os.path.basename(source_path)}'.")
         self._stopped_by_user = False
@@ -123,6 +200,7 @@ class Pipeline:
 
     def run_single_image_test(self, test_image_path, output_path, config_dict, log_callback, is_verbose=False):
         """Runs the mock pipeline for a single test image inside a background thread."""
+        self._preprocess_config(config_dict)
         log_callback("PIPELINE", f"Starting visual test mock for: {os.path.basename(test_image_path)}")
         self._stopped_by_user = False
 
