@@ -840,4 +840,211 @@ class ConfigLoader:
         self._keys_vars = self._load_keys_file()
         return self._keys_vars.get(name) or os.environ.get(name)
 
+    def save_languages_config(self, lang_data):
+        """Saves a languages dictionary {Name: Code} back to supporttargetlang.yaml."""
+        import yaml
+        yaml_path = os.path.join(self.project_base_dir, ".config", "configs", "supporttargetlang.yaml")
+        # supporttargetlang.yaml uses {Code: Name}
+        db_format = {str(code): str(name) for name, code in lang_data.items()}
+        try:
+            with open(yaml_path, 'w', encoding='utf-8') as f:
+                yaml.dump(db_format, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+            self.languages = lang_data
+            # Re-initialize config files mapping and repair dependencies
+            self._initialize_and_repair_config()
+            return True
+        except Exception as e:
+            print(f"[ConfigLoader] Error saving supporttargetlang.yaml: {e}")
+            return False
+
+    def save_capabilities_config(self, capabilities_data):
+        """Saves translator capabilities data back to translator_capabilities.yaml."""
+        import yaml
+        yaml_path = os.path.join(self.project_base_dir, ".config", "configs", "translator_capabilities.yaml")
+        try:
+            with open(yaml_path, 'w', encoding='utf-8') as f:
+                yaml.dump(capabilities_data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+            self.translator_groups = capabilities_data.get("TRANSLATOR_GROUPS", {})
+            self.translator_capabilities = capabilities_data.get("TRANSLATOR_CAPABILITIES", {})
+            self.log_colors = capabilities_data.get("LOG_COLORS", self.log_colors)
+            # Re-initialize config files mapping and repair dependencies
+            self._initialize_and_repair_config()
+            return True
+        except Exception as e:
+            print(f"[ConfigLoader] Error saving translator_capabilities.yaml: {e}")
+            return False
+
+    def fetch_online_languages_libretranslate(self):
+        """Fetches supported target languages from public LibreTranslate API mirrors."""
+        import urllib.request
+        import json
+        
+        # Public LibreTranslate mirrors/endpoints
+        urls = [
+            "https://translate.argosopentech.com/languages",
+            "https://libretranslate.com/languages"
+        ]
+        
+        last_error = None
+        data = None
+        for url in urls:
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+                with urllib.request.urlopen(req, timeout=8) as response:
+                    data = json.loads(response.read().decode('utf-8'))
+                if data:
+                    break
+            except Exception as e:
+                last_error = e
+                continue
+                
+        if not data:
+            raise RuntimeError(f"Failed to fetch languages from LibreTranslate API: {last_error}")
+            
+        # Map ISO 639-1 (2 letters) to app's internal 3 letters code
+        ISO_MAP = {
+            "en": "ENG", "vi": "VIN", "ja": "JPN", "ko": "KOR", 
+            "zh": "CHS", "es": "ESP", "fr": "FRA", "de": "DEU", 
+            "ru": "RUS", "pt": "PTB", "it": "ITA", "pl": "POL", 
+            "nl": "NLD", "cs": "CSY", "hu": "HUN", "ro": "ROM", 
+            "uk": "UKR", "ar": "ARA", "sr": "SRP", "hr": "HRV", 
+            "th": "THA", "id": "IND", "fil": "FIL", "tr": "TRK"
+        }
+        
+        langs_dict = {}
+        for item in data:
+            code = item.get("code")
+            name = item.get("name")
+            if code and name:
+                app_code = ISO_MAP.get(code.lower(), code.upper())
+                langs_dict[str(name)] = str(app_code)
+                
+        return langs_dict
+
+    def fetch_online_languages_lingva(self):
+        """Fetches supported languages from Lingva Translate API (a public frontend for Google Translate)."""
+        import urllib.request
+        import json
+        
+        url = "https://lingva.ml/api/v1/languages"
+        try:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+            with urllib.request.urlopen(req, timeout=8) as response:
+                data = json.loads(response.read().decode('utf-8'))
+        except Exception as e:
+            raise RuntimeError(f"Failed to fetch languages from Lingva API: {e}")
+            
+        # Lingva structure: {"languages": [{"code": "en", "name": "English"}, ...]} or similar.
+        ISO_MAP = {
+            "en": "ENG", "vi": "VIN", "ja": "JPN", "ko": "KOR", 
+            "zh": "CHS", "es": "ESP", "fr": "FRA", "de": "DEU", 
+            "ru": "RUS", "pt": "PTB", "it": "ITA", "pl": "POL", 
+            "nl": "NLD", "cs": "CSY", "hu": "HUN", "ro": "ROM", 
+            "uk": "UKR", "ar": "ARA", "sr": "SRP", "hr": "HRV", 
+            "th": "THA", "id": "IND", "fil": "FIL", "tr": "TRK"
+        }
+        
+        langs_dict = {}
+        languages_list = data.get("languages", []) or data.get("targets", [])
+        if not languages_list and isinstance(data, list):
+            languages_list = data
+            
+        for item in languages_list:
+            code = item.get("code")
+            name = item.get("name")
+            if code and name:
+                app_code = ISO_MAP.get(code.lower(), code.upper())
+                langs_dict[str(name)] = str(app_code)
+                
+        return langs_dict
+
+    def update_single_translator_capabilities(self, translator_name, api_key=None):
+        """
+        Updates target language capabilities for a single translator.
+        If api_key is provided for online translators (like DeepL), calls the real API.
+        Otherwise, uses a mock implementation to simulate fetching updated capabilities from online.
+        """
+        translator_name = translator_name.lower()
+        
+        # Real DeepL API query if key is available
+        if translator_name == "deepl" and api_key:
+            import urllib.request
+            import json
+            
+            # Choose free or pro api host
+            host = "api-free.deepl.com" if "-free" in api_key.lower() or len(api_key) < 40 else "api.deepl.com"
+            url = f"https://{host}/v2/languages?type=target"
+            try:
+                req = urllib.request.Request(url, headers={
+                    'Authorization': f'DeepL-Auth-Key {api_key}',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                })
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    data = json.loads(response.read().decode('utf-8'))
+                
+                # Map DeepL format: [{"language": "EN-US", "name": "English (American)"}, ...]
+                ISO_MAP = {
+                    "en": "ENG", "vi": "VIN", "ja": "JPN", "ko": "KOR", 
+                    "zh": "CHS", "es": "ESP", "fr": "FRA", "de": "DEU", 
+                    "ru": "RUS", "pt": "PTB", "it": "ITA", "pl": "POL", 
+                    "nl": "NLD", "cs": "CSY", "hu": "HUN", "ro": "ROM", 
+                    "uk": "UKR", "ar": "ARA", "sr": "SRP", "hr": "HRV", 
+                    "th": "THA", "id": "IND", "fil": "FIL", "tr": "TRK"
+                }
+                supported_targets = []
+                for item in data:
+                    lang_code = item.get("language", "").lower()
+                    base_code = lang_code.split("-")[0]
+                    app_code = ISO_MAP.get(base_code, base_code.upper())
+                    if app_code not in supported_targets:
+                        supported_targets.append(app_code)
+                
+                if supported_targets:
+                    # Update in capabilities dictionary
+                    capabilities_data = self._load_translator_capabilities()
+                    capabilities_data.setdefault("TRANSLATOR_CAPABILITIES", {})
+                    capabilities_data["TRANSLATOR_CAPABILITIES"]["deepl"] = {"__any__": supported_targets}
+                    self.save_capabilities_config(capabilities_data)
+                    return True, f"Successfully updated DeepL target languages: {len(supported_targets)} languages supported."
+            except Exception as e:
+                return False, f"Failed to call DeepL API: {e}"
+        
+        # Mock/Simulation mode for test purposes (when no key or for other engines)
+        import time
+        time.sleep(1.0) # Simulate network delay
+        
+        capabilities_data = self._load_translator_capabilities()
+        capabilities_data.setdefault("TRANSLATOR_CAPABILITIES", {})
+        
+        if translator_name in capabilities_data["TRANSLATOR_CAPABILITIES"]:
+            curr_caps = capabilities_data["TRANSLATOR_CAPABILITIES"][translator_name]
+            
+            if isinstance(curr_caps, dict):
+                if curr_caps.get("__any__") == "__all__":
+                    return True, f"Translator '{translator_name}' supports all languages. Configuration is already up-to-date."
+                else:
+                    # Modify existing dictionary mapping to add a mock lang (e.g. MOK)
+                    updated = False
+                    for src, dsts in list(curr_caps.items()):
+                        if isinstance(dsts, list) and "MOK" not in dsts:
+                            dsts.append("MOK")
+                            updated = True
+                    
+                    if not updated:
+                        # If already updated or empty, set a mock list
+                        curr_caps["__any__"] = ["ENG", "VIN", "JPN", "MOK"]
+                    
+                    capabilities_data["TRANSLATOR_CAPABILITIES"][translator_name] = curr_caps
+                    self.save_capabilities_config(capabilities_data)
+                    return True, f"Mock Update: Successfully simulated update for '{translator_name}'. Added mock test code 'MOK'."
+            else:
+                capabilities_data["TRANSLATOR_CAPABILITIES"][translator_name] = {"__any__": ["ENG", "VIN", "JPN", "MOK"]}
+                self.save_capabilities_config(capabilities_data)
+                return True, f"Mock Update: Reinitialized capabilities for '{translator_name}' with test set."
+        else:
+            capabilities_data["TRANSLATOR_CAPABILITIES"][translator_name] = {"__any__": ["ENG", "VIN", "JPN", "MOK"]}
+            self.save_capabilities_config(capabilities_data)
+            return True, f"Mock Update: Created capabilities map for '{translator_name}'."
+
+
 

@@ -928,6 +928,25 @@ class TranslatorStudioApp(QMainWindow):
                 widget_row = self._create_setting_row(info)
                 layout.addWidget(widget_row)
 
+        # Special handling for Translator tab (Update all button)
+        if tab_name == "Translator":
+            layout.addSpacing(15)
+            update_all_btn = QPushButton("🔄 Cập nhật tất cả cấu hình (Ngôn ngữ & Bộ dịch)")
+            update_all_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #3b82f6;
+                    color: white;
+                    font-weight: bold;
+                    padding: 8px;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #2563eb;
+                }
+            """)
+            update_all_btn.clicked.connect(self._trigger_all_configs_update)
+            layout.addWidget(update_all_btn)
+
         # Special handling for Extra Settings tab (Theme manager, etc.)
         if tab_name == "Extra Settings":
             vram_info_label = QLabel()
@@ -1182,6 +1201,13 @@ class TranslatorStudioApp(QMainWindow):
 
             row_layout.addWidget(widget, stretch=2)
 
+            if not context_key and info.get('key') in ['offline_translator', 'ai_translator']:
+                update_btn = QPushButton("🔄")
+                update_btn.setFixedSize(30, 30)
+                update_btn.setToolTip("Cập nhật năng lực bộ dịch đang chọn")
+                update_btn.clicked.connect(lambda checked=False, k=info.get('key'): self._trigger_online_config_update(k))
+                row_layout.addWidget(update_btn)
+
             if context_key:
                 self.task_widgets[context_key][info['key']] = widget
                 initial_value = self.task_settings[context_key].get(info['key'])
@@ -1258,6 +1284,7 @@ class TranslatorStudioApp(QMainWindow):
                     if not exists:
                         last_idx = combo_box.count() - 1
                         combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+                combo_box.addItem("🔄 Cập nhật tất cả bộ dịch...", "update_trigger")
             else:
                 # Optionmenu with separators (e.g. from TRANSLATOR_GROUPS)
                 for group_name, translators in TRANSLATOR_GROUPS.items():
@@ -2681,11 +2708,20 @@ class TranslatorStudioApp(QMainWindow):
                 new_value = self._get_translator_chain_string()
             else:
                 new_value = self._get_value_from_widget(key, widget)
+                
+            if isinstance(widget, QComboBox):
+                text = widget.currentText()
+                if text == "🔄 Cập nhật tất cả bộ dịch...":
+                    self._trigger_online_config_update_from_combo(key, widget)
+                    return
+
             self.current_settings[key] = new_value
             print(f"[Settings] Updated '{key}' to: {new_value}")
 
     def _on_translator_changed(self, translator_name: str):
         """Handles changes in the main translator selection."""
+        if translator_name == "🔄 Cập nhật tất cả bộ dịch...":
+            return
         if translator_name and " (Not Setup)" in translator_name:
             translator_name = translator_name.split(" (Not Setup)")[0]
 
@@ -2731,6 +2767,9 @@ class TranslatorStudioApp(QMainWindow):
                     last_idx = offline_combo.count() - 1
                     offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             
+            # Add update trigger
+            offline_combo.addItem("🔄 Cập nhật tất cả bộ dịch...", "update_trigger")
+            
             # Restore selection or fallback
             restored = False
             for i in range(offline_combo.count()):
@@ -2759,6 +2798,9 @@ class TranslatorStudioApp(QMainWindow):
                 if not exists:
                     last_idx = ai_combo.count() - 1
                     ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+            
+            # Add update trigger
+            ai_combo.addItem("🔄 Cập nhật tất cả bộ dịch...", "update_trigger")
             
             # Restore selection or fallback
             restored = False
@@ -5261,9 +5303,253 @@ class TranslatorStudioApp(QMainWindow):
         self._bulk_worker.finished.connect(on_finished)
         self._bulk_worker.start()
 
+    def _trigger_online_config_update_from_combo(self, key: str, combo: QComboBox):
+        """Triggers online update when a special trigger item is selected from a QComboBox."""
+        # Restore the previous valid selection first
+        combo.blockSignals(True)
+        prev_val = self.current_settings.get(key)
+        self._set_widget_value(key, prev_val, combo)
+        combo.blockSignals(False)
+        
+        # Trigger the actual update
+        self._trigger_online_config_update(key)
+
+    def _trigger_online_config_update(self, key: str):
+        """Triggers a background thread to update a single configuration parameter (target lang list or model capability)."""
+        if getattr(self, "_config_update_active", False):
+            QMessageBox.information(self, "Đang xử lý", "Một tiến trình cập nhật cấu hình đang chạy, vui lòng đợi.")
+            return
+
+        mode = ""
+        translator_name = None
+        api_key = None
+
+        if key == "target_lang":
+            mode = "languages"
+            self.log("INFO", "Đang cập nhật danh sách ngôn ngữ đích từ LibreTranslate...")
+        elif key in ["offline_translator", "ai_translator"]:
+            mode = "single_translator"
+            combo = self.setting_widgets.get(key)
+            if not combo:
+                return
+            translator_name = combo.itemData(combo.currentIndex())
+            if not translator_name or translator_name in ["none", "original"]:
+                QMessageBox.information(self, "Thông tin", f"Bộ dịch '{translator_name}' không hỗ trợ cập nhật động.")
+                return
+                
+            self.log("INFO", f"Đang cập nhật khả năng dịch cho bộ dịch: {translator_name}...")
+            if key == "ai_translator" and translator_name == "deepl":
+                api_key = self.config_loader.get_env_var('DEEPL_API_KEY')
+        else:
+            return
+
+        self._config_update_active = True
+        
+        for k in ['target_lang', 'offline_translator', 'ai_translator']:
+            w = self.setting_widgets.get(k)
+            if w:
+                w.setEnabled(False)
+
+        self._config_worker = ConfigUpdateWorker(self.config_loader, mode, translator_name, api_key)
+
+        def on_finished(success, message):
+            self._config_update_active = False
+            for k in ['target_lang', 'offline_translator', 'ai_translator']:
+                w = self.setting_widgets.get(k)
+                if w:
+                    w.setEnabled(True)
+            
+            if success:
+                self.log("SUCCESS", message)
+                self._reload_dynamic_configurations()
+                QMessageBox.information(self, "Cập nhật Thành công", message)
+            else:
+                self.log("ERROR", message)
+                QMessageBox.warning(self, "Cập nhật Thất bại", message)
+                
+            del self._config_worker
+
+        self._config_worker.finished.connect(on_finished)
+        self._config_worker.start()
+
+    def _trigger_all_configs_update(self):
+        """Triggers a background thread to update all configs (languages & capabilities)."""
+        if getattr(self, "_config_update_active", False):
+            QMessageBox.information(self, "Đang xử lý", "Một tiến trình cập nhật cấu hình đang chạy, vui lòng đợi.")
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Xác nhận Cập nhật Tất cả",
+            "Bạn có muốn tải về và đồng bộ hóa toàn bộ danh sách ngôn ngữ & năng lực bộ dịch từ Internet không?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.No:
+            return
+
+        self.log("INFO", "Bắt đầu cập nhật toàn bộ cấu hình ngôn ngữ và khả năng dịch...")
+        self._config_update_active = True
+
+        for k in ['target_lang', 'offline_translator', 'ai_translator']:
+            w = self.setting_widgets.get(k)
+            if w:
+                w.setEnabled(False)
+
+        self._config_worker = ConfigUpdateWorker(self.config_loader, "all")
+
+        def on_finished(success, message):
+            self._config_update_active = False
+            for k in ['target_lang', 'offline_translator', 'ai_translator']:
+                w = self.setting_widgets.get(k)
+                if w:
+                    w.setEnabled(True)
+            
+            if success:
+                self.log("SUCCESS", message)
+                self._reload_dynamic_configurations()
+                QMessageBox.information(self, "Cập nhật Thành công", message)
+            else:
+                self.log("ERROR", message)
+                QMessageBox.warning(self, "Cập nhật Thất bại", message)
+                
+            del self._config_worker
+
+        self._config_worker.finished.connect(on_finished)
+        self._config_worker.start()
+
+    def _reload_dynamic_configurations(self):
+        """Reloads dynamic configurations from the config loader into global mapping variables."""
+        global LANGUAGES, TRANSLATOR_GROUPS, TRANSLATOR_CAPABILITIES, LOG_COLORS
+        
+        if hasattr(self.config_loader, 'languages') and self.config_loader.languages:
+            LANGUAGES.clear()
+            LANGUAGES.update(self.config_loader.languages)
+            
+        offline_info = self.config_loader.full_config_data.get('offline_translator')
+        ai_info = self.config_loader.full_config_data.get('ai_translator')
+        
+        offline_list = offline_info.get('values', []) if offline_info else []
+        api_list = ai_info.get('values', []) if ai_info else []
+        other_list = ["original", "none"]
+        
+        TRANSLATOR_GROUPS.clear()
+        TRANSLATOR_GROUPS["--- OFFLINE MODELS (No API Key) ---"] = offline_list
+        TRANSLATOR_GROUPS["--- API-BASED (Requires Setup) ---"] = api_list
+        TRANSLATOR_GROUPS["--- OTHER ACTIONS ---"] = other_list
+        
+        self.original_offline_translators = list(offline_list)
+        self.original_ai_translators = list(api_list)
+        
+        if hasattr(self.config_loader, 'translator_capabilities'):
+            TRANSLATOR_CAPABILITIES.clear()
+            TRANSLATOR_CAPABILITIES.update(self.config_loader.translator_capabilities)
+            
+        if hasattr(self.config_loader, 'log_colors'):
+            LOG_COLORS.clear()
+            LOG_COLORS.update(self.config_loader.log_colors)
+            
+        self._refresh_combobox_values('target_lang')
+        self._refresh_combobox_values('offline_translator')
+        self._refresh_combobox_values('ai_translator')
+        
+        target_lang_combo = self.setting_widgets.get('target_lang')
+        if target_lang_combo:
+            curr_lang = target_lang_combo.currentText()
+            self._filter_translator_dropdowns(curr_lang)
+
+    def _refresh_combobox_values(self, key):
+        combo = self.setting_widgets.get(key)
+        if not combo or not isinstance(combo, QComboBox):
+            return
+            
+        combo.blockSignals(True)
+        combo.clear()
+        
+        if key == "target_lang":
+            for name, code in sorted(LANGUAGES.items()):
+                if code != "auto":
+                    combo.addItem(name, code)
+        elif key == "offline_translator":
+            values = TRANSLATOR_GROUPS.get("--- OFFLINE MODELS (No API Key) ---", [])
+            for val in values:
+                exists = self.config_loader.check_model_existence(val, field=key)
+                display_name = val if exists else f"{val} (Not Setup)"
+                combo.addItem(display_name, val)
+                if not exists:
+                    idx = combo.count() - 1
+                    combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+            combo.addItem("🔄 Cập nhật tất cả bộ dịch...", "update_trigger")
+        elif key == "ai_translator":
+            values = TRANSLATOR_GROUPS.get("--- API-BASED (Requires Setup) ---", [])
+            for val in values:
+                exists = self.config_loader.check_model_existence(val, field=key)
+                display_name = val if exists else f"{val} (Not Setup)"
+                combo.addItem(display_name, val)
+                if not exists:
+                    idx = combo.count() - 1
+                    combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+            combo.addItem("🔄 Cập nhật tất cả bộ dịch...", "update_trigger")
+                    
+        current_val = self.current_settings.get(key)
+        self._set_widget_value(key, current_val, combo)
+        combo.blockSignals(False)
+
 
 # Helper classes for background threads
 from PySide6.QtCore import Signal, QThread
+
+class ConfigUpdateWorker(QThread):
+    finished = Signal(bool, str) # success, message
+    
+    def __init__(self, config_loader, mode, translator_name=None, api_key=None):
+        super().__init__()
+        self.config_loader = config_loader
+        self.mode = mode # "all", "languages", "single_translator"
+        self.translator_name = translator_name
+        self.api_key = api_key
+        
+    def run(self):
+        try:
+            if self.mode == "all":
+                try:
+                    langs_data = self.config_loader.fetch_online_languages_libretranslate()
+                except Exception:
+                    try:
+                        langs_data = self.config_loader.fetch_online_languages_lingva()
+                    except Exception as e:
+                        self.finished.emit(False, f"Lỗi kết nối mạng: Không tải được danh sách ngôn ngữ từ LibreTranslate/Lingva: {e}")
+                        return
+                
+                success = self.config_loader.save_languages_config(langs_data)
+                if success:
+                    self.finished.emit(True, "Đã cập nhật thành công tất cả cấu hình ngôn ngữ & bộ dịch từ Internet!")
+                else:
+                    self.finished.emit(False, "Lỗi khi lưu cấu hình ngôn ngữ.")
+                    
+            elif self.mode == "languages":
+                try:
+                    langs_data = self.config_loader.fetch_online_languages_libretranslate()
+                except Exception:
+                    try:
+                        langs_data = self.config_loader.fetch_online_languages_lingva()
+                    except Exception as e:
+                        self.finished.emit(False, f"Lỗi kết nối mạng: Không tải được danh sách ngôn ngữ: {e}")
+                        return
+                
+                success = self.config_loader.save_languages_config(langs_data)
+                if success:
+                    self.finished.emit(True, "Đã cập nhật thành công danh sách ngôn ngữ đích!")
+                else:
+                    self.finished.emit(False, "Lỗi khi lưu danh sách ngôn ngữ mới.")
+                    
+            elif self.mode == "single_translator":
+                success, msg = self.config_loader.update_single_translator_capabilities(
+                    self.translator_name, self.api_key
+                )
+                self.finished.emit(success, msg)
+        except Exception as e:
+            self.finished.emit(False, f"Lỗi trong quá trình cập nhật cấu hình: {e}")
+
 
 class CheckAllFontsWorker(QThread):
     finished = Signal(bool, list, str) # success, list of updates, error_msg
