@@ -89,24 +89,6 @@ class WidgetBuildersMixin:
                 widget_row = self._create_setting_row(info)
                 layout.addWidget(widget_row)
 
-        # Special handling for Translator tab (Update all button)
-        if raw_tab_name in ["Translator", "General & Translator"]:
-            layout.addSpacing(15)
-            update_all_btn = QPushButton("🔄 Cập nhật tất cả cấu hình (Ngôn ngữ & Bộ dịch)")
-            update_all_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #3b82f6;
-                    color: white;
-                    font-weight: bold;
-                    padding: 8px;
-                    border-radius: 4px;
-                }
-                QPushButton:hover {
-                    background-color: #2563eb;
-                }
-            """)
-            update_all_btn.clicked.connect(self._trigger_all_configs_update)
-            layout.addWidget(update_all_btn)
 
         # Special handling for Extra Settings tab (Theme manager, etc.)
         if raw_tab_name == "Extra Settings":
@@ -365,6 +347,10 @@ class WidgetBuildersMixin:
                 update_btn.setToolTip("Cập nhật phần mềm hoặc mô hình bộ dịch hiện tại")
                 update_btn.clicked.connect(lambda checked=False, k=info.get('key'): self._trigger_translator_software_update(k))
                 row_layout.addWidget(update_btn)
+            elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_group_selector", "api_profile_selector", "ai_model_selector"]:
+                spacer = QWidget()
+                spacer.setFixedWidth(30)
+                row_layout.addWidget(spacer)
 
             if context_key:
                 self.task_widgets[context_key][info['key']] = widget
@@ -385,7 +371,7 @@ class WidgetBuildersMixin:
         from PySide6.QtCore import QUrl
         
         button = QPushButton("Open Configuration (YAML) 📂")
-        file_name = info.get("default", "skip_languages.yaml")
+        file_name = info.get("default") or "skip_languages.yaml"
         
         def on_click():
             file_path = os.path.join(self.project_base_dir, ".config", "configs", file_name)
@@ -477,7 +463,6 @@ class WidgetBuildersMixin:
             for name, code in sorted(mw.LANGUAGES.items()):
                 if code != "auto":
                     combo_box.addItem(name, code)
-            combo_box.addItem("🔄 Cập nhật danh sách ngôn ngữ...", "update_trigger")
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))
         elif info.get("widget") == "optionmenu_separators" or key in ["offline_translator", "ai_translator"]:
             # If it'''s the main translator selectors or has separators
@@ -492,6 +477,7 @@ class WidgetBuildersMixin:
                         last_idx = combo_box.count() - 1
                         combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
                 combo_box.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
+                combo_box.addItem("🔄 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
             else:
                 # Optionmenu with separators (e.g. from TRANSLATOR_GROUPS)
                 for group_name, translators in mw.TRANSLATOR_GROUPS.items():
