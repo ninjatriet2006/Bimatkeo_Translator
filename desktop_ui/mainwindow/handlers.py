@@ -2172,9 +2172,16 @@ class HandlersMixin:
                     
                     self.progress.emit(30, "Đang kiểm tra kết nối nguồn tải...")
                     
-                    is_direct_archive = url.lower().endswith('.zip') or url.lower().endswith('.tar.gz')
+                    is_direct_archive = False
+                    is_huggingface = False
                     
-                    if is_direct_archive:
+                    if url.startswith('hf://'):
+                        is_huggingface = True
+                        repo_id = url[5:]
+                        latest_version = "hf_latest"
+                        zipball_url = ""
+                    elif url.lower().endswith('.zip') or url.lower().endswith('.tar.gz'):
+                        is_direct_archive = True
                         latest_version = "latest_direct"
                         zipball_url = url
                     else:
@@ -2212,15 +2219,94 @@ class HandlersMixin:
                         self.finished.emit(True, f"Bộ dịch '{translator_name}' đã ở phiên bản mới nhất ({current_version}) và đã được cài đặt. Không cần cập nhật.")
                         return
                         
-                    self.progress.emit(70, f"Đang tiến hành tải Source Code từ {zipball_url}...")
+                    self.progress.emit(70, f"Đang tiến hành lấy danh sách file từ {url}...")
                     
-                    # Thực sự tải file zip từ GitHub và giải nén
-                    if zipball_url:
+                    # Thực sự tải file
+                    if is_huggingface:
                         try:
+                            if check_file_path:
+                                model_dir = os.path.join(base_dir, os.path.dirname(check_file_path))
+                            else:
+                                model_dir = os.path.join(base_dir, "models", "Offline Translator", translator_name)
+                            os.makedirs(model_dir, exist_ok=True)
+                            
+                            tree_url = f"https://huggingface.co/api/models/{repo_id}/tree/main"
+                            req = urllib.request.Request(tree_url, headers={'User-Agent': 'Mozilla/5.0'})
+                            
+                            with urllib.request.urlopen(req, timeout=15) as response:
+                                files_data = json.loads(response.read().decode('utf-8'))
+                                
+                            target_files = []
+                            for item in files_data:
+                                if item.get("type") == "file":
+                                    path = item.get("path", "")
+                                    ext = os.path.splitext(path)[1].lower()
+                                    if ext not in [".msgpack", ".h5", ".ot", ".md"] and not path.startswith("."):
+                                        target_files.append(item)
+                                        
+                            total_files = len(target_files)
+                            if total_files == 0:
+                                self.finished.emit(False, f"Không tìm thấy file hợp lệ nào trong repository {repo_id}")
+                                return
+                                
+                            for idx, item in enumerate(target_files):
+                                path = item.get("path")
+                                size = item.get("size", 0)
+                                import urllib.parse
+                                file_url = f"https://huggingface.co/{repo_id}/resolve/main/{urllib.parse.quote(path)}"
+                                local_path = os.path.join(model_dir, path)
+                                
+                                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                                self.progress.emit(70 + int((idx/total_files)*25), f"Đang tải {path} ({idx+1}/{total_files})...")
+                                
+                                req_file = urllib.request.Request(file_url, headers={'User-Agent': 'Mozilla/5.0'})
+                                with urllib.request.urlopen(req_file, timeout=60) as resp:
+                                    with open(local_path, "wb") as f:
+                                        downloaded = 0
+                                        chunk_size = 1024 * 1024
+                                        while True:
+                                            chunk = resp.read(chunk_size)
+                                            if not chunk:
+                                                break
+                                            f.write(chunk)
+                                            downloaded += len(chunk)
+                                            if size > 0 and downloaded % (2 * 1024 * 1024) < chunk_size:
+                                                percent = int((downloaded/size)*100)
+                                                self.progress.emit(70 + int((idx/total_files)*25), f"Đang tải {path} ({idx+1}/{total_files}) - {percent}%")
+                                                
+                        except Exception as e:
+                            self.finished.emit(False, f"Lỗi khi tải từ HuggingFace: {e}")
+                            return
+                            
+                    elif zipball_url:
+                        try:
+                            self.progress.emit(70, f"Đang tiến hành tải dữ liệu từ {zipball_url}...")
                             req_zip = urllib.request.Request(zipball_url, headers={'User-Agent': 'Mozilla/5.0'})
                             with urllib.request.urlopen(req_zip, timeout=600) as response:
-                                import zipfile, tarfile, io, shutil
-                                zip_data = response.read()
+                                import zipfile, tarfile, shutil, tempfile
+                                
+                                total_size = int(response.info().get('Content-Length', -1))
+                                fd, temp_path = tempfile.mkstemp(suffix=".zip")
+                                os.close(fd)
+                                
+                                chunk_size = 1024 * 1024 # 1MB chunks
+                                downloaded = 0
+                                
+                                with open(temp_path, "wb") as f:
+                                    while True:
+                                        chunk = response.read(chunk_size)
+                                        if not chunk:
+                                            break
+                                        f.write(chunk)
+                                        downloaded += len(chunk)
+                                        
+                                        if total_size > 0:
+                                            # Scale progress between 70% and 90%
+                                            progress_percent = 70 + int((downloaded / total_size) * 20)
+                                            # Update every ~2MB to avoid UI freezing
+                                            if downloaded % (2 * 1024 * 1024) < chunk_size:
+                                                self.progress.emit(progress_percent, f"Đang tải: {downloaded//(1024*1024)}MB / {total_size//(1024*1024)}MB...")
+                                
                                 self.progress.emit(90, "Đang giải nén dữ liệu...")
                                 
                                 # Tạo thư mục nếu chưa có
@@ -2231,11 +2317,13 @@ class HandlersMixin:
                                 os.makedirs(model_dir, exist_ok=True)
                                 
                                 if zipball_url.lower().endswith('.tar.gz'):
-                                    with tarfile.open(fileobj=io.BytesIO(zip_data), mode="r:gz") as tar_ref:
+                                    with tarfile.open(temp_path, mode="r:gz") as tar_ref:
                                         tar_ref.extractall(model_dir)
                                 else:
-                                    with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
+                                    with zipfile.ZipFile(temp_path, 'r') as zip_ref:
                                         zip_ref.extractall(model_dir)
+                                        
+                                os.remove(temp_path)
                                         
                                 # Xử lý thư mục rỗng thừa (Smart Extraction/Flatten directory)
                                 items = os.listdir(model_dir)
@@ -2297,6 +2385,10 @@ class HandlersMixin:
             if success:
                 self.log("SUCCESS", message)
                 QMessageBox.information(self, "Cập nhật Hoàn tất", message)
+                # Tự động làm mới UI để xóa chữ (Not Setup)
+                if hasattr(self, '_refresh_combobox_values'):
+                    self._refresh_combobox_values('offline_translator')
+                    self._refresh_combobox_values('ai_translator')
             else:
                 self.log("ERROR", message)
                 QMessageBox.warning(self, "Cập nhật Thất bại", message)
