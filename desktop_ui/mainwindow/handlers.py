@@ -784,19 +784,35 @@ class HandlersMixin:
                     return True
             return False
 
+        import re
+        def natural_sort_key(s):
+            return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
+
         offline_combo = self.setting_widgets.get('offline_translator')
         if offline_combo:
             current_val = offline_combo.currentData()
             offline_combo.blockSignals(True)
             offline_combo.clear()
+            
             filtered_offline = [t for t in self.original_offline_translators if supports_target(t)]
+            setup_items = []
+            not_setup_items = []
             for val in filtered_offline:
                 exists = self.config_loader.check_model_existence(val, field='offline_translator')
-                display_name = val if exists else f"{val} (Not Setup)"
-                offline_combo.addItem(display_name, val)
-                if not exists:
-                    last_idx = offline_combo.count() - 1
-                    offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+                if exists:
+                    setup_items.append(val)
+                else:
+                    not_setup_items.append(val)
+            
+            setup_items.sort(key=natural_sort_key)
+            not_setup_items.sort(key=natural_sort_key)
+            
+            for val in setup_items:
+                offline_combo.addItem(val, val)
+            for val in not_setup_items:
+                offline_combo.addItem(f"{val} (Not Setup)", val)
+                last_idx = offline_combo.count() - 1
+                offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             offline_combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
             offline_combo.addItem("🔄 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
             
@@ -817,13 +833,24 @@ class HandlersMixin:
             ai_combo.blockSignals(True)
             ai_combo.clear()
             filtered_ai = [t for t in self.original_ai_translators if supports_target(t)]
+            setup_items = []
+            not_setup_items = []
             for val in filtered_ai:
                 exists = self.config_loader.check_model_existence(val, field='ai_translator')
-                display_name = val if exists else f"{val} (Not Setup)"
-                ai_combo.addItem(display_name, val)
-                if not exists:
-                    last_idx = ai_combo.count() - 1
-                    ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+                if exists:
+                    setup_items.append(val)
+                else:
+                    not_setup_items.append(val)
+            
+            setup_items.sort(key=natural_sort_key)
+            not_setup_items.sort(key=natural_sort_key)
+            
+            for val in setup_items:
+                ai_combo.addItem(val, val)
+            for val in not_setup_items:
+                ai_combo.addItem(f"{val} (Not Setup)", val)
+                last_idx = ai_combo.count() - 1
+                ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             ai_combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
             ai_combo.addItem("🔄 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
             
@@ -871,18 +898,35 @@ class HandlersMixin:
             filtered_translators = [t for t in translators if supports_target(t)]
             if not filtered_translators:
                 continue
+                
+            field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
+            
+            setup_items = []
+            not_setup_items = []
+            for t in filtered_translators:
+                exists = self.config_loader.check_model_existence(t, field=field_name)
+                if exists:
+                    setup_items.append(t)
+                else:
+                    not_setup_items.append(t)
+                    
+            import re
+            def natural_sort_key(s):
+                return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
+                
+            setup_items.sort(key=natural_sort_key)
+            not_setup_items.sort(key=natural_sort_key)
+            
             item_index = translator_combo.count()
             translator_combo.addItem(group_name)
             translator_combo.model().item(item_index).setEnabled(False)
             
-            field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
-            for t in filtered_translators:
-                exists = self.config_loader.check_model_existence(t, field=field_name)
-                display_name = t if exists else f"{t} (Not Setup)"
-                translator_combo.addItem(display_name, t)
-                if not exists:
-                    last_idx = translator_combo.count() - 1
-                    translator_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+            for t in setup_items:
+                translator_combo.addItem(t, t)
+            for t in not_setup_items:
+                translator_combo.addItem(f"{t} (Not Setup)", t)
+                last_idx = translator_combo.count() - 1
+                translator_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
         
         restored = False
         for i in range(translator_combo.count()):
@@ -1572,6 +1616,7 @@ class HandlersMixin:
 
         class FontDownloadWorker(QThread):
             finished = Signal(bool, str)
+            progress = Signal(int, int, str)
             def run(self):
                 import urllib.request
                 import urllib.parse
@@ -1597,7 +1642,9 @@ class HandlersMixin:
                     os.makedirs(fonts_dir, exist_ok=True)
                     extracted_any = False
                     
-                    for block in blocks:
+                    total_blocks = len(blocks)
+                    
+                    for idx, block in enumerate(blocks):
                         url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
                         if url_match:
                             ttf_url = url_match.group(1).strip()
@@ -1620,6 +1667,8 @@ class HandlersMixin:
                             filename = f"{clean_name}{suffix}.ttf"
                             dest_path = os.path.join(fonts_dir, filename)
                             
+                            self.progress.emit(idx, total_blocks, filename)
+                            
                             req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
                             with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
                                 font_data = res_ttf.read()
@@ -1628,6 +1677,8 @@ class HandlersMixin:
                                 f.write(font_data)
                             extracted_any = True
                             
+                            self.progress.emit(idx + 1, total_blocks, filename)
+                            
                     if extracted_any:
                         self.finished.emit(True, google_family)
                     else:
@@ -1635,9 +1686,27 @@ class HandlersMixin:
                 except Exception as e:
                     self.finished.emit(False, str(e))
 
+        from PySide6.QtWidgets import QProgressDialog
+        from PySide6.QtCore import Qt
+        progress_dlg = QProgressDialog(f"Đang chuẩn bị tải {google_family}...", "Hủy", 0, 100, self)
+        progress_dlg.setWindowTitle("Cập nhật Phông Chữ")
+        progress_dlg.setWindowModality(Qt.WindowModality.WindowModal)
+        progress_dlg.setMinimumDuration(0)
+        progress_dlg.show()
+
         self._font_worker = FontDownloadWorker()
+        progress_dlg.canceled.connect(self._font_worker.terminate)
+
+        def on_progress(current, total, filename):
+            progress_dlg.setMaximum(total)
+            progress_dlg.setValue(current)
+            progress_dlg.setLabelText(f"Đang tải: {filename} ({current}/{total})")
+
+        self._font_worker.progress.connect(on_progress)
 
         def on_finished(success, message_or_family):
+            progress_dlg.setValue(progress_dlg.maximum())
+            progress_dlg.close()
             self._font_install_active = False
             main_font_combo.setEnabled(True)
             if success:
@@ -1696,6 +1765,7 @@ class HandlersMixin:
         
         class FontDownloadWorker(QThread):
             finished = Signal(bool, str)
+            progress = Signal(int, int, str)
             def run(self):
                 import urllib.request
                 import urllib.parse
@@ -1721,7 +1791,9 @@ class HandlersMixin:
                     os.makedirs(fonts_dir, exist_ok=True)
                     extracted_any = False
                     
-                    for block in blocks:
+                    total_blocks = len(blocks)
+                    
+                    for idx, block in enumerate(blocks):
                         url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
                         if url_match:
                             ttf_url = url_match.group(1).strip()
@@ -1744,6 +1816,8 @@ class HandlersMixin:
                             filename = f"{clean_name}{suffix}.ttf"
                             dest_path = os.path.join(fonts_dir, filename)
                             
+                            self.progress.emit(idx, total_blocks, filename)
+                            
                             req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
                             with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
                                 font_data = res_ttf.read()
@@ -1752,6 +1826,8 @@ class HandlersMixin:
                                 f.write(font_data)
                             extracted_any = True
                             
+                            self.progress.emit(idx + 1, total_blocks, filename)
+                            
                     if extracted_any:
                         self.finished.emit(True, font_family)
                     else:
@@ -1759,9 +1835,27 @@ class HandlersMixin:
                 except Exception as e:
                     self.finished.emit(False, str(e))
 
+        from PySide6.QtWidgets import QProgressDialog
+        from PySide6.QtCore import Qt
+        progress_dlg = QProgressDialog(f"Đang chuẩn bị tải {font_family}...", "Hủy", 0, 100, self)
+        progress_dlg.setWindowTitle("Cài đặt Phông Chữ")
+        progress_dlg.setWindowModality(Qt.WindowModality.WindowModal)
+        progress_dlg.setMinimumDuration(0)
+        progress_dlg.show()
+
         self._font_worker = FontDownloadWorker()
+        progress_dlg.canceled.connect(self._font_worker.terminate)
+
+        def on_progress(current, total, filename):
+            progress_dlg.setMaximum(total)
+            progress_dlg.setValue(current)
+            progress_dlg.setLabelText(f"Đang tải: {filename} ({current}/{total})")
+
+        self._font_worker.progress.connect(on_progress)
         
         def on_finished(success, message_or_family):
+            progress_dlg.setValue(progress_dlg.maximum())
+            progress_dlg.close()
             self._font_install_active = False
             main_font_combo.setEnabled(True)
             if success:
@@ -2042,6 +2136,10 @@ class HandlersMixin:
             if w:
                 w.setEnabled(False)
 
+        # Lấy thông tin đường dẫn đích dựa vào cấu hình
+        rule = self.config_loader._DEFAULT_CHECKS.get(key, {}).get(translator_name, {})
+        check_file_path = rule.get("check_file", "")
+
         class TranslatorSoftwareUpdateWorker(QThread):
             finished = Signal(bool, str)
             progress = Signal(int, str)
@@ -2078,6 +2176,7 @@ class HandlersMixin:
                         with urllib.request.urlopen(req, timeout=10) as response:
                             data = json.loads(response.read().decode('utf-8'))
                             latest_version = data.get("tag_name", "unknown")
+                            zipball_url = data.get("zipball_url", "")
                     except Exception as e:
                         self.finished.emit(False, f"Lỗi khi kết nối đến nguồn tải: {e}")
                         return
@@ -2090,26 +2189,64 @@ class HandlersMixin:
                             local_versions = json.load(lf)
                             
                     current_version = local_versions.get(translator_name, "none")
+                    
+                    # Force update if check file does not exist, even if version matches
+                    needs_update = True
                     if current_version == latest_version:
+                        if check_file_path:
+                            full_check_path = os.path.join(base_dir, check_file_path)
+                            if os.path.exists(full_check_path):
+                                needs_update = False
+                        else:
+                            needs_update = False
+                            
+                    if not needs_update:
                         self.progress.emit(100, "Hoàn tất")
-                        self.finished.emit(True, f"Bộ dịch '{translator_name}' đã ở phiên bản mới nhất ({current_version}). Không cần cập nhật.")
+                        self.finished.emit(True, f"Bộ dịch '{translator_name}' đã ở phiên bản mới nhất ({current_version}) và đã được cài đặt. Không cần cập nhật.")
                         return
                         
-                    self.progress.emit(70, f"Phát hiện bản mới ({latest_version}). Đang tiến hành tải dữ liệu mô hình...")
-                    import time
-                    time.sleep(2) # Simulate download process for now
+                    self.progress.emit(70, f"Đang tiến hành tải Source Code từ {zipball_url}...")
+                    
+                    # Thực sự tải file zip từ GitHub và giải nén
+                    if zipball_url:
+                        try:
+                            req_zip = urllib.request.Request(zipball_url, headers={'User-Agent': 'Mozilla/5.0'})
+                            with urllib.request.urlopen(req_zip, timeout=60) as response:
+                                import zipfile, io
+                                zip_data = response.read()
+                                self.progress.emit(90, "Đang giải nén mã nguồn...")
+                                
+                                # Tạo thư mục nếu chưa có
+                                if check_file_path:
+                                    model_dir = os.path.join(base_dir, os.path.dirname(check_file_path))
+                                else:
+                                    model_dir = os.path.join(base_dir, "models", "Unknown", translator_name)
+                                os.makedirs(model_dir, exist_ok=True)
+                                
+                                with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
+                                    zip_ref.extractall(model_dir)
+                        except Exception as e:
+                            self.finished.emit(False, f"Lỗi khi tải hoặc giải nén mã nguồn: {e}")
+                            return
+                    else:
+                        self.finished.emit(False, "Không tìm thấy đường dẫn tải zipball_url.")
+                        return
                     
                     # Update local version
                     local_versions[translator_name] = latest_version
                     with open(local_versions_file, "w", encoding="utf-8") as lf:
                         json.dump(local_versions, lf, indent=4)
                         
-                    # Create models folder to pretend it is setup
-                    model_dir = os.path.join(base_dir, "models", translator_name)
+                    # Create models folder based on captured config
+                    if check_file_path:
+                        model_dir = os.path.join(base_dir, os.path.dirname(check_file_path))
+                    else:
+                        model_dir = os.path.join(base_dir, "models", "Unknown", translator_name)
+                        
                     os.makedirs(model_dir, exist_ok=True)
                     
-                    self.progress.emit(100, "Tải và cài đặt thành công!")
-                    self.finished.emit(True, f"Đã cập nhật/cài đặt thành công mô hình '{translator_name}' lên phiên bản {latest_version}!")
+                    self.progress.emit(100, "Tải Source Code và cài đặt thành công!")
+                    self.finished.emit(True, f"Đã tải Source Code và cài đặt thành công mô hình '{translator_name}' lên phiên bản {latest_version}!")
                 except Exception as e:
                     self.finished.emit(False, f"Lỗi không xác định: {str(e)}")
 
@@ -2144,8 +2281,8 @@ class HandlersMixin:
                 QMessageBox.warning(self, "Cập nhật Thất bại", message)
             del self._software_worker
 
-        self._software_worker.finished.connect(on_finished)
-        self._software_worker.progress.connect(on_progress)
+        self._software_worker.finished.connect(on_finished, Qt.ConnectionType.QueuedConnection)
+        self._software_worker.progress.connect(on_progress, Qt.ConnectionType.QueuedConnection)
         self._software_worker.start()
 
     def _trigger_online_config_update_from_combo(self, key: str, combo: QComboBox):

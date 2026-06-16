@@ -213,12 +213,11 @@ class CapabilitiesMixin:
 
         check_module = rule.get("check_module")
         if check_module:
+            import importlib.util
             modules = [check_module] if isinstance(check_module, str) else check_module
             for module_name in modules:
                 try:
-                    cmd = [self.python_executable, "-c", f"import {module_name}"]
-                    res = subprocess.run(cmd, capture_output=True, timeout=5)
-                    if res.returncode != 0:
+                    if importlib.util.find_spec(module_name) is None:
                         return False
                 except Exception:
                     return False
@@ -226,18 +225,6 @@ class CapabilitiesMixin:
         check_file = rule.get("check_file")
         if check_file:
             files_to_check = [check_file]
-            if model_name == "waifu2x":
-                files_to_check = [
-                    "models/waifu2x-linux/waifu2x-ncnn-vulkan",
-                    "models/waifu2x-win/waifu2x-ncnn-vulkan.exe",
-                    "models/waifu2x-macos/waifu2x-ncnn-vulkan"
-                ]
-            elif model_name == "esrgan":
-                files_to_check = [
-                    "models/esrgan-linux/realesrgan-ncnn-vulkan",
-                    "models/esrgan-win/realesrgan-ncnn-vulkan.exe",
-                    "models/esrgan-macos/realesrgan-ncnn-vulkan"
-                ]
             
             found = False
             for f in files_to_check:
@@ -337,7 +324,7 @@ class CapabilitiesMixin:
 
     def fetch_online_languages_lingva(self):
         """Fetches supported languages from Lingva Translate API (a public frontend for Google Translate)."""
-        url = "https://lingva.ml/api/v1/languages"
+        url = "https://translate.plausibility.cloud/api/v1/languages"
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
             with urllib.request.urlopen(req, timeout=8) as response:

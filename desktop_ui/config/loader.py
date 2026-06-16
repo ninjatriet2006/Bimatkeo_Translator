@@ -1,20 +1,23 @@
 import os
 import sys
 
+_os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platform.startswith('darwin') else "linux")
+_exe_ext = ".exe" if _os_suffix == "win" else ""
+
 class ConfigLoaderBase:
     _DEFAULT_CHECKS = {
         "offline_translator": {
-            "sugoi": {"check_file": "models/translators/sugoi/spm.ja.nopretok.model"},
-            "m2m100": {"check_file": "models/translators/m2m_100/m2m100_12b/sentencepiece.model"},
-            "m2m100_big": {"check_file": "models/translators/m2m_100/m2m100_12b/model.bin"},
-            "nllb": {"check_file": "models/translators/m2m_100/m2m100_12b/sentencepiece.model"},
-            "nllb_big": {"check_file": "models/translators/m2m_100/m2m100_12b/model.bin"},
-            "mbart50": {"check_file": "models/translators/m2m_100/m2m100_12b/sentencepiece.model"},
-            "jparacrawl": {"check_file": "models/translators/jparacrawl/spm.ja.nopretok.model"},
-            "jparacrawl_big": {"check_file": "models/translators/jparacrawl/spm.ja.nopretok.model"},
-            "qwen2": {"check_file": "models/translators/qwen2/qwen2_1.5b/model.bin"},
-            "qwen2_big": {"check_file": "models/translators/qwen2/qwen2_1.5b/model.bin"},
-            "offline": {"check_file": "models/translators/m2m_100/m2m100_12b/sentencepiece.model"},
+            "sugoi": {"check_file": "models/Offline Translator/Sugoi/spm.ja.nopretok.model"},
+            "m2m100": {"check_file": "models/Offline Translator/M2M100/sentencepiece.model"},
+            "m2m100_big": {"check_file": "models/Offline Translator/M2M100/model.bin"},
+            "nllb": {"check_file": "models/Offline Translator/NLLB/sentencepiece.model"},
+            "nllb_big": {"check_file": "models/Offline Translator/NLLB/model.bin"},
+            "mbart50": {"check_file": "models/Offline Translator/MBart50/sentencepiece.model"},
+            "jparacrawl": {"check_file": "models/Offline Translator/JParaCrawl/spm.ja.nopretok.model"},
+            "jparacrawl_big": {"check_file": "models/Offline Translator/JParaCrawl/spm.ja.nopretok.model"},
+            "qwen2": {"check_file": "models/Offline Translator/Qwen2/model.bin"},
+            "qwen2_big": {"check_file": "models/Offline Translator/Qwen2/model.bin"},
+            "offline": {"check_file": "models/Offline Translator/M2M100/sentencepiece.model"},
         },
         "ai_translator": {
             "deepl": {
@@ -57,32 +60,32 @@ class ConfigLoaderBase:
             }
         },
         "ocr": {
-            "32px": {"check_file": "models/ocr/alphabet-all-v7.txt"},
-            "48px": {"check_file": "models/ocr/ocr_ar_48px.ckpt"},
-            "48px_ctc": {"check_file": "models/ocr/ocr-ctc.ckpt"},
+            "32px": {"check_file": "models/OCR/32px/alphabet-all-v7.txt"},
+            "48px": {"check_file": "models/OCR/48px/ocr_ar_48px.ckpt"},
+            "48px_ctc": {"check_file": "models/OCR/48px_ctc/ocr-ctc.ckpt"},
             "mocr": {
                 "check_file": "app/ocr/mocr.py",
                 "check_module": "manga_ocr"
             }
         },
         "detector": {
-            "default": {"check_file": "models/detection/detect-20241225.ckpt"},
-            "dbconvnext": {"check_file": "models/detection/dbnet_convnext.ckpt"},
-            "ctd": {"check_file": "models/detection/detect-20241225.ckpt"},
-            "craft": {"check_file": "models/detector/craft/craft_mlt_25k.pth"},
-            "paddle": {"check_file": "models/detector/paddle/det.onnx"},
+            "default": {"check_file": "models/Detector/CTD/detect-20241225.ckpt"},
+            "dbconvnext": {"check_file": "models/Detector/DBConvNeXt/dbnet_convnext.ckpt"},
+            "ctd": {"check_file": "models/Detector/CTD/detect-20241225.ckpt"},
+            "craft": {"check_file": "models/Detector/CRAFT/craft_mlt_25k.pth"},
+            "paddle": {"check_file": "models/Detector/Paddle/det.onnx"},
         },
         "inpainter": {
-            "default": {"check_file": "models/inpainting/lama_large_512px.ckpt"},
-            "lama_large": {"check_file": "models/inpainting/lama_large_512px.ckpt"},
-            "lama_mpe": {"check_file": "models/inpainting/inpainting_lama_mpe.ckpt"},
+            "default": {"check_file": "models/Inpainter/Lama_Large/lama_large_512px.ckpt"},
+            "lama_large": {"check_file": "models/Inpainter/Lama_Large/lama_large_512px.ckpt"},
+            "lama_mpe": {"check_file": "models/Inpainter/Lama_MPE/inpainting_lama_mpe.ckpt"},
         },
         "upscaler": {
-            "waifu2x": {"check_file": "models/waifu2x-linux/waifu2x-ncnn-vulkan"},
-            "esrgan": {"check_file": "models/esrgan-linux/realesrgan-ncnn-vulkan"},
+            "waifu2x": {"check_file": f"models/Upscaler/Waifu2x/waifu2x-{_os_suffix}/waifu2x-ncnn-vulkan{_exe_ext}"},
+            "esrgan": {"check_file": f"models/Upscaler/ESRGAN/esrgan-{_os_suffix}/realesrgan-ncnn-vulkan{_exe_ext}"},
         },
         "colorizer": {
-            "mc2": {"check_file": "models/manga-colorization-v2/generator.zip"},
+            "mc2": {"check_file": "models/Colorizer/MC2/generator.zip"},
         }
     }
 

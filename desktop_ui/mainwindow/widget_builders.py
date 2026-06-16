@@ -339,18 +339,25 @@ class WidgetBuildersMixin:
                 widget = QLabel(f"TODO: '''{widget_type}'''")
                 widget.setStyleSheet("color: yellow;")
 
-            row_layout.addWidget(widget, stretch=2)
+            right_container = QWidget()
+            right_layout = QHBoxLayout(right_container)
+            right_layout.setContentsMargins(0, 0, 0, 0)
+            right_layout.setSpacing(5)
+            
+            right_layout.addWidget(widget, stretch=1)
 
             if not context_key and info.get('key') in ['offline_translator', 'ai_translator']:
                 update_btn = QPushButton("🔄")
                 update_btn.setFixedSize(30, 30)
                 update_btn.setToolTip("Cập nhật phần mềm hoặc mô hình bộ dịch hiện tại")
                 update_btn.clicked.connect(lambda checked=False, k=info.get('key'): self._trigger_translator_software_update(k))
-                row_layout.addWidget(update_btn)
+                right_layout.addWidget(update_btn)
             elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_group_selector", "api_profile_selector", "ai_model_selector"]:
                 spacer = QWidget()
                 spacer.setFixedWidth(30)
-                row_layout.addWidget(spacer)
+                right_layout.addWidget(spacer)
+
+            row_layout.addWidget(right_container, stretch=2)
 
             if context_key:
                 self.task_widgets[context_key][info['key']] = widget

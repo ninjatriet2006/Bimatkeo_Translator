@@ -82,7 +82,7 @@ class RepairMixin:
         if 'translator' in enum_fields:
             del enum_fields['translator']
 
-        translator_groups = self.translator_capabilities.get("TRANSLATOR_GROUPS", {})
+        translator_groups = getattr(self, 'translator_groups', {})
         enum_fields['offline_translator'] = translator_groups.get("--- OFFLINE MODELS (No API Key) ---", [])
         enum_fields['ai_translator'] = translator_groups.get("--- API-BASED (Requires Setup) ---", [])
 
