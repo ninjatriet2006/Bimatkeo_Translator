@@ -23,4 +23,9 @@ Tất cả các AI Assistant (Agent) khi làm việc trong dự án này **BẮT
 - Khi thêm một tùy chọn mới vào Dropdown, phải nhớ thêm nó vào cả hàm tạo ban đầu (`_create_combobox`) LẪN các hàm tự làm mới (`_refresh_combobox_values` và `_filter_translator_dropdowns`).
 
 ---
+
+## 5. QUY TẮC ĐỘC LẬP DỰ ÁN (PROJECT INDEPENDENCE)
+- Dự án `Bimatkeo_Translator` được thiết kế hoạt động hoàn toàn **ĐỘC LẬP** với dự án gốc `manga-image-translator` ở cấp độ lưu trữ và cấu trúc thư mục.
+- Tuyệt đối KHÔNG ĐƯỢC ép buộc hoặc sửa đổi các đường dẫn lưu trữ model/file của `Bimatkeo_Translator` (ví dụ: `models/Offline Translator/...`) về lại cấu trúc cũ của backend `manga-image-translator` (như `models/translators/...`). Việc tải và lưu trữ model phải tuân thủ nghiêm ngặt hệ sinh thái riêng của dự án này.
+
 *(Bất cứ AI nào đọc được file này, hãy tự ý thức việc tuân thủ để tránh làm sai lệch cấu trúc dự án và gây mất thời gian cho lập trình viên!)*

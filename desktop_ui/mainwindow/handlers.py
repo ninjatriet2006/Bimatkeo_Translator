@@ -2170,16 +2170,23 @@ class HandlersMixin:
                         self.finished.emit(False, f"Không tìm thấy cấu hình nguồn tải cho bộ dịch '{translator_name}' trong model_sources.yaml.")
                         return
                     
-                    self.progress.emit(30, "Đang kết nối để kiểm tra phiên bản mới nhất...")
-                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                    try:
-                        with urllib.request.urlopen(req, timeout=10) as response:
-                            data = json.loads(response.read().decode('utf-8'))
-                            latest_version = data.get("tag_name", "unknown")
-                            zipball_url = data.get("zipball_url", "")
-                    except Exception as e:
-                        self.finished.emit(False, f"Lỗi khi kết nối đến nguồn tải: {e}")
-                        return
+                    self.progress.emit(30, "Đang kiểm tra kết nối nguồn tải...")
+                    
+                    is_direct_archive = url.lower().endswith('.zip') or url.lower().endswith('.tar.gz')
+                    
+                    if is_direct_archive:
+                        latest_version = "latest_direct"
+                        zipball_url = url
+                    else:
+                        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                        try:
+                            with urllib.request.urlopen(req, timeout=10) as response:
+                                data = json.loads(response.read().decode('utf-8'))
+                                latest_version = data.get("tag_name", "unknown")
+                                zipball_url = data.get("zipball_url", "")
+                        except Exception as e:
+                            self.finished.emit(False, f"Lỗi khi kết nối đến nguồn tải (API): {e}")
+                            return
                         
                     self.progress.emit(50, f"Phiên bản mới nhất trên máy chủ: {latest_version}. Đang kiểm tra cục bộ...")
                     
@@ -2211,10 +2218,10 @@ class HandlersMixin:
                     if zipball_url:
                         try:
                             req_zip = urllib.request.Request(zipball_url, headers={'User-Agent': 'Mozilla/5.0'})
-                            with urllib.request.urlopen(req_zip, timeout=60) as response:
-                                import zipfile, io
+                            with urllib.request.urlopen(req_zip, timeout=600) as response:
+                                import zipfile, tarfile, io, shutil
                                 zip_data = response.read()
-                                self.progress.emit(90, "Đang giải nén mã nguồn...")
+                                self.progress.emit(90, "Đang giải nén dữ liệu...")
                                 
                                 # Tạo thư mục nếu chưa có
                                 if check_file_path:
@@ -2223,8 +2230,22 @@ class HandlersMixin:
                                     model_dir = os.path.join(base_dir, "models", "Unknown", translator_name)
                                 os.makedirs(model_dir, exist_ok=True)
                                 
-                                with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
-                                    zip_ref.extractall(model_dir)
+                                if zipball_url.lower().endswith('.tar.gz'):
+                                    with tarfile.open(fileobj=io.BytesIO(zip_data), mode="r:gz") as tar_ref:
+                                        tar_ref.extractall(model_dir)
+                                else:
+                                    with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_ref:
+                                        zip_ref.extractall(model_dir)
+                                        
+                                # Xử lý thư mục rỗng thừa (Smart Extraction/Flatten directory)
+                                items = os.listdir(model_dir)
+                                if len(items) == 1:
+                                    single_item_path = os.path.join(model_dir, items[0])
+                                    if os.path.isdir(single_item_path):
+                                        for sub_item in os.listdir(single_item_path):
+                                            shutil.move(os.path.join(single_item_path, sub_item), os.path.join(model_dir, sub_item))
+                                        os.rmdir(single_item_path)
+
                         except Exception as e:
                             self.finished.emit(False, f"Lỗi khi tải hoặc giải nén mã nguồn: {e}")
                             return

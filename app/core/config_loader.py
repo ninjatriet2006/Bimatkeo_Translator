@@ -66,18 +66,20 @@ class ConfigLoader:
             except Exception:
                 pass
 
-        print("[ConfigLoader] Fetching fresh configuration schema...")
-        try:
-            command = [self.python_executable, "-m", "manga_translator", "config-help"]
-            result = subprocess.run(command, capture_output=True, text=True, encoding='utf-8', check=True)
-            schema_data = self._parse_schema_output(result.stdout)
-            if schema_data is None:
-                raise ValueError("Schema command did not return valid JSON.")
-            self.studio_config["schema_cache"] = schema_data
-            self.save_studio_config()
-            return schema_data
-        except Exception as e:
-            print(f"[ERROR] Could not fetch schema: {e}")
+        fallback_path = os.path.join(self.project_base_dir, ".config", "configs", "schema_fallback.json")
+        print("[ConfigLoader] Loading static configuration schema from fallback...")
+        if os.path.exists(fallback_path):
+            try:
+                with open(fallback_path, 'r', encoding='utf-8') as f:
+                    schema_data = json.load(f)
+                self.studio_config["schema_cache"] = schema_data
+                self.save_studio_config()
+                return schema_data
+            except Exception as e:
+                print(f"[ERROR] Could not load schema fallback: {e}")
+                return None
+        else:
+            print("[ERROR] No schema fallback found!")
             return None
     
     def _parse_schema_output(self, stdout):
