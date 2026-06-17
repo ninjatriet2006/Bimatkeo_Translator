@@ -476,9 +476,9 @@ class WidgetBuildersMixin:
             if key in ["offline_translator", "ai_translator"]:
                 for val in values:
                     exists = self.config_loader.check_model_existence(val, field=key)
-                    display_name = val
+                    display_name = self.config_loader.format_display_label(val, key)
                     if not exists:
-                        display_name = f"{val} (Not Setup)"
+                        display_name = f"{display_name} (Not Setup)"
                     combo_box.addItem(display_name, val)
                     if not exists:
                         last_idx = combo_box.count() - 1
@@ -494,9 +494,9 @@ class WidgetBuildersMixin:
                     field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
                     for t in translators:
                         exists = self.config_loader.check_model_existence(t, field=field_name)
-                        display_name = t
+                        display_name = self.config_loader.format_display_label(t, field_name)
                         if not exists:
-                            display_name = f"{t} (Not Setup)"
+                            display_name = f"{display_name} (Not Setup)"
                         combo_box.addItem(display_name, t)
                         if not exists:
                             last_idx = combo_box.count() - 1
@@ -505,9 +505,9 @@ class WidgetBuildersMixin:
         else:
             for val in values:
                 exists = self.config_loader.check_model_existence(val, field=key)
-                display_name = val
+                display_name = self.config_loader.format_display_label(val, key)
                 if not exists:
-                    display_name = f"{val} (Not Setup)"
+                    display_name = f"{display_name} (Not Setup)"
                 combo_box.addItem(display_name, val)
                 if not exists:
                     last_idx = combo_box.count() - 1
@@ -890,7 +890,9 @@ class WidgetBuildersMixin:
         capabilities = mw.TRANSLATOR_CAPABILITIES.get(translator_name, {})
         code_to_name = {v: k for k, v in mw.LANGUAGES.items()}
 
-        tooltip_html = f"<b>{translator_name} Capabilities:</b><hr>"
+        label = self.config_loader.format_display_label(translator_name, key)
+        header = label if label == translator_name else f"{label} ({translator_name})"
+        tooltip_html = f"<b>{header} Capabilities:</b><hr>"
 
         if not capabilities:
             tooltip_html += "No translation is performed."

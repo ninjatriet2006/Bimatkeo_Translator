@@ -5,89 +5,13 @@ _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platfo
 _exe_ext = ".exe" if _os_suffix == "win" else ""
 
 class ConfigLoaderBase:
-    _DEFAULT_CHECKS = {
-        "offline_translator": {
-            "sugoi": {"check_file": "models/Offline Translator/Sugoi/spm.ja.nopretok.model"},
-            "m2m100": {"check_file": "models/Offline Translator/M2M100/sentencepiece.model"},
-            "m2m100_big": {"check_file": "models/Offline Translator/M2M100/model.bin"},
-            "nllb": {"check_file": "models/Offline Translator/NLLB/pytorch_model.bin"},
-            "nllb_big": {"check_file": "models/Offline Translator/NLLB/pytorch_model.bin"},
-            "mbart50": {"check_file": "models/Offline Translator/MBart50/pytorch_model.bin"},
-            "jparacrawl": {"check_file": "models/Offline Translator/JParaCrawl/spm.ja.nopretok.model"},
-            "jparacrawl_big": {"check_file": "models/Offline Translator/JParaCrawl/spm.ja.nopretok.model"},
-            "qwen2": {"check_file": "models/Offline Translator/Qwen2/model.safetensors"},
-            "qwen2_big": {"check_file": "models/Offline Translator/Qwen2/model.safetensors"},
-            "offline": {"check_file": "models/Offline Translator/M2M100/sentencepiece.model"},
-        },
-        "ai_translator": {
-            "deepl": {
-                "check_file": "app/translators/deepl.py",
-                "check_module": "deepl"
-            },
-            "gemini": {
-                "check_file": "app/translators/gemini.py",
-                "check_module": "google.genai"
-            },
-            "deepseek": {
-                "check_file": "app/translators/deepseek.py"
-            },
-            "groq": {
-                "check_file": "app/translators/groq.py",
-                "check_module": "groq"
-            },
-            "youdao": {
-                "check_file": "app/translators/youdao.py"
-            },
-            "baidu": {
-                "check_file": "app/translators/baidu.py"
-            },
-            "caiyun": {
-                "check_file": "app/translators/caiyun.py"
-            },
-            "sakura": {
-                "check_file": "app/translators/sakura.py"
-            },
-            "papago": {
-                "check_file": "app/translators/papago.py"
-            },
-            "openai": {
-                "check_file": "app/translators/openai.py",
-                "check_module": "openai"
-            },
-            "custom_openai": {
-                "check_file": "app/translators/custom_openai.py",
-                "check_module": "openai"
-            }
-        },
-        "ocr": {
-            "32px": {"check_file": "models/OCR/32px/alphabet-all-v7.txt"},
-            "48px": {"check_file": "models/OCR/48px/ocr_ar_48px.ckpt"},
-            "48px_ctc": {"check_file": "models/OCR/48px_ctc/ocr-ctc.ckpt"},
-            "mocr": {
-                "check_file": "app/ocr/mocr.py",
-                "check_module": "manga_ocr"
-            }
-        },
-        "detector": {
-            "default": {"check_file": "models/Detector/CTD/detect-20241225.ckpt"},
-            "dbconvnext": {"check_file": "models/Detector/DBConvNeXt/dbnet_convnext.ckpt"},
-            "ctd": {"check_file": "models/Detector/CTD/detect-20241225.ckpt"},
-            "craft": {"check_file": "models/Detector/CRAFT/craft_mlt_25k.pth"},
-            "paddle": {"check_file": "models/Detector/Paddle/det.onnx"},
-        },
-        "inpainter": {
-            "default": {"check_file": "models/Inpainter/Lama_Large/lama_large_512px.ckpt"},
-            "lama_large": {"check_file": "models/Inpainter/Lama_Large/lama_large_512px.ckpt"},
-            "lama_mpe": {"check_file": "models/Inpainter/Lama_MPE/inpainting_lama_mpe.ckpt"},
-        },
-        "upscaler": {
-            "waifu2x": {"check_file": f"models/Upscaler/Waifu2x/waifu2x-{_os_suffix}/waifu2x-ncnn-vulkan{_exe_ext}"},
-            "esrgan": {"check_file": f"models/Upscaler/ESRGAN/esrgan-{_os_suffix}/realesrgan-ncnn-vulkan{_exe_ext}"},
-        },
-        "colorizer": {
-            "mc2": {"check_file": "models/Colorizer/MC2/generator.zip"},
-        }
-    }
+    # NOTE: _DEFAULT_CHECKS is now DERIVED from the model registry at runtime
+    # (see RegistryMixin.load_registry, called early in __init__, which sets
+    # self._DEFAULT_CHECKS as an instance attribute). This class-level value is
+    # only a safe empty fallback so attribute access never raises if the
+    # registry hasn't loaded yet. Do NOT add model definitions here -- the
+    # single source of truth is .config/models/model_registry.yaml.
+    _DEFAULT_CHECKS = {}
 
     def __init__(self, project_base_dir):
         self.project_base_dir = project_base_dir
@@ -150,6 +74,11 @@ class ConfigLoaderBase:
             except Exception as e:
                 print(f"[ConfigLoader] Error loading files in langs directory: {e}")
 
+        # Load the model registry FIRST (single source of truth).
+        # This derives self._DEFAULT_CHECKS and registry-based groups/capabilities
+        # before repair/capabilities/schema logic consumes them.
+        self.load_registry()
+
         # Expose attributes from translator capabilities YAML
         capabilities_data = self._load_translator_capabilities()
         self.languages = self._load_backend_languages()
@@ -182,6 +111,11 @@ class ConfigLoaderBase:
         # The data is built and stored directly as attributes, not through getter methods
         self.factory_defaults = self._parse_factory_defaults()
         self.full_config_data = self._build_full_config_data()
+
+        # Run the one-time model fallback sweep (once per machine). Repairs any
+        # stored profile/default that points at a deleted or not-set-up model.
+        # No-op after the first successful run on this machine. Never raises.
+        self.optimize_profiles_once()
 
     def save_studio_config(self):
         import yaml

@@ -7,13 +7,40 @@ import time
 
 class CapabilitiesMixin:
     def _load_translator_capabilities(self):
-        """Loads translator capabilities and groups dynamically from translator_capabilities.yaml, falling back to defaults if unavailable."""
+        """Returns translator groups + capabilities.
+
+        Priority: data derived from the model registry (single source of truth).
+        LOG_COLORS still comes from translator_capabilities.yaml if present.
+        Falls back to a minimal hardcoded default only if the registry produced nothing.
+        """
         yaml_path = os.path.join(self.project_base_dir, ".config", "configs", "translator_capabilities.yaml")
-        
+
+        # 1. Read LOG_COLORS (and any extra) from the existing YAML, if available.
+        yaml_data = {}
+        if os.path.exists(yaml_path):
+            try:
+                with open(yaml_path, 'r', encoding='utf-8') as f:
+                    loaded = yaml.safe_load(f)
+                if isinstance(loaded, dict):
+                    yaml_data = loaded
+            except Exception as e:
+                print(f"[ConfigLoader] Error loading translator_capabilities.yaml: {e}")
+
+        # 2. Prefer registry-derived groups/capabilities (single source of truth).
+        reg_groups = getattr(self, "registry_translator_groups", None)
+        reg_caps = getattr(self, "registry_translator_capabilities", None)
+        if reg_groups and reg_caps:
+            print("[ConfigLoader] Loaded translator groups/capabilities from model registry.")
+            return {
+                "TRANSLATOR_GROUPS": reg_groups,
+                "TRANSLATOR_CAPABILITIES": reg_caps,
+                "LOG_COLORS": yaml_data.get("LOG_COLORS", self._default_log_colors()),
+            }
+
         default_capabilities = {
             "TRANSLATOR_GROUPS": {
                 "--- OFFLINE MODELS (No API Key) ---": [
-                    "sugoi", "m2m100", "m2m100_big", "nllb", "nllb_big", "mbart50",
+                    "m2m100", "m2m100_big", "nllb", "nllb_big", "mbart50",
                     "jparacrawl", "jparacrawl_big", "qwen2", "qwen2_big", "offline"
                 ],
                 "--- API-BASED (Requires Setup) ---": [
@@ -51,9 +78,6 @@ class CapabilitiesMixin:
                     "CHS": ["JPN"],
                     "CHT": ["JPN"]
                 },
-                "sugoi": {
-                    "JPN": ["ENG"]
-                },
                 "jparacrawl": {
                     "JPN": ["ENG"]
                 },
@@ -82,26 +106,25 @@ class CapabilitiesMixin:
             }
         }
         
-        if not os.path.exists(yaml_path):
-            try:
-                os.makedirs(os.path.dirname(yaml_path), exist_ok=True)
-                with open(yaml_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(default_capabilities, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
-                print("[ConfigLoader] Created default translator_capabilities.yaml")
-            except Exception as e:
-                print(f"[ConfigLoader] Error creating translator_capabilities.yaml: {e}")
-                return default_capabilities
+        # Registry produced nothing usable; fall back to the legacy YAML if it
+        # contains valid groups/capabilities, otherwise the minimal default.
+        if isinstance(yaml_data, dict) and "TRANSLATOR_GROUPS" in yaml_data and "TRANSLATOR_CAPABILITIES" in yaml_data:
+            print("[ConfigLoader] Registry unavailable; loaded capabilities from translator_capabilities.yaml.")
+            return yaml_data
 
-        try:
-            with open(yaml_path, 'r', encoding='utf-8') as f:
-                loaded = yaml.safe_load(f)
-            if isinstance(loaded, dict) and "TRANSLATOR_GROUPS" in loaded and "TRANSLATOR_CAPABILITIES" in loaded:
-                print("[ConfigLoader] Loaded translator capabilities dynamically from translator_capabilities.yaml.")
-                return loaded
-        except Exception as e:
-            print(f"[ConfigLoader] Error loading translator_capabilities.yaml: {e}")
-            
+        print("[ConfigLoader] Registry and YAML unavailable; using minimal default capabilities.")
         return default_capabilities
+
+    def _default_log_colors(self):
+        return {
+            "ERROR": "#E74C3C",
+            "SUCCESS": "#2ECC71",
+            "PIPELINE": "#5DADE2",
+            "WARNING": "#F39C12",
+            "INFO": "white",
+            "DEBUG": "gray",
+            "RAW": "gray"
+        }
 
     def _load_backend_languages(self):
         """Loads languages dynamically from .config/configs/supporttargetlang.yaml, falling back to constants if unavailable."""

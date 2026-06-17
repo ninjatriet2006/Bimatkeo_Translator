@@ -617,6 +617,15 @@ class HandlersMixin:
             import copy
             loaded_settings = copy.deepcopy(profiles[name])
 
+            # Runtime fallback: repair any model field pointing at a deleted or
+            # not-set-up model, and persist the fix so it won't recur.
+            changes = self.config_loader.sweep_settings(loaded_settings)
+            if changes:
+                profiles[name] = copy.deepcopy(loaded_settings)
+                self._save_preset_profiles(profiles)
+                for k, old, new in changes:
+                    self.log("WARNING", f"Model '{old}' không khả dụng -> đã chuyển '{k}' sang '{new or '(trống)'}'.")
+
             job_index = self._get_selected_job_index()
             if job_index is not None:
                 self.job_queue[job_index]['settings'].update(loaded_settings)
@@ -808,9 +817,9 @@ class HandlersMixin:
             not_setup_items.sort(key=natural_sort_key)
             
             for val in setup_items:
-                offline_combo.addItem(val, val)
+                offline_combo.addItem(self.config_loader.format_display_label(val, 'offline_translator'), val)
             for val in not_setup_items:
-                offline_combo.addItem(f"{val} (Not Setup)", val)
+                offline_combo.addItem(f"{self.config_loader.format_display_label(val, 'offline_translator')} (Not Setup)", val)
                 last_idx = offline_combo.count() - 1
                 offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             offline_combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
@@ -846,9 +855,9 @@ class HandlersMixin:
             not_setup_items.sort(key=natural_sort_key)
             
             for val in setup_items:
-                ai_combo.addItem(val, val)
+                ai_combo.addItem(self.config_loader.format_display_label(val, 'ai_translator'), val)
             for val in not_setup_items:
-                ai_combo.addItem(f"{val} (Not Setup)", val)
+                ai_combo.addItem(f"{self.config_loader.format_display_label(val, 'ai_translator')} (Not Setup)", val)
                 last_idx = ai_combo.count() - 1
                 ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             ai_combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
@@ -922,9 +931,9 @@ class HandlersMixin:
             translator_combo.model().item(item_index).setEnabled(False)
             
             for t in setup_items:
-                translator_combo.addItem(t, t)
+                translator_combo.addItem(self.config_loader.format_display_label(t, field_name), t)
             for t in not_setup_items:
-                translator_combo.addItem(f"{t} (Not Setup)", t)
+                translator_combo.addItem(f"{self.config_loader.format_display_label(t, field_name)} (Not Setup)", t)
                 last_idx = translator_combo.count() - 1
                 translator_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
         
@@ -2154,7 +2163,7 @@ class HandlersMixin:
                 try:
                     self.progress.emit(10, f"Đang tải cấu hình nguồn của {translator_name}...")
                     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                    config_dir = os.path.join(base_dir, ".config", "configs")
+                    config_dir = os.path.join(base_dir, ".config", "models")
                     sources_file = os.path.join(config_dir, "model_sources.yaml")
                     local_versions_file = os.path.join(config_dir, "local_versions.json")
                     

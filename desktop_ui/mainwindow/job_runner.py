@@ -445,6 +445,32 @@ class JobRunnerMixin:
             QMessageBox.information(self, "Information", "Please add one or more jobs to the queue first.")
             return
 
+        # Block the run if any READY job has a required model field (detector,
+        # ocr, inpainter) that is blank or not set up. Report clearly instead
+        # of letting the backend crash mid-pipeline.
+        field_labels = {"detector": "Detector", "ocr": "OCR", "inpainter": "Inpainter"}
+        blocked = []
+        for job in self.job_queue:
+            if job.get('status') != 'Ready':
+                continue
+            settings = job.get('settings', {})
+            missing = self.config_loader.missing_required_fields(settings)
+            if missing:
+                names = ", ".join(field_labels.get(f, f) for f in missing)
+                blocked.append((job.get('id', '?'), names))
+
+        if blocked:
+            lines = "\n".join(f"  - Job {jid}: {names}" for jid, names in blocked)
+            QMessageBox.critical(
+                self,
+                "Thiếu mô hình bắt buộc",
+                "Không thể chạy. Các job sau có mô hình bắt buộc chưa được cài đặt "
+                "(detector / OCR / inpainter):\n\n"
+                f"{lines}\n\n"
+                "Hãy cài đặt mô hình cho các mục này (hoặc chọn mô hình khả dụng) rồi thử lại."
+            )
+            return
+
         self._stopped_by_user = False
         self._toggle_ui_state(True)
         thread = threading.Thread(target=self._run_pipeline, daemon=True)

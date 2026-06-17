@@ -176,9 +176,20 @@ class SchemaMixin:
         return full_data
 
     def _load_custom_models(self, field):
-        """Loads custom models list from .config/model_<field>.yaml (or config_<field>.yaml) if it exists."""
+        """Returns the ordered list of model keys for a field.
+
+        Priority: the model registry (single source of truth). The registry
+        already populated self._model_checks via load_registry, so we just read
+        the ordered keys from it. Falls back to the legacy .config YAML files
+        only when the registry has no entry for this field.
+        """
         if field == "dict_profile":
             return list(self.dict_profiles.get("profiles", {}).keys())
+
+        registry = getattr(self, "model_registry", {})
+        if field in registry and registry[field]:
+            return list(registry[field].keys())
+
         import yaml
         filename = self._get_yaml_filename(field)
         model_yaml_path = os.path.join(self.project_base_dir, ".config", filename)
