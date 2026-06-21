@@ -120,8 +120,8 @@ class CapabilitiesMixin:
             "ERROR": "#E74C3C",
             "SUCCESS": "#2ECC71",
             "PIPELINE": "#5DADE2",
-            "WARNING": "#F39C12",
-            "INFO": "white",
+            "WARNING": "#F39C12",  # Orange
+            "INFO": "default",
             "DEBUG": "gray",
             "RAW": "gray"
         }

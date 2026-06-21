@@ -54,12 +54,12 @@ class ConsoleMixin:
             elif "out of memory" in msg_lower or "allocation failed" in msg_lower:
                 log_level_for_color = "ERROR"
 
-            color = log_colors.get(log_level_for_color, "white")
+            color = log_colors.get(log_level_for_color, "default")
             # We emit the RAW message without any extra prefixes.
             self.log_signal.emit(color, raw_message)
         else:
             # For our own UI-generated logs (PIPELINE, SUCCESS, etc.), we add a prefix.
-            color = log_colors.get(level.upper(), "white")
+            color = log_colors.get(level.upper(), "default")
             self.log_signal.emit(color, f"[{level.upper()}] {message.strip()}")
 
     def _insert_log_text(self, color: str, message: str):
@@ -68,7 +68,10 @@ class ConsoleMixin:
         QTextEdit widget from the main UI thread.
         """
         # Use simple HTML to color the text
-        self.log_textbox.append(f'<span style="color:{color};">{message}</span>')
+        if not color or color.lower() in ["white", "default", "none"]:
+            self.log_textbox.append(f'<span>{message}</span>')
+        else:
+            self.log_textbox.append(f'<span style="color:{color};">{message}</span>')
 
     def _clear_log(self):
         """Clears all text from the log box."""
