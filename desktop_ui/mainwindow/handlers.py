@@ -51,9 +51,15 @@ class HandlersMixin:
             self.setting_rows['offline_translator'].setVisible(show_offline)
 
         # Show all AI fields when AI / Online is selected
-        for ai_key in ['ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
+        profile_selected = self.current_settings.get('api_name', '').strip()
+        has_profile = bool(profile_selected and profile_selected.lower() not in ["none", "--- select ---"])
+        
+        for ai_key in ['api_group', 'api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
             if ai_key in self.setting_rows:
-                self.setting_rows[ai_key].setVisible(show_ai)
+                if ai_key in ['api_group', 'api_name', 'ai_translator']:
+                    self.setting_rows[ai_key].setVisible(show_ai)
+                else:
+                    self.setting_rows[ai_key].setVisible(show_ai and has_profile)
 
     def _on_translator_category_changed(self):
         """Handles changes in translator category (Offline vs AI)."""
@@ -706,6 +712,16 @@ class HandlersMixin:
 
             self.current_settings[key] = new_value
             print(f"[Settings] Updated '''{key}''' to: {new_value}")
+
+            # Auto-save changes to endpoint, model, key into the currently active profile
+            if key in ['ai_endpoint', 'ai_model', 'ai_key']:
+                profile_name = self.current_settings.get('api_name', '').strip()
+                if profile_name and profile_name.lower() not in ["none", "--- select ---"] and not getattr(self, '_loading_api_profile', False):
+                    profiles = self._load_api_profiles()
+                    if profile_name in profiles:
+                        field_name = key.replace('ai_', '')
+                        profiles[profile_name][field_name] = new_value
+                        self._save_api_profiles(profiles)
 
             if key == 'app_language':
                 self.config_loader.studio_config["app_language"] = new_value
