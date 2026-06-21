@@ -397,11 +397,6 @@ class HandlersMixin:
             combo.setCurrentText("--- Select ---")
             combo.blockSignals(False)
             self._on_api_profile_changed("--- Select ---")
-                for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
-                    widget = self.setting_widgets.get(key)
-                    if widget:
-                        self.current_settings[key] = ""
-                        self._set_widget_value(key, "", widget)
         else:
             self.log("WARNING", f"Không tìm thấy hồ sơ '{profile_name}' trong cấu hình.")
 
