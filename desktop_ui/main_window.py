@@ -118,6 +118,9 @@ class TranslatorStudioApp(QMainWindow, WidgetBuildersMixin, JobRunnerMixin, Cons
         self.task_settings = {}
         self.widget_references = {}
         self.current_settings = self.config_loader.get_factory_defaults()
+        if hasattr(self.config_loader, 'oldsession_config'):
+            saved_settings = self.config_loader.oldsession_config.get("current_settings", {})
+            self.current_settings.update(saved_settings)
         if hasattr(self.config_loader, 'app_language'):
             self.current_settings['app_language'] = self.config_loader.app_language
         self.job_queue = []
@@ -160,7 +163,9 @@ class TranslatorStudioApp(QMainWindow, WidgetBuildersMixin, JobRunnerMixin, Cons
         self.pipeline_finished_signal.connect(self._on_pipeline_finished)
         self.models_fetched_signal.connect(self._on_models_fetched)
         self.fetch_finished_signal.connect(self._on_fetch_finished)
-        self._apply_theme("Default Qt")
+        # Apply saved theme if exists
+        saved_theme = self.config_loader.oldsession_config.get("theme", "Default Qt")
+        self._apply_theme(saved_theme)
         self._on_translator_category_changed()
 
     def _initialize_app(self):

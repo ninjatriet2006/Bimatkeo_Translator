@@ -41,66 +41,25 @@ class HandlersMixin:
         return self._get_value_from_widget(key, widget) or 'none'
 
     def _update_translator_visibility(self):
-        """Toggles the visibility of translator settings based on Offline vs AI category with cascade hierarchy."""
-        selected_category = self._get_active_translator_category()
+        """Toggles the visibility of translator settings based on Offline vs AI category."""
+        category = self._get_active_translator_category()
         
-        show_offline = (selected_category == "Offline")
-        show_ai = (selected_category == "AI / Online")
+        show_offline = (category == 'Offline')
+        show_ai = (category == 'AI / Online')
 
-        # Toggle rows visibility
         if 'offline_translator' in self.setting_rows:
             self.setting_rows['offline_translator'].setVisible(show_offline)
-        
-        # Determine visibility in AI / Online mode based on cascade dependency
-        group_val = ""
-        group_widget = self.setting_widgets.get('api_group')
-        if group_widget:
-            group_combo = group_widget.findChild(QComboBox)
-            if group_combo:
-                group_val = group_combo.currentText().strip()
-                
-        is_group_selected = show_ai and group_val != "" and group_val.lower() != "none"
-        
-        name_val = ""
-        name_widget = self.setting_widgets.get('api_name')
-        if name_widget:
-            name_combo = name_widget.findChild(QComboBox)
-            if name_combo:
-                name_val = name_combo.currentText().strip()
-                
-        is_name_selected = is_group_selected and name_val != "" and name_val.lower() != "none"
 
-        # Apply cascade visibility
-        if 'api_group' in self.setting_rows:
-            self.setting_rows['api_group'].setVisible(show_ai)
-            
-        if 'api_name' in self.setting_rows:
-            self.setting_rows['api_name'].setVisible(is_group_selected)
-            
+        # Show all AI fields when AI / Online is selected
         for ai_key in ['ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
             if ai_key in self.setting_rows:
-                self.setting_rows[ai_key].setVisible(is_name_selected)
+                self.setting_rows[ai_key].setVisible(show_ai)
 
     def _on_translator_category_changed(self):
         """Handles changes in translator category (Offline vs AI)."""
         self._update_translator_visibility()
         active_name = self._get_active_translator_name()
         self._on_translator_changed(active_name)
-
-    def _sync_ai_credentials(self, ai_provider: str):
-        """Auto-populates Endpoint, Model, and Key fields when changing AI provider."""
-        if getattr(self, '_loading_api_profile', False):
-            return
-        from dotenv import load_dotenv
-        load_dotenv(os.path.join(self.project_base_dir, ".env"))
-
-        info = get_provider_credentials(ai_provider)
-
-        for field, key in [('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
-            widget = self.setting_widgets.get(key)
-            if widget:
-                self.current_settings[key] = info[field]
-                self._set_widget_value(key, info[field], widget)
 
     def _fetch_ai_models(self, button):
         """Fetches models from the configured endpoint in a background thread."""
@@ -690,8 +649,6 @@ class HandlersMixin:
             widget.currentIndexChanged.connect(handler)
             if key in ['offline_translator', 'ai_translator']:
                 widget.currentTextChanged.connect(self._on_translator_changed)
-                if key == 'ai_translator':
-                    widget.currentTextChanged.connect(self._sync_ai_credentials)
             elif key == 'target_lang':
                 widget.currentTextChanged.connect(self._on_target_lang_changed)
         elif isinstance(widget, QCheckBox):
@@ -1178,6 +1135,14 @@ class HandlersMixin:
         self.config_loader.studio_config["window_geometry"] = self.saveGeometry().toHex().data().decode('utf-8')
         self.config_loader.studio_config["last_directory"] = getattr(self, 'last_selected_directory', None)
         self.config_loader.save_studio_config()
+        
+        # Save UI Session State (current settings and theme) to oldsession.yaml
+        if hasattr(self.config_loader, 'oldsession_config'):
+            self.config_loader.oldsession_config["current_settings"] = getattr(self, 'current_settings', {})
+            if hasattr(self, 'theme_combobox'):
+                self.config_loader.oldsession_config["theme"] = self.theme_combobox.currentText()
+            self.config_loader.save_oldsession_config()
+            
         print("[INFO] Application state saved.")
 
     def _load_themes(self):
@@ -2139,6 +2104,9 @@ class HandlersMixin:
         
         current_data = combo.itemData(combo.currentIndex())
         current_text = combo.currentText()
+        
+        if current_data == "none":
+            return
         
         if key == 'font_family':
             if current_text == "🔍 Install New Font...":

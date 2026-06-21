@@ -1,3 +1,4 @@
+# type: ignore
 import os
 import sys
 
@@ -38,6 +39,7 @@ class ConfigLoaderBase:
                     pass
 
         self.studio_config_path = os.path.join(configs_dir, "studio_config.yaml")
+        self.oldsession_path = os.path.join(configs_dir, "oldsession.yaml")
 
         # Load studio_config.yaml early
         import yaml
@@ -48,6 +50,15 @@ class ConfigLoaderBase:
                     self.studio_config = yaml.safe_load(f) or {}
             except Exception as e:
                 print(f"[ConfigLoader] Error loading studio_config.yaml: {e}")
+
+        # Load oldsession.yaml for UI session state
+        self.oldsession_config = {}
+        if os.path.exists(self.oldsession_path):
+            try:
+                with open(self.oldsession_path, "r", encoding="utf-8") as f:
+                    self.oldsession_config = yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"[ConfigLoader] Error loading oldsession.yaml: {e}")
 
         # Load dict_profiles.yaml early
         self.dict_profiles_path = os.path.join(configs_dir, "dict_profiles.yaml")
@@ -124,6 +135,14 @@ class ConfigLoaderBase:
                 yaml.dump(self.studio_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
         except Exception as e:
             print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
+
+    def save_oldsession_config(self):
+        import yaml
+        try:
+            with open(self.oldsession_path, "w", encoding="utf-8") as f:
+                yaml.dump(self.oldsession_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        except Exception as e:
+            print(f"[ConfigLoader] Error saving oldsession.yaml: {e}")
 
     def _find_python_executable(self):
         venv_path_win = os.path.join(self.project_base_dir, 'venv', 'Scripts', 'python.exe')

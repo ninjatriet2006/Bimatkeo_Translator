@@ -445,6 +445,23 @@ class JobRunnerMixin:
             QMessageBox.information(self, "Information", "Please add one or more jobs to the queue first.")
             return
 
+        for job in self.job_queue:
+            if job.get('status') != 'Ready' or job.get('job_type') != 'T':
+                continue
+            settings = job.get('settings', {})
+            translator_type = settings.get("translator_category", "Offline")
+            
+            if translator_type == "Offline":
+                offline_model = settings.get("offline_translator", "none")
+                if not offline_model or offline_model == "none" or offline_model.startswith("---"):
+                    QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn Offline Model trước khi bắt đầu (Không thể để là --- Select ---).")
+                    return
+            else:
+                ai_model = settings.get("ai_translator", "none")
+                if not ai_model or ai_model == "none" or ai_model.startswith("---"):
+                    QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn AI Model trước khi bắt đầu.")
+                    return
+
         # Block the run if any READY job has a required model field (detector,
         # ocr, inpainter) that is blank or not set up. Report clearly instead
         # of letting the backend crash mid-pipeline.

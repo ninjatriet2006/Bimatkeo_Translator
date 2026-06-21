@@ -54,6 +54,8 @@ class WidgetBuildersMixin:
         standard_settings = []
         advanced_settings = []
         for info in settings_list:
+            if info.get("key") in ["api_group", "api_name"]:
+                continue
             if info.get("section") == "advanced":
                 advanced_settings.append(info)
             else:
@@ -415,6 +417,8 @@ class WidgetBuildersMixin:
         btn_delete.clicked.connect(lambda checked=False, k=key: self._on_dynamic_btn_clicked(k, 'delete'))
         
         combo_box.currentIndexChanged.connect(lambda idx, k=key: self._update_dynamic_btns(k))
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(0, lambda k=key: self._update_dynamic_btns(k))
 
     def _create_open_yaml_button(self, info: dict) -> QPushButton:
         """Creates a button that opens a specific YAML config file in the default system editor."""
@@ -518,6 +522,8 @@ class WidgetBuildersMixin:
         elif info.get("widget") == "optionmenu_separators" or key in ["offline_translator", "ai_translator"]:
             # If it'''s the main translator selectors or has separators
             if key in ["offline_translator", "ai_translator"]:
+                combo_box.addItem("--- Select ---", "none")
+                info["default"] = "none"  # Force default to none for new users
                 for val in values:
                     exists = self.config_loader.check_model_existence(val, field=key)
                     display_name = self.config_loader.format_display_label(val, key)
@@ -547,6 +553,9 @@ class WidgetBuildersMixin:
                             combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))
         else:
+            if key in ['detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
+                combo_box.addItem("--- Select ---", "none")
+                info["default"] = "none"  # Force default to none for new users
             for val in values:
                 exists = self.config_loader.check_model_existence(val, field=key)
                 display_name = self.config_loader.format_display_label(val, key)
