@@ -1,0 +1,5 @@
+{
+    "python.defaultInterpreterPath": "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/bin/python",
+    "python.interpreterPath": "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/bin/python",
+    "python.terminal.activateEnvInTrigger": true
+}

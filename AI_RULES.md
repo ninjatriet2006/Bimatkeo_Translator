@@ -29,3 +29,8 @@ Tất cả các AI Assistant (Agent) khi làm việc trong dự án này **BẮT
 - Tuyệt đối KHÔNG ĐƯỢC ép buộc hoặc sửa đổi các đường dẫn lưu trữ model/file của `Bimatkeo_Translator` (ví dụ: `models/Offline Translator/...`) về lại cấu trúc cũ của backend `manga-image-translator` (như `models/translators/...`). Việc tải và lưu trữ model phải tuân thủ nghiêm ngặt hệ sinh thái riêng của dự án này.
 
 *(Bất cứ AI nào đọc được file này, hãy tự ý thức việc tuân thủ để tránh làm sai lệch cấu trúc dự án và gây mất thời gian cho lập trình viên!)*
+
+## 6. QUY TẮC TỰ KIỂM CHỨNG & THỰC THI TRIỆT ĐỂ (EXHAUSTIVE EXECUTION)
+- Khi User yêu cầu "quét toàn bộ", "làm cho đến khi hết", hoặc "kiểm tra tất cả", AI **BẮT BUỘC** phải tự động thực hiện các vòng rà soát sâu (Deep Scan) bằng tất cả các công cụ có sẵn (`grep_search`, `list_dir`, `view_file`) cho đến khi vét cạn 100% thông tin.
+- **Cấm báo cáo nhỏ giọt:** Tuyệt đối không được tìm thấy 1-2 lỗi/tính năng rồi báo cáo ngay lập tức. Phải tự động lặp lại vòng lặp tìm kiếm cho đến khi hệ thống báo "không còn gì" rồi mới tổng hợp thành một báo cáo duy nhất.
+- Không được bắt User phải prompt "Tiếp tục kiểm tra" nhiều lần. Trách nhiệm quét triệt để và tự xác nhận độ hoàn thiện thuộc về AI.
