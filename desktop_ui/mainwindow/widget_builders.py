@@ -54,7 +54,7 @@ class WidgetBuildersMixin:
         standard_settings = []
         advanced_settings = []
         for info in settings_list:
-            if info.get("key") in ["api_group", "api_name"]:
+            if info.get("key") in ["api_group", "ai_translator"]:
                 continue
             if info.get("section") == "advanced":
                 advanced_settings.append(info)
@@ -1017,29 +1017,30 @@ class WidgetBuildersMixin:
         layout.setSpacing(5)
         
         combo = SearchableComboBox()
-        combo.setEditable(True)
         profiles = self._load_api_profiles()
         current_group = self.current_settings.get('api_group', '')
-        filtered_profiles = []
+        
         if current_group and current_group.strip():
             filtered_profiles = [name for name, p in profiles.items() if p.get("group", "") == current_group]
+        else:
+            filtered_profiles = list(profiles.keys())
             
-        combo.addItem("")
+        combo.addItem("--- Select ---")
         combo.addItems(filtered_profiles)
         
         default_val = self.current_settings.get('api_name', info.get("default", ""))
-        combo.setCurrentText(str(default_val))
+        combo.setCurrentText(str(default_val) if default_val else "--- Select ---")
             
         layout.addWidget(combo, stretch=1)
         
-        save_btn = QPushButton("Save")
-        save_btn.setFixedWidth(50)
+        save_btn = QPushButton("+")
+        save_btn.setFixedWidth(30)
         save_btn.setToolTip("Save this profile to local config")
         save_btn.clicked.connect(self._save_current_api_profile)
         layout.addWidget(save_btn)
         
-        del_btn = QPushButton("Del")
-        del_btn.setFixedWidth(40)
+        del_btn = QPushButton("-")
+        del_btn.setFixedWidth(30)
         del_btn.setToolTip("Delete this profile from local config")
         del_btn.clicked.connect(self._delete_current_api_profile)
         layout.addWidget(del_btn)

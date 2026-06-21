@@ -65,20 +65,16 @@ class HandlersMixin:
         """Fetches models from the configured endpoint in a background thread."""
         endpoint = self._get_value_from_widget('ai_endpoint', self.setting_widgets.get('ai_endpoint'))
         key = self._get_value_from_widget('ai_key', self.setting_widgets.get('ai_key'))
-        ai_provider = self._get_active_translator_name()
-
-        if not endpoint:
-            provider_endpoints = {
-                'openai': 'https://api.openai.com/v1',
-                'deepseek': 'https://api.deepseek.com',
-                'groq': 'https://api.groq.com/openai/v1',
-                'custom_openai': 'http://localhost:11434/v1',
-                'sakura': 'http://127.0.0.1:8080/v1'
-            }
-            endpoint = provider_endpoints.get(ai_provider, '')
+        
+        # Auto-detect format based on endpoint string
+        ep_lower = endpoint.lower() if endpoint else ""
+        if not endpoint or "generativelanguage" in ep_lower or "gemini" in ep_lower:
+            ai_provider = 'gemini'
+        else:
+            ai_provider = 'openai'
 
         if not endpoint and ai_provider != 'gemini':
-            self.log("WARNING", f"No API Endpoint URL provided for provider '{ai_provider}'. Please enter a valid URL.")
+            self.log("WARNING", "No API Endpoint URL provided. Please enter a valid URL.")
             return
 
         button.setEnabled(False)
@@ -274,9 +270,14 @@ class HandlersMixin:
         combo = name_widget.findChild(QComboBox)
         if not combo:
             return
-        profile_name = combo.currentText().strip()
-        if not profile_name:
-            self.log("WARNING", "Please enter an API Profile Name before saving.")
+        from PySide6.QtWidgets import QInputDialog
+        profile_name, ok = QInputDialog.getText(self, "New API Profile", "Enter a name for the new API Profile:")
+        if not ok:
+            return
+            
+        profile_name = profile_name.strip()
+        if not profile_name or profile_name.lower() in ["none", "--- select ---"]:
+            self.log("WARNING", "Please enter a valid API Profile Name before saving.")
             return
 
         group = self._get_value_from_widget('api_group', self.setting_widgets.get('api_group')) or 'Default'
@@ -308,9 +309,10 @@ class HandlersMixin:
                 group_combo.setCurrentText(group)
                 group_combo.blockSignals(False)
 
-        filtered_profiles = [name for name, p in profiles.items() if p.get("group", "Default") == group]
+        filtered_profiles = list(profiles.keys())
         combo.blockSignals(True)
         combo.clear()
+        combo.addItem("--- Select ---")
         combo.addItems(filtered_profiles)
         combo.setCurrentText(profile_name)
         combo.blockSignals(False)
@@ -386,21 +388,15 @@ class HandlersMixin:
             self._save_api_profiles(profiles)
             self.log("SUCCESS", f"Đã xóa hồ sơ API '{profile_name}'.")
 
-            group = self._get_value_from_widget('api_group', self.setting_widgets.get('api_group')) or 'Default'
-            filtered_profiles = [name for name, p in profiles.items() if p.get("group", "Default") == group]
+            filtered_profiles = list(profiles.keys())
 
             combo.blockSignals(True)
             combo.clear()
-            if filtered_profiles:
-                combo.addItems(filtered_profiles)
-                fallback_name = filtered_profiles[0]
-                combo.setCurrentText(fallback_name)
-                combo.blockSignals(False)
-                self._on_api_profile_changed(fallback_name)
-            else:
-                combo.setCurrentText("")
-                combo.blockSignals(False)
-                self.current_settings['api_name'] = ""
+            combo.addItem("--- Select ---")
+            combo.addItems(filtered_profiles)
+            combo.setCurrentText("--- Select ---")
+            combo.blockSignals(False)
+            self._on_api_profile_changed("--- Select ---")
                 for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
                     widget = self.setting_widgets.get(key)
                     if widget:
@@ -457,7 +453,7 @@ class HandlersMixin:
     def _on_api_profile_changed(self, profile_name: str):
         profile_name = (profile_name or "").strip()
         
-        if not profile_name or profile_name.lower() == "none":
+        if not profile_name or profile_name.lower() in ["none", "--- select ---"]:
             self.current_settings['api_name'] = ""
             for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
                 widget = self.setting_widgets.get(key)

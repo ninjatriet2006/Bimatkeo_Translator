@@ -457,7 +457,7 @@ class JobRunnerMixin:
                     QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn Offline Model trước khi bắt đầu (Không thể để là --- Select ---).")
                     return
             else:
-                ai_model = settings.get("ai_translator", "none")
+                ai_model = settings.get("ai_model", "")
                 if not ai_model or ai_model == "none" or ai_model.startswith("---"):
                     QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn AI Model trước khi bắt đầu.")
                     return
@@ -559,7 +559,11 @@ class JobRunnerMixin:
         if category == 'Offline':
             translator_dict['translator'] = settings.get('offline_translator', 'none')
         else:
-            translator_dict['translator'] = settings.get('ai_translator', 'gemini')
+            ep = settings.get('ai_endpoint', '').lower()
+            if not ep or "generativelanguage" in ep or "gemini" in ep:
+                translator_dict['translator'] = 'gemini'
+            else:
+                translator_dict['translator'] = 'custom_openai'
 
         if settings.get('translator_chain'):
             final_config.get("translator", {}).pop('translator', None)
