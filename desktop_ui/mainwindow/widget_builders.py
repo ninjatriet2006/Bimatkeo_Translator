@@ -346,12 +346,8 @@ class WidgetBuildersMixin:
             
             right_layout.addWidget(widget, stretch=1)
 
-            if not context_key and info.get('key') in ['offline_translator', 'ai_translator']:
-                update_btn = QPushButton("🔄")
-                update_btn.setFixedSize(30, 30)
-                update_btn.setToolTip("Cập nhật phần mềm hoặc mô hình bộ dịch hiện tại")
-                update_btn.clicked.connect(lambda checked=False, k=info.get('key'): self._trigger_translator_software_update(k))
-                right_layout.addWidget(update_btn)
+            if not context_key and info.get('key') in ['offline_translator', 'ai_translator', 'detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
+                self._setup_dynamic_action_buttons(info.get('key'), widget, right_layout)
             elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_group_selector", "api_profile_selector", "ai_model_selector"]:
                 spacer = QWidget()
                 spacer.setFixedWidth(30)
@@ -371,6 +367,54 @@ class WidgetBuildersMixin:
             self._connect_widget_signal(info['key'], widget, context_key)
 
         return row_widget
+
+
+    def _setup_dynamic_action_buttons(self, key: str, combo_box, right_layout):
+        from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton
+        
+        btn_container = QWidget()
+        btn_layout = QHBoxLayout(btn_container)
+        btn_layout.setContentsMargins(0, 0, 0, 0)
+        btn_layout.setSpacing(2)
+
+        btn_tick = QPushButton("✔️")
+        btn_tick.setFixedSize(30, 30)
+        btn_tick.setStyleSheet("color: #2ECC71; font-weight: bold;")
+        
+        btn_download = QPushButton("📥")
+        btn_download.setFixedSize(30, 30)
+        
+        btn_search = QPushButton("🔍")
+        btn_search.setFixedSize(30, 30)
+        
+        btn_delete = QPushButton("❌")
+        btn_delete.setFixedSize(30, 30)
+        btn_delete.setStyleSheet("color: #E74C3C;")
+        
+        btn_layout.addWidget(btn_tick)
+        btn_layout.addWidget(btn_download)
+        btn_layout.addWidget(btn_search)
+        btn_layout.addWidget(btn_delete)
+        
+        right_layout.addWidget(btn_container)
+        
+        if not hasattr(self, '_dynamic_btns_map'):
+            self._dynamic_btns_map = {}
+            
+        self._dynamic_btns_map[key] = {
+            'tick': btn_tick,
+            'download': btn_download,
+            'search': btn_search,
+            'delete': btn_delete,
+            'combo': combo_box
+        }
+        
+        btn_tick.clicked.connect(lambda checked=False, k=key: self._on_dynamic_btn_clicked(k, 'tick'))
+        btn_download.clicked.connect(lambda checked=False, k=key: self._on_dynamic_btn_clicked(k, 'download'))
+        btn_search.clicked.connect(lambda checked=False, k=key: self._on_dynamic_btn_clicked(k, 'search'))
+        btn_delete.clicked.connect(lambda checked=False, k=key: self._on_dynamic_btn_clicked(k, 'delete'))
+        
+        combo_box.currentIndexChanged.connect(lambda idx, k=key: self._update_dynamic_btns(k))
 
     def _create_open_yaml_button(self, info: dict) -> QPushButton:
         """Creates a button that opens a specific YAML config file in the default system editor."""
@@ -484,7 +528,7 @@ class WidgetBuildersMixin:
                         last_idx = combo_box.count() - 1
                         combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
                 combo_box.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-                combo_box.addItem("🔄 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
+                combo_box.addItem("🔄 Cập nhật TẤT CẢ mô hình dịch...", "update_all_software_trigger")
             else:
                 # Optionmenu with separators (e.g. from TRANSLATOR_GROUPS)
                 for group_name, translators in mw.TRANSLATOR_GROUPS.items():
@@ -512,6 +556,11 @@ class WidgetBuildersMixin:
                 if not exists:
                     last_idx = combo_box.count() - 1
                     combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+            
+            # Thêm lựa chọn cập nhật tất cả cho các mô hình AI khác
+            if key in ['detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
+                combo_box.addItem(f"🔄 Cập nhật TẤT CẢ mô hình {key}...", "update_all_software_trigger")
+                
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))
 
         return combo_box
@@ -1151,8 +1200,8 @@ class WidgetBuildersMixin:
             font_names.insert(0, default_font)
 
         combo_box.addItems(font_names)
-        combo_box.addItem("📥 Install New Font...")
-        combo_box.addItem("🔄 Update All Fonts...")
+        combo_box.addItem("🔍 Install New Font...")
+        combo_box.addItem("📥 Update All Fonts...")
 
         combo_box.setCurrentText(default_font)
         self._last_selected_font = default_font
