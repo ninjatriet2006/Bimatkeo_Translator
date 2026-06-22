@@ -308,6 +308,7 @@ class ManagePoolsDialog(QDialog):
 if __name__ == "__main__":
     import sys
     import os
+    from PySide6.QtWidgets import QApplication
     # Add the project root to sys.path so 'desktop_ui' module can be found
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if project_root not in sys.path:
