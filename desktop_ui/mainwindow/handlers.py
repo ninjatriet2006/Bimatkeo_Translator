@@ -22,6 +22,86 @@ from .widgets_helper import (
     get_provider_credentials, SearchableFontInstallDialog
 )
 
+class FontDownloadWorker(QThread):
+    finished = Signal(bool, str)
+    progress = Signal(int, int, str)
+    
+    def __init__(self, font_family, fonts_dir):
+        super().__init__()
+        self.font_family = font_family
+        self.fonts_dir = fonts_dir
+
+    def run(self):
+        import urllib.request
+        import urllib.parse
+        import re
+        import os
+        try:
+            url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(self.font_family)}:regular,italic,700,700italic"
+            req = urllib.request.Request(url, headers={'User-Agent': 'curl/7.81.0'})
+            with urllib.request.urlopen(req, timeout=15) as response:
+                css_content = response.read().decode('utf-8')
+            
+            blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
+            if not blocks:
+                url_fallback = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(self.font_family)}"
+                req_fb = urllib.request.Request(url_fallback, headers={'User-Agent': 'curl/7.81.0'})
+                with urllib.request.urlopen(req_fb, timeout=15) as response_fb:
+                    css_content = response_fb.read().decode('utf-8')
+                blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
+            
+            if not blocks:
+                self.finished.emit(False, "Không tìm thấy cấu hình phông chữ trên Google Fonts.")
+                return
+
+            os.makedirs(self.fonts_dir, exist_ok=True)
+            extracted_any = False
+            
+            total_blocks = len(blocks)
+            
+            for idx, block in enumerate(blocks):
+                url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
+                if url_match:
+                    ttf_url = url_match.group(1).strip()
+                    style_match = re.search(r'font-style:\s*([^;]+);', block)
+                    weight_match = re.search(r'font-weight:\s*([^;]+);', block)
+                    
+                    style = style_match.group(1).strip() if style_match else "normal"
+                    weight = weight_match.group(1).strip() if weight_match else "400"
+                    
+                    clean_name = self.font_family.replace(" ", "")
+                    if weight == "700" and style == "italic":
+                        suffix = "-BoldItalic"
+                    elif weight == "700":
+                        suffix = "-Bold"
+                    elif style == "italic":
+                        suffix = "-Italic"
+                    else:
+                        suffix = "-Regular"
+                    
+                    filename = f"{clean_name}{suffix}.ttf"
+                    dest_path = os.path.join(self.fonts_dir, filename)
+                    
+                    self.progress.emit(idx, total_blocks, filename)
+                    
+                    req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
+                    with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
+                        font_data = res_ttf.read()
+                    
+                    with open(dest_path, "wb") as f:
+                        f.write(font_data)
+                    extracted_any = True
+                    
+                    self.progress.emit(idx + 1, total_blocks, filename)
+                    
+            if extracted_any:
+                self.finished.emit(True, self.font_family)
+            else:
+                self.finished.emit(False, "Không tìm thấy tệp font phù hợp để tải về.")
+        except Exception as e:
+            self.finished.emit(False, str(e))
+
+
 class HandlersMixin:
     def _get_active_translator_category(self) -> str:
         """Returns '''Offline''' or '''AI / Online'''."""
@@ -423,11 +503,7 @@ class HandlersMixin:
             combo.blockSignals(False)
             
             self.current_settings['api_name'] = ""
-            for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
-                widget = self.setting_widgets.get(key)
-                if widget:
-                    self.current_settings[key] = ""
-                    self._set_widget_value(key, "", widget)
+            self._clear_api_widgets()
             self._update_translator_visibility()
             return
         
@@ -443,24 +519,23 @@ class HandlersMixin:
         combo.blockSignals(False)
         
         self.current_settings['api_name'] = ""
+        self._clear_api_widgets()
+                
+        self._update_translator_visibility()
+
+    def _clear_api_widgets(self):
         for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
             widget = self.setting_widgets.get(key)
             if widget:
                 self.current_settings[key] = ""
                 self._set_widget_value(key, "", widget)
-                
-        self._update_translator_visibility()
 
     def _on_api_profile_changed(self, profile_name: str):
         profile_name = (profile_name or "").strip()
         
         if not profile_name or profile_name.lower() in ["none", "--- select ---"]:
             self.current_settings['api_name'] = ""
-            for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
-                widget = self.setting_widgets.get(key)
-                if widget:
-                    self.current_settings[key] = ""
-                    self._set_widget_value(key, "", widget)
+            self._clear_api_widgets()
             self._update_translator_visibility()
             return
             
@@ -480,11 +555,7 @@ class HandlersMixin:
                 self._loading_api_profile = False
         else:
             self.current_settings['api_name'] = profile_name
-            for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
-                widget = self.setting_widgets.get(key)
-                if widget:
-                    self.current_settings[key] = ""
-                    self._set_widget_value(key, "", widget)
+            self._clear_api_widgets()
             
         self._update_translator_visibility()
 
@@ -1601,78 +1672,6 @@ class HandlersMixin:
         main_font_combo.setEnabled(False)
         fonts_dir = os.path.join(self.project_base_dir, "fonts")
 
-        class FontDownloadWorker(QThread):
-            finished = Signal(bool, str)
-            progress = Signal(int, int, str)
-            def run(self):
-                import urllib.request
-                import urllib.parse
-                import re
-                try:
-                    url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(google_family)}:regular,italic,700,700italic"
-                    req = urllib.request.Request(url, headers={'User-Agent': 'curl/7.81.0'})
-                    with urllib.request.urlopen(req, timeout=15) as response:
-                        css_content = response.read().decode('utf-8')
-                    
-                    blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
-                    if not blocks:
-                        url_fallback = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(google_family)}"
-                        req_fb = urllib.request.Request(url_fallback, headers={'User-Agent': 'curl/7.81.0'})
-                        with urllib.request.urlopen(req_fb, timeout=15) as response_fb:
-                            css_content = response_fb.read().decode('utf-8')
-                        blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
-                    
-                    if not blocks:
-                        self.finished.emit(False, "Không tìm thấy cấu hình phông chữ trên Google Fonts.")
-                        return
-
-                    os.makedirs(fonts_dir, exist_ok=True)
-                    extracted_any = False
-                    
-                    total_blocks = len(blocks)
-                    
-                    for idx, block in enumerate(blocks):
-                        url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
-                        if url_match:
-                            ttf_url = url_match.group(1).strip()
-                            style_match = re.search(r'font-style:\s*([^;]+);', block)
-                            weight_match = re.search(r'font-weight:\s*([^;]+);', block)
-                            
-                            style = style_match.group(1).strip() if style_match else "normal"
-                            weight = weight_match.group(1).strip() if weight_match else "400"
-                            
-                            clean_name = google_family.replace(" ", "")
-                            if weight == "700" and style == "italic":
-                                suffix = "-BoldItalic"
-                            elif weight == "700":
-                                suffix = "-Bold"
-                            elif style == "italic":
-                                suffix = "-Italic"
-                            else:
-                                suffix = "-Regular"
-                            
-                            filename = f"{clean_name}{suffix}.ttf"
-                            dest_path = os.path.join(fonts_dir, filename)
-                            
-                            self.progress.emit(idx, total_blocks, filename)
-                            
-                            req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
-                            with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
-                                font_data = res_ttf.read()
-                            
-                            with open(dest_path, "wb") as f:
-                                f.write(font_data)
-                            extracted_any = True
-                            
-                            self.progress.emit(idx + 1, total_blocks, filename)
-                            
-                    if extracted_any:
-                        self.finished.emit(True, google_family)
-                    else:
-                        self.finished.emit(False, "Không tìm thấy tệp font phù hợp để tải về.")
-                except Exception as e:
-                    self.finished.emit(False, str(e))
-
         from PySide6.QtWidgets import QProgressDialog
         from PySide6.QtCore import Qt
         progress_dlg = QProgressDialog(f"Đang chuẩn bị tải {google_family}...", "Hủy", 0, 100, self)
@@ -1681,7 +1680,7 @@ class HandlersMixin:
         progress_dlg.setMinimumDuration(0)
         progress_dlg.show()
 
-        self._font_worker = FontDownloadWorker()
+        self._font_worker = FontDownloadWorker(google_family, fonts_dir)
         progress_dlg.canceled.connect(self._font_worker.terminate)
 
         def on_progress(current, total, filename):
@@ -1749,78 +1748,6 @@ class HandlersMixin:
         self.log("INFO", f"Initiating download for font family: {font_family}...")
         main_font_combo.setEnabled(False)
         fonts_dir = os.path.join(self.project_base_dir, "fonts")
-        
-        class FontDownloadWorker(QThread):
-            finished = Signal(bool, str)
-            progress = Signal(int, int, str)
-            def run(self):
-                import urllib.request
-                import urllib.parse
-                import re
-                try:
-                    url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(font_family)}:regular,italic,700,700italic"
-                    req = urllib.request.Request(url, headers={'User-Agent': 'curl/7.81.0'})
-                    with urllib.request.urlopen(req, timeout=15) as response:
-                        css_content = response.read().decode('utf-8')
-                    
-                    blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
-                    if not blocks:
-                        url_fallback = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(font_family)}"
-                        req_fb = urllib.request.Request(url_fallback, headers={'User-Agent': 'curl/7.81.0'})
-                        with urllib.request.urlopen(req_fb, timeout=15) as response_fb:
-                            css_content = response_fb.read().decode('utf-8')
-                        blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
-                    
-                    if not blocks:
-                        self.finished.emit(False, "Không tìm thấy cấu hình phông chữ trên Google Fonts.")
-                        return
-
-                    os.makedirs(fonts_dir, exist_ok=True)
-                    extracted_any = False
-                    
-                    total_blocks = len(blocks)
-                    
-                    for idx, block in enumerate(blocks):
-                        url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
-                        if url_match:
-                            ttf_url = url_match.group(1).strip()
-                            style_match = re.search(r'font-style:\s*([^;]+);', block)
-                            weight_match = re.search(r'font-weight:\s*([^;]+);', block)
-                            
-                            style = style_match.group(1).strip() if style_match else "normal"
-                            weight = weight_match.group(1).strip() if weight_match else "400"
-                            
-                            clean_name = font_family.replace(" ", "")
-                            if weight == "700" and style == "italic":
-                                suffix = "-BoldItalic"
-                            elif weight == "700":
-                                suffix = "-Bold"
-                            elif style == "italic":
-                                suffix = "-Italic"
-                            else:
-                                suffix = "-Regular"
-                            
-                            filename = f"{clean_name}{suffix}.ttf"
-                            dest_path = os.path.join(fonts_dir, filename)
-                            
-                            self.progress.emit(idx, total_blocks, filename)
-                            
-                            req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
-                            with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
-                                font_data = res_ttf.read()
-                            
-                            with open(dest_path, "wb") as f:
-                                f.write(font_data)
-                            extracted_any = True
-                            
-                            self.progress.emit(idx + 1, total_blocks, filename)
-                            
-                    if extracted_any:
-                        self.finished.emit(True, font_family)
-                    else:
-                        self.finished.emit(False, "Không tải được tệp .ttf nào từ Google Fonts.")
-                except Exception as e:
-                    self.finished.emit(False, str(e))
 
         from PySide6.QtWidgets import QProgressDialog
         from PySide6.QtCore import Qt
@@ -1830,7 +1757,7 @@ class HandlersMixin:
         progress_dlg.setMinimumDuration(0)
         progress_dlg.show()
 
-        self._font_worker = FontDownloadWorker()
+        self._font_worker = FontDownloadWorker(font_family, fonts_dir)
         progress_dlg.canceled.connect(self._font_worker.terminate)
 
         def on_progress(current, total, filename):

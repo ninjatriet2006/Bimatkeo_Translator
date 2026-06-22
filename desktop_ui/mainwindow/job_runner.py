@@ -103,35 +103,27 @@ class JobRunnerMixin:
         self._update_job_list_ui()
         self.log("INFO", f"Duplicated {len(jobs_to_add)} job(s) as new, unconfigured tasks.")
 
-    def _clear_queue(self):
-        """Removes all jobs from the queue after confirmation."""
-        if not self.job_queue:
+    def _clear_list_data(self, data_list, name: str, update_ui_func):
+        if not data_list:
             return
 
-        reply = QMessageBox.question(self, "Confirm Clear Queue",
-                                     "Are you sure you want to remove ALL jobs from the queue?",
+        reply = QMessageBox.question(self, f"Confirm Clear {name}",
+                                     f"Are you sure you want to remove ALL jobs from the {name.lower()}?",
                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                      QMessageBox.StandardButton.No)
 
         if reply == QMessageBox.StandardButton.Yes:
-            self.job_queue.clear()
-            self.log("INFO", "All jobs have been cleared from the queue.")
-            self._update_job_list_ui()
+            data_list.clear()
+            self.log("INFO", f"{name} has been cleared.")
+            update_ui_func()
+
+    def _clear_queue(self):
+        """Removes all jobs from the queue after confirmation."""
+        self._clear_list_data(self.job_queue, "Queue", self._update_job_list_ui)
 
     def _clear_history(self):
         """Removes all jobs from the history list after confirmation."""
-        if not self.history_queue:
-            return
-
-        reply = QMessageBox.question(self, "Confirm Clear History",
-                                     "Are you sure you want to remove ALL jobs from the history?",
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                     QMessageBox.StandardButton.No)
-
-        if reply == QMessageBox.StandardButton.Yes:
-            self.history_queue.clear()
-            self.log("INFO", "History has been cleared.")
-            self._update_history_list_ui()
+        self._clear_list_data(self.history_queue, "History", self._update_history_list_ui)
 
     def _move_job(self, direction: str):
         """Moves the selected job up or down in the queue."""

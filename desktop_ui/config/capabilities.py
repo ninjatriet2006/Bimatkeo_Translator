@@ -5,6 +5,15 @@ import subprocess
 import urllib.request
 import time
 
+GLOBAL_ISO_MAP = {
+    "en": "ENG", "vi": "VIN", "ja": "JPN", "ko": "KOR", 
+    "zh": "CHS", "es": "ESP", "fr": "FRA", "de": "DEU", 
+    "ru": "RUS", "pt": "PTB", "it": "ITA", "pl": "POL", 
+    "nl": "NLD", "cs": "CSY", "hu": "HUN", "ro": "ROM", 
+    "uk": "UKR", "ar": "ARA", "sr": "SRP", "hr": "HRV", 
+    "th": "THA", "id": "IND", "fil": "FIL", "tr": "TRK"
+}
+
 class CapabilitiesMixin:
     def _load_translator_capabilities(self):
         """Returns translator groups + capabilities.
@@ -326,21 +335,12 @@ class CapabilitiesMixin:
         if not data:
             raise RuntimeError(f"Failed to fetch languages from LibreTranslate API: {last_error}")
             
-        ISO_MAP = {
-            "en": "ENG", "vi": "VIN", "ja": "JPN", "ko": "KOR", 
-            "zh": "CHS", "es": "ESP", "fr": "FRA", "de": "DEU", 
-            "ru": "RUS", "pt": "PTB", "it": "ITA", "pl": "POL", 
-            "nl": "NLD", "cs": "CSY", "hu": "HUN", "ro": "ROM", 
-            "uk": "UKR", "ar": "ARA", "sr": "SRP", "hr": "HRV", 
-            "th": "THA", "id": "IND", "fil": "FIL", "tr": "TRK"
-        }
-        
         langs_dict = {}
         for item in data:
             code = item.get("code")
             name = item.get("name")
             if code and name:
-                app_code = ISO_MAP.get(code.lower(), code.upper())
+                app_code = GLOBAL_ISO_MAP.get(code.lower(), code.upper())
                 langs_dict[str(name)] = str(app_code)
                 
         return langs_dict
@@ -355,15 +355,6 @@ class CapabilitiesMixin:
         except Exception as e:
             raise RuntimeError(f"Failed to fetch languages from Lingva API: {e}")
             
-        ISO_MAP = {
-            "en": "ENG", "vi": "VIN", "ja": "JPN", "ko": "KOR", 
-            "zh": "CHS", "es": "ESP", "fr": "FRA", "de": "DEU", 
-            "ru": "RUS", "pt": "PTB", "it": "ITA", "pl": "POL", 
-            "nl": "NLD", "cs": "CSY", "hu": "HUN", "ro": "ROM", 
-            "uk": "UKR", "ar": "ARA", "sr": "SRP", "hr": "HRV", 
-            "th": "THA", "id": "IND", "fil": "FIL", "tr": "TRK"
-        }
-        
         langs_dict = {}
         languages_list = data.get("languages", []) or data.get("targets", [])
         if not languages_list and isinstance(data, list):
@@ -373,7 +364,7 @@ class CapabilitiesMixin:
             code = item.get("code")
             name = item.get("name")
             if code and name:
-                app_code = ISO_MAP.get(code.lower(), code.upper())
+                app_code = GLOBAL_ISO_MAP.get(code.lower(), code.upper())
                 langs_dict[str(name)] = str(app_code)
                 
         return langs_dict
@@ -397,19 +388,11 @@ class CapabilitiesMixin:
                 with urllib.request.urlopen(req, timeout=10) as response:
                     data = json.loads(response.read().decode('utf-8'))
                 
-                ISO_MAP = {
-                    "en": "ENG", "vi": "VIN", "ja": "JPN", "ko": "KOR", 
-                    "zh": "CHS", "es": "ESP", "fr": "FRA", "de": "DEU", 
-                    "ru": "RUS", "pt": "PTB", "it": "ITA", "pl": "POL", 
-                    "nl": "NLD", "cs": "CSY", "hu": "HUN", "ro": "ROM", 
-                    "uk": "UKR", "ar": "ARA", "sr": "SRP", "hr": "HRV", 
-                    "th": "THA", "id": "IND", "fil": "FIL", "tr": "TRK"
-                }
                 supported_targets = []
                 for item in data:
                     lang_code = item.get("language", "").lower()
                     base_code = lang_code.split("-")[0]
-                    app_code = ISO_MAP.get(base_code, base_code.upper())
+                    app_code = GLOBAL_ISO_MAP.get(base_code, base_code.upper())
                     if app_code not in supported_targets:
                         supported_targets.append(app_code)
                 
