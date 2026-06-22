@@ -3,6 +3,8 @@ import queue
 import gc
 from app.core.dto import PageContext
 from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer
+from app.core.vision_utils import sort_comic_text_boxes
+from app.core.ocr_corrector import VisionOCRCorrector
 
 try:
     import torch # type: ignore
@@ -22,6 +24,7 @@ class OCRWorker(threading.Thread):
         self.detector = detector
         self.recognizer = recognizer
         self.log_callback = log_callback
+        self.corrector = VisionOCRCorrector(use_llm=True, log_callback=log_callback)
         self.daemon = True
 
     def run(self):
@@ -36,7 +39,11 @@ class OCRWorker(threading.Thread):
                 self.log_callback("OCR", f"Processing {ctx.page_id}...")
 
             if self.detector and ctx.original_image is not None:
-                bboxes = self.detector.detect(ctx.original_image)
+                h, w = ctx.original_image.shape[:2]
+                raw_bboxes = self.detector.detect(ctx.original_image)
+                # Sắp xếp lại box theo chuẩn đọc truyện. 
+                # (TODO: Đọc direction từ config_dict, tạm thời gán cứng rtl_ttb)
+                bboxes = sort_comic_text_boxes(raw_bboxes, direction="rtl_ttb", image_width=w, image_height=h)
                 ctx.bboxes = bboxes
                 
                 texts = []
@@ -54,6 +61,9 @@ class OCRWorker(threading.Thread):
                             if self.log_callback:
                                 self.log_callback("ERROR", f"OCR Error on {ctx.page_id}: {e}")
                             texts.append("")
+                            
+                # Stage 2: Vision OCR Correction
+                texts = self.corrector.correct(texts, ctx.original_image)
                 ctx.original_texts = texts
             
             self.out_q.put(ctx)

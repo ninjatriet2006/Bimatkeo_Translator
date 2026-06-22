@@ -15,9 +15,15 @@ from app.core.factories import TranslatorFactory, DetectorFactory, RecognizerFac
 # Nạp các Plugin (để trigger @Factory.register)
 try:
     import app.plugins.detector.ctd_impl
+    import app.plugins.detector.dbconvnext_impl
+    import app.plugins.detector.craft_impl
+    import app.plugins.detector.paddle_det_impl
     import app.plugins.recognizer.mocr_impl
-except ImportError:
-    pass
+    import app.plugins.recognizer.pixel_32px_impl
+    import app.plugins.recognizer.pixel_48px_impl
+    import app.plugins.recognizer.pixel_48px_ctc_impl
+except ImportError as e:
+    print(f"Warning: Failed to import some plugins - {e}")
 
 # --- Dummy Implementations for the currently missing ML Models ---
 @DetectorFactory.register("dummy_detector")
