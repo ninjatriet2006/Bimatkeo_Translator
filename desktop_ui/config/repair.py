@@ -4,6 +4,8 @@ from ruamel.yaml import YAML
 yaml = YAML()
 yaml.preserve_quotes = True
 yaml.default_flow_style = False
+from desktop_ui.constants import *
+
 
 from typing import Dict, Any
 
@@ -12,11 +14,7 @@ class RepairMixin:
     _DEFAULT_CHECKS: dict
     def _get_flat_properties(self) -> Dict[str, Any]: return {}
     def _get_definition_from_ref(self, arg) -> Dict[str, Any]: return {}
-    def _get_yaml_filename(self, field: str) -> str:
-        field_lower = field.lower()
-        if field_lower in ["alignment", "direction", "inpainting_precision", "renderer"]:
-            return os.path.join("configs", f"config_{field_lower}.yaml")
-        return os.path.join("models", f"model_{field_lower}.yaml")
+
 
     def _initialize_and_repair_config(self):
         """
@@ -68,97 +66,4 @@ class RepairMixin:
         except Exception as e:
             print(f"[ConfigLoader] Error writing supporttargetlang.yaml: {e}")
 
-        # 2. Repair dynamic enum model files
-        enum_fields = {}
-        all_properties = self._get_flat_properties()
 
-        for key, prop_def in all_properties.items():
-            if isinstance(prop_def, dict):
-                ref_path = prop_def.get("allOf", [{}])[0].get('$ref')
-                if ref_path:
-                    enum_def = self._get_definition_from_ref(ref_path)
-                    if enum_def and "enum" in enum_def:
-                        enum_fields[key] = enum_def["enum"]
-
-        if 'translator' in enum_fields:
-            del enum_fields['translator']
-
-        translator_groups = getattr(self, 'translator_groups', {})
-        enum_fields['offline_translator'] = translator_groups.get("--- OFFLINE MODELS (No API Key) ---", [])
-        enum_fields['ai_translator'] = translator_groups.get("--- API-BASED (Requires Setup) ---", [])
-
-        old_translator_yaml = os.path.join(config_dir, "model_translator.yaml")
-        if os.path.exists(old_translator_yaml):
-            try:
-                os.remove(old_translator_yaml)
-            except Exception:
-                pass
-
-        for field, schema_choices in enum_fields.items():
-            filename = self._get_yaml_filename(field)
-            model_yaml_path = os.path.join(config_dir, filename)
-            
-            root_filename = os.path.basename(filename)
-            possible_old_names = [root_filename, f"model_{field.lower()}.yaml", f"config_{field.lower()}.yaml"]
-            for old_name in possible_old_names:
-                old_path = os.path.join(config_dir, old_name)
-                if os.path.exists(old_path) and old_path != model_yaml_path:
-                    try:
-                        if os.path.exists(model_yaml_path):
-                            os.remove(model_yaml_path)
-                        os.rename(old_path, model_yaml_path)
-                        print(f"[ConfigLoader] Migrated {old_name} to {filename}")
-                        break
-                    except Exception as e:
-                        print(f"[ConfigLoader] Error migrating {old_name} to {filename}: {e}")
-            
-            loaded_models = []
-            if os.path.exists(model_yaml_path):
-                try:
-                    with open(model_yaml_path, 'r', encoding='utf-8') as f:
-                        content = yaml.load(f)
-                    if isinstance(content, dict) and "models" in content:
-                        models_list = content["models"]
-                    elif isinstance(content, list):
-                        models_list = content
-                    else:
-                        models_list = []
-                    
-                    for item in models_list:
-                        if isinstance(item, str):
-                            loaded_models.append(item)
-                        elif isinstance(item, dict) and "name" in item:
-                            loaded_models.append(item)
-                except Exception as e:
-                    print(f"[ConfigLoader] Error reading {filename}: {e}")
-
-            existing_by_name = {}
-            for item in loaded_models:
-                if isinstance(item, str):
-                    existing_by_name[item] = {"name": item}
-                elif isinstance(item, dict) and "name" in item:
-                    existing_by_name[item["name"]] = item
-
-            repaired_models = []
-            for item in schema_choices:
-                name = str(item)
-                field_key = field.lower()
-                has_default = (field_key in self._DEFAULT_CHECKS and name in self._DEFAULT_CHECKS[field_key])
-                
-                if name in existing_by_name and not has_default:
-                    repaired_models.append(existing_by_name[name])
-                else:
-                    model_entry = {"name": name}
-                    if has_default:
-                        model_entry.update(self._DEFAULT_CHECKS[field_key][name])
-                    repaired_models.append(model_entry)
-            
-            for name, item in existing_by_name.items():
-                if name not in schema_choices:
-                    repaired_models.append(item)
-
-            try:
-                with open(model_yaml_path, 'w', encoding='utf-8') as f:
-                    yaml.dump({"models": repaired_models}, f)
-            except Exception as e:
-                print(f"[ConfigLoader] Error writing {filename}: {e}")

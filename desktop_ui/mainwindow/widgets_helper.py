@@ -288,9 +288,6 @@ class SearchableComboPopup(QWidget):
         if 0 <= row < len(self.current_visible_mappings):
             orig_index = self.current_visible_mappings[row]
             self.combo.setCurrentIndex(orig_index)
-            self.combo.activated.emit(orig_index)
-            self.combo.currentIndexChanged.emit(orig_index)
-            self.combo.currentTextChanged.emit(self.combo.itemText(orig_index))
             if self.combo.isEditable() and self.combo.lineEdit():
                 self.combo.lineEdit().setText(self.combo.itemText(orig_index))
         self.close()

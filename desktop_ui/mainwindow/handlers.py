@@ -19,6 +19,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal, QThread, QByteArray
 from PySide6.QtGui import QColor
+from desktop_ui.constants import *
+
 
 from .widgets_helper import (
     get_provider_credentials, SearchableFontInstallDialog
@@ -265,17 +267,29 @@ class HandlersMixin:
             }
         }
 
-    def _save_api_profiles(self, profiles: dict):
+    def _get_yaml_config_path(self, filename: str) -> str:
+        import os
+        base_dir = os.path.join(self.project_base_dir, '.config', 'configs')
+        os.makedirs(base_dir, exist_ok=True)
+        return os.path.join(base_dir, filename)
+
+    def _save_yaml_config(self, filename: str, data: dict, wrap_key: str = None):
         from ruamel.yaml import YAML
         yaml = YAML()
         yaml.preserve_quotes = True
         yaml.default_flow_style = False
-        path = self._get_api_profiles_file_path()
+        path = self._get_yaml_config_path(filename)
         try:
             with open(path, 'w', encoding='utf-8') as f:
-                yaml.dump(profiles, f)
+                if wrap_key:
+                    yaml.dump({wrap_key: data}, f)
+                else:
+                    yaml.dump(data, f)
         except Exception as e:
-            print(f"[ERROR] Failed to save API profiles: {e}")
+            print(f"[ERROR] Failed to save {filename}: {e}")
+
+    def _save_api_profiles(self, profiles: dict):
+        self._save_yaml_config('api_profiles.yaml', profiles)
 
     def _save_current_api_profile(self):
         name_widget = self.setting_widgets.get('api_name')
@@ -489,10 +503,7 @@ class HandlersMixin:
 
 
     def _get_preset_profiles_file_path(self) -> str:
-        import os
-        base_dir = os.path.join(self.project_base_dir, '.config', 'configs')
-        os.makedirs(base_dir, exist_ok=True)
-        return os.path.join(base_dir, 'profiles.yaml')
+        return self._get_yaml_config_path('profiles.yaml')
 
     def _load_preset_profiles(self) -> dict:
         import os
@@ -510,22 +521,10 @@ class HandlersMixin:
         return {}
 
     def _save_preset_profiles(self, profiles: dict):
-        from ruamel.yaml import YAML
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        yaml.default_flow_style = False
-        path = self._get_preset_profiles_file_path()
-        try:
-            with open(path, 'w', encoding='utf-8') as f:
-                yaml.dump(profiles, f)
-        except Exception as e:
-            print(f"[ERROR] Failed to save preset profiles: {e}")
+        self._save_yaml_config('profiles.yaml', profiles)
 
     def _get_pool_profiles_file_path(self) -> str:
-        import os
-        base_dir = os.path.join(self.project_base_dir, '.config', 'configs')
-        os.makedirs(base_dir, exist_ok=True)
-        return os.path.join(base_dir, 'pool_profiles.yaml')
+        return self._get_yaml_config_path('pool_profiles.yaml')
 
     def _load_pool_profiles(self) -> dict:
         import os
@@ -544,16 +543,7 @@ class HandlersMixin:
         return {}
 
     def _save_pool_profiles(self, pools: dict):
-        from ruamel.yaml import YAML
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        yaml.default_flow_style = False
-        path = self._get_pool_profiles_file_path()
-        try:
-            with open(path, 'w', encoding='utf-8') as f:
-                yaml.dump({'pools': pools}, f)
-        except Exception as e:
-            print(f"[ERROR] Failed to save pool profiles: {e}")
+        self._save_yaml_config('pool_profiles.yaml', pools, wrap_key='pools')
 
     def _open_manage_pools_dialog(self):
         from desktop_ui.mainwindow.pool_dialog import ManagePoolsDialog
@@ -766,7 +756,7 @@ class HandlersMixin:
                 
             if isinstance(widget, QComboBox):
                 text = widget.currentText()
-                if text in ["📥 Cập nhật danh sách ngôn ngữ...", "📥 Cập nhật danh sách hỗ trợ dịch..."]:
+                if text in [UPDATE_LANGS_LIST, UPDATE_SUPPORTED_LANGS]:
                     self._trigger_online_config_update_from_combo(key, widget)
                     return
 
@@ -790,11 +780,24 @@ class HandlersMixin:
 
     def _on_translator_changed(self, translator_name: str):
         """Handles changes in the main translator selection."""
-        if translator_name == "📥 Cập nhật danh sách hỗ trợ dịch...":
+        if translator_name == UPDATE_SUPPORTED_LANGS:
             return
         if translator_name and " (Not Setup)" in translator_name:
             translator_name = translator_name.split(" (Not Setup)")[0]
         self._update_translator_tooltip(translator_name)
+
+    def _is_translator_supported_for_target(self, translator_name: str, target_code: str) -> bool:
+        """Kiểm tra xem mô hình dịch thuật có hỗ trợ ngôn ngữ đích không."""
+        from .. import main_window as mw
+        if translator_name in ["none", "original"]:
+            return True
+        capabilities = mw.TRANSLATOR_CAPABILITIES.get(translator_name, {'__any__': '__all__'})
+        if capabilities.get('__any__') == '__all__':
+            return True
+        for source_lang, target_langs in capabilities.items():
+            if target_code in target_langs:
+                return True
+        return False
 
     def _filter_translator_dropdowns(self, target_lang_name: str):
         """Filters the offline_translator and ai_translator dropdowns based on the selected target language."""
@@ -805,17 +808,6 @@ class HandlersMixin:
         target_code = mw.LANGUAGES.get(target_lang_name)
         if not target_code:
             return
-
-        def supports_target(translator_name):
-            if translator_name in ["none", "original"]:
-                return True
-            capabilities = mw.TRANSLATOR_CAPABILITIES.get(translator_name, {'__any__': '__all__'})
-            if capabilities.get('__any__') == '__all__':
-                return True
-            for source_lang, target_langs in capabilities.items():
-                if target_code in target_langs:
-                    return True
-            return False
 
         import re
         def natural_sort_key(s):
@@ -831,7 +823,7 @@ class HandlersMixin:
             setup_items = []
             not_setup_items = []
             for val in self.original_offline_translators:
-                supported = supports_target(val)
+                supported = self._is_translator_supported_for_target(val, target_code)
                 exists = self.config_loader.check_model_existence(val, field='offline_translator')
                 
                 label = self.config_loader.format_display_label(val, 'offline_translator')
@@ -858,8 +850,12 @@ class HandlersMixin:
                 offline_combo.addItem(label, val)
                 last_idx = offline_combo.count() - 1
                 offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            offline_combo.addItem("📥 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-            offline_combo.addItem("📥 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
+            is_en = self.config_loader.studio_config.get("app_language", "vi") == "en"
+            update_langs_text = UPDATE_SUPPORTED_LANGS_EN if is_en else UPDATE_SUPPORTED_LANGS
+            update_software_text = UPDATE_SOFTWARE_EN if is_en else UPDATE_SOFTWARE
+            
+            offline_combo.addItem(update_langs_text, "update_trigger")
+            offline_combo.addItem(update_software_text, "update_software_trigger")
             
             restored = False
             for i in range(offline_combo.count()):
@@ -881,7 +877,7 @@ class HandlersMixin:
             setup_items = []
             not_setup_items = []
             for val in self.original_ai_translators:
-                supported = supports_target(val)
+                supported = self._is_translator_supported_for_target(val, target_code)
                 exists = self.config_loader.check_model_existence(val, field='ai_translator')
                 
                 label = self.config_loader.format_display_label(val, 'ai_translator')
@@ -908,8 +904,12 @@ class HandlersMixin:
                 ai_combo.addItem(label, val)
                 last_idx = ai_combo.count() - 1
                 ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            ai_combo.addItem("📥 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-            ai_combo.addItem("📥 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
+            is_en = self.config_loader.studio_config.get("app_language", "vi") == "en"
+            update_langs_text = UPDATE_SUPPORTED_LANGS_EN if is_en else UPDATE_SUPPORTED_LANGS
+            update_software_text = UPDATE_SOFTWARE_EN if is_en else UPDATE_SOFTWARE
+
+            ai_combo.addItem(update_langs_text, "update_trigger")
+            ai_combo.addItem(update_software_text, "update_software_trigger")
             
             restored = False
             for i in range(ai_combo.count()):
@@ -936,17 +936,6 @@ class HandlersMixin:
         if not target_code:
             return
 
-        def supports_target(translator_name):
-            if translator_name in ["none", "original"]:
-                return True
-            capabilities = mw.TRANSLATOR_CAPABILITIES.get(translator_name, {'__any__': '__all__'})
-            if capabilities.get('__any__') == '__all__':
-                return True
-            for source_lang, target_langs in capabilities.items():
-                if target_code in target_langs:
-                    return True
-            return False
-
         current_val = translator_combo.currentData()
         translator_combo.blockSignals(True)
         translator_combo.clear()
@@ -957,7 +946,7 @@ class HandlersMixin:
             setup_items = []
             not_setup_items = []
             for t in translators:
-                supported = supports_target(t)
+                supported = self._is_translator_supported_for_target(t, target_code)
                 exists = self.config_loader.check_model_existence(t, field=field_name)
                 
                 label = self.config_loader.format_display_label(t, field_name)
@@ -1010,7 +999,7 @@ class HandlersMixin:
 
     def _on_target_lang_changed(self, target_lang_name: str):
         """Handles changes in the target language selection."""
-        if target_lang_name == "📥 Cập nhật danh sách ngôn ngữ...":
+        if target_lang_name == UPDATE_LANGS_LIST:
             return
         self._filter_translator_dropdowns(target_lang_name)
 
@@ -1611,7 +1600,7 @@ class HandlersMixin:
                 main_font_combo.clear()
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
-                main_font_combo.addItem("📥 Update All Fonts...")
+                main_font_combo.addItem(UPDATE_ALL_FONTS)
                 self._style_custom_fonts_in_combobox(main_font_combo)
 
                 newly_installed_font = next((fn for fn in font_names if message_or_family.replace(" ", "").lower() in fn.replace("-", "").replace(" ", "").lower()), None)
@@ -1688,7 +1677,7 @@ class HandlersMixin:
                 main_font_combo.clear()
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
-                main_font_combo.addItem("📥 Update All Fonts...")
+                main_font_combo.addItem(UPDATE_ALL_FONTS)
                 self._style_custom_fonts_in_combobox(main_font_combo)
                 
                 newly_installed_font = next((fn for fn in font_names if message_or_family.replace(" ", "").lower() in fn.replace("-", "").replace(" ", "").lower()), None)
@@ -1892,7 +1881,7 @@ class HandlersMixin:
                 main_font_combo.clear()
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
-                main_font_combo.addItem("📥 Update All Fonts...")
+                main_font_combo.addItem(UPDATE_ALL_FONTS)
                 self._style_custom_fonts_in_combobox(main_font_combo)
                 
                 prev_font = getattr(self, "_last_selected_font", "Sans-serif")
@@ -1954,10 +1943,10 @@ class HandlersMixin:
             return
         
         if key == 'font_family':
-            if current_text == "🔍 Install New Font...":
+            if current_text == INSTALL_NEW_FONT:
                 btn_tick.show()
                 btn_tick.setToolTip("Xác nhận Cài đặt Font mới")
-            elif current_text == "📥 Update All Fonts...":
+            elif current_text == UPDATE_ALL_FONTS:
                 btn_tick.show()
                 btn_tick.setToolTip("Xác nhận Cập nhật toàn bộ danh sách Font")
             else:
@@ -1996,9 +1985,9 @@ class HandlersMixin:
                     self._trigger_online_config_update("target_lang")
                 elif key in ["offline_translator", "ai_translator"]:
                     self._trigger_all_configs_update()
-            elif current_text == "📥 Update All Fonts...":
+            elif current_text == UPDATE_ALL_FONTS:
                 self._check_and_update_all_fonts(combo)
-            elif current_text == "🔍 Install New Font...":
+            elif current_text == INSTALL_NEW_FONT:
                 self._prompt_font_install(combo)
                 
         elif action == 'download':
@@ -2009,7 +1998,7 @@ class HandlersMixin:
                 
         elif action == 'search':
             if key == 'font_family':
-                if current_text != "🔍 Install New Font...":
+                if current_text != INSTALL_NEW_FONT:
                     self._find_similar_font(combo)
                     
         elif action == 'delete':
@@ -2052,8 +2041,8 @@ class HandlersMixin:
             combo.blockSignals(True)
             combo.clear()
             combo.addItems(font_names)
-            combo.addItem("🔍 Install New Font...")
-            combo.addItem("📥 Update All Fonts...")
+            combo.addItem(INSTALL_NEW_FONT)
+            combo.addItem(UPDATE_ALL_FONTS)
             self._style_custom_fonts_in_combobox(combo)
             combo.setCurrentIndex(0)
             combo.blockSignals(False)
@@ -2458,24 +2447,7 @@ class HandlersMixin:
 
         self._config_worker = ConfigUpdateWorker(self.config_loader, mode, translator_name, api_key)
 
-        def on_finished(success, message):
-            self._config_update_active = False
-            for k in ['target_lang', 'offline_translator', 'ai_translator']:
-                w = self.setting_widgets.get(k)
-                if w:
-                    w.setEnabled(True)
-            
-            if success:
-                self.log("SUCCESS", message)
-                self._reload_dynamic_configurations()
-                QMessageBox.information(self, "Cập nhật Thành công", message)
-            else:
-                self.log("ERROR", message)
-                QMessageBox.warning(self, "Cập nhật Thất bại", message)
-                
-            del self._config_worker
-
-        self._config_worker.finished.connect(on_finished)
+        self._config_worker.finished.connect(self._handle_config_update_finished)
         self._config_worker.start()
 
     def _trigger_all_configs_update(self):
@@ -2503,25 +2475,28 @@ class HandlersMixin:
 
         self._config_worker = ConfigUpdateWorker(self.config_loader, "all")
 
-        def on_finished(success, message):
-            self._config_update_active = False
-            for k in ['target_lang', 'offline_translator', 'ai_translator']:
-                w = self.setting_widgets.get(k)
-                if w:
-                    w.setEnabled(True)
-            
-            if success:
-                self.log("SUCCESS", message)
-                self._reload_dynamic_configurations()
-                QMessageBox.information(self, "Cập nhật Thành công", message)
-            else:
-                self.log("ERROR", message)
-                QMessageBox.warning(self, "Cập nhật Thất bại", message)
-                
-            del self._config_worker
-
-        self._config_worker.finished.connect(on_finished)
+        self._config_worker.finished.connect(self._handle_config_update_finished)
         self._config_worker.start()
+
+    def _handle_config_update_finished(self, success, message):
+        self._config_update_active = False
+        for k in ['target_lang', 'offline_translator', 'ai_translator']:
+            w = self.setting_widgets.get(k)
+            if w:
+                w.setEnabled(True)
+        
+        if success:
+            self.log("SUCCESS", message)
+            self._reload_dynamic_configurations()
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(self, "Cập nhật Thành công", message)
+        else:
+            self.log("ERROR", message)
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Cập nhật Thất bại", message)
+            
+        if hasattr(self, '_config_worker'):
+            del self._config_worker
 
     def _reload_dynamic_configurations(self):
         """Reloads dynamic configurations from the config loader into global mapping variables."""
@@ -2539,9 +2514,9 @@ class HandlersMixin:
         other_list = ["original", "none"]
         
         mw.TRANSLATOR_GROUPS.clear()
-        mw.TRANSLATOR_GROUPS["--- OFFLINE MODELS (No API Key) ---"] = offline_list
-        mw.TRANSLATOR_GROUPS["--- API-BASED (Requires Setup) ---"] = api_list
-        mw.TRANSLATOR_GROUPS["--- OTHER ACTIONS ---"] = other_list
+        mw.TRANSLATOR_GROUPS[CAT_OFFLINE_MODELS] = offline_list
+        mw.TRANSLATOR_GROUPS[CAT_API_BASED] = api_list
+        mw.TRANSLATOR_GROUPS[CAT_OTHER_ACTIONS] = other_list
         
         self.original_offline_translators = list(offline_list)
         self.original_ai_translators = list(api_list)
@@ -2576,9 +2551,9 @@ class HandlersMixin:
             for name, code in sorted(mw.LANGUAGES.items()):
                 if code != "auto":
                     combo.addItem(name, code)
-            combo.addItem("📥 Cập nhật danh sách ngôn ngữ...", "update_trigger")
+            combo.addItem(UPDATE_LANGS_LIST, "update_trigger")
         elif key == "offline_translator":
-            values = mw.TRANSLATOR_GROUPS.get("--- OFFLINE MODELS (No API Key) ---", [])
+            values = mw.TRANSLATOR_GROUPS.get(CAT_OFFLINE_MODELS, [])
             for val in values:
                 exists = self.config_loader.check_model_existence(val, field=key)
                 display_name = val if exists else f"{val} (Not Setup)"
@@ -2586,10 +2561,10 @@ class HandlersMixin:
                 if not exists:
                     idx = combo.count() - 1
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            combo.addItem("📥 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-            combo.addItem("📥 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
+            combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
+            combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
         elif key == "ai_translator":
-            values = mw.TRANSLATOR_GROUPS.get("--- API-BASED (Requires Setup) ---", [])
+            values = mw.TRANSLATOR_GROUPS.get(CAT_API_BASED, [])
             for val in values:
                 exists = self.config_loader.check_model_existence(val, field=key)
                 display_name = val if exists else f"{val} (Not Setup)"
@@ -2597,8 +2572,8 @@ class HandlersMixin:
                 if not exists:
                     idx = combo.count() - 1
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            combo.addItem("📥 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-            combo.addItem("📥 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
+            combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
+            combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
                     
         current_val = self.current_settings.get(key)
         self._set_widget_value(key, current_val, combo)

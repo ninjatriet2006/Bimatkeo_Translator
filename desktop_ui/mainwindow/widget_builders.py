@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QTimer, QSize
 from PySide6.QtGui import QColor, QFont
+from desktop_ui.constants import *
+
 
 from .widgets_helper import (
     SearchableComboBox, NoScrollComboBox, DynamicHeightListWidget, SearchableFontInstallDialog
@@ -509,9 +511,9 @@ class WidgetBuildersMixin:
 
         # Override values for UI-only translators if needed
         if key == "offline_translator":
-            values = mw.TRANSLATOR_GROUPS.get("--- OFFLINE MODELS (No API Key) ---", values)
+            values = mw.TRANSLATOR_GROUPS.get(CAT_OFFLINE_MODELS, values)
         elif key == "ai_translator":
-            values = mw.TRANSLATOR_GROUPS.get("--- API-BASED (Requires Setup) ---", values)
+            values = mw.TRANSLATOR_GROUPS.get(CAT_API_BASED, values)
 
         if info.get("widget") == "optionmenu_languages":
             # Populate languages excluding Auto-Detect
@@ -535,8 +537,8 @@ class WidgetBuildersMixin:
                         last_idx = combo_box.count() - 1
                         combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
                 is_en = self.current_settings.get('app_language', 'English') == 'English'
-                update_support_text = "📥 Update translation support list..." if is_en else "📥 Cập nhật danh sách hỗ trợ dịch..."
-                update_all_text = "📥 Update ALL translation models..." if is_en else "📥 Cập nhật TẤT CẢ mô hình dịch..."
+                update_support_text = UPDATE_SUPPORTED_LANGS_EN if is_en else UPDATE_SUPPORTED_LANGS
+                update_all_text = UPDATE_ALL_MODELS_EN if is_en else UPDATE_ALL_MODELS
                 combo_box.addItem(update_support_text, "update_trigger")
                 combo_box.addItem(update_all_text, "update_all_software_trigger")
             else:
@@ -1239,8 +1241,8 @@ class WidgetBuildersMixin:
             is_google = self._get_google_font_family_from_filename(font) is not None
             display_text = font if is_google else f"{font} (Unavailable in fonts stores)"
             combo_box.addItem(display_text, userData=font)
-        combo_box.addItem("🔍 Install New Font...")
-        combo_box.addItem("📥 Update All Fonts...")
+        combo_box.addItem(INSTALL_NEW_FONT)
+        combo_box.addItem(UPDATE_ALL_FONTS)
 
         # Set current index using data
         idx = combo_box.findData(default_font)
@@ -1254,7 +1256,7 @@ class WidgetBuildersMixin:
         self._style_custom_fonts_in_combobox(combo_box)
 
         def on_combo_text_changed(text):
-            if text not in ["🔍 Install New Font...", "📥 Update All Fonts..."]:
+            if text not in [INSTALL_NEW_FONT, UPDATE_ALL_FONTS]:
                 actual_font = combo_box.currentData()
                 if actual_font is None:
                     actual_font = text
@@ -1275,7 +1277,7 @@ class WidgetBuildersMixin:
         """Styles custom (non-Google) fonts in the combobox items with yellow/amber foreground color."""
         for i in range(combo_box.count()):
             text = combo_box.itemText(i)
-            if text not in ["🔍 Install New Font...", "📥 Update All Fonts..."]:
+            if text not in [INSTALL_NEW_FONT, UPDATE_ALL_FONTS]:
                 actual_font = combo_box.itemData(i)
                 if actual_font is None:
                     actual_font = text
@@ -1288,7 +1290,7 @@ class WidgetBuildersMixin:
         if actual_curr_font is None:
             actual_curr_font = curr_text
         is_google_curr = self._get_google_font_family_from_filename(actual_curr_font) is not None
-        is_warn = not is_google_curr and curr_text not in ["🔍 Install New Font...", "📥 Update All Fonts..."]
+        is_warn = not is_google_curr and curr_text not in [INSTALL_NEW_FONT, UPDATE_ALL_FONTS]
         combo_box.setProperty("warning", "true" if is_warn else "false")
         combo_box.style().unpolish(combo_box)
         combo_box.style().polish(combo_box)

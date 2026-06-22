@@ -10,6 +10,8 @@ import sys
 import copy
 import subprocess
 import threading
+from desktop_ui.constants import *
+
 
 # PySide6 imports
 from PySide6.QtWidgets import (
@@ -94,9 +96,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         api_list = ai_info.get('values', []) if ai_info else []
         other_list = ["original", "none"]
 
-        TRANSLATOR_GROUPS["--- OFFLINE MODELS (No API Key) ---"] = offline_list
-        TRANSLATOR_GROUPS["--- API-BASED (Requires Setup) ---"] = api_list
-        TRANSLATOR_GROUPS["--- OTHER ACTIONS ---"] = other_list
+        TRANSLATOR_GROUPS[CAT_OFFLINE_MODELS] = offline_list
+        TRANSLATOR_GROUPS[CAT_API_BASED] = api_list
+        TRANSLATOR_GROUPS[CAT_OTHER_ACTIONS] = other_list
 
         # Update TRANSLATOR_CAPABILITIES dynamically from the dynamic YAML config loader
         if hasattr(self.config_loader, 'translator_capabilities'):

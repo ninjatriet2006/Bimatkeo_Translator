@@ -1,0 +1,323 @@
+=== Duplicate Keys across different YAML files ===
+
+Key 'models' appears in 11 files:
+  - .config/models/model_upscaler.yaml
+  - .config/models/model_ocr.yaml
+  - .config/models/model_inpainter.yaml
+  - .config/configs/config_direction.yaml
+  - .config/configs/config_alignment.yaml
+  - .config/configs/config_renderer.yaml
+  - .config/models/model_detector.yaml
+  - .config/models/model_offline_translator.yaml
+  - .config/configs/config_inpainting_precision.yaml
+  - .config/models/model_ai_translator.yaml
+  - .config/models/model_colorizer.yaml
+
+Key 'ocr' appears in 4 files:
+  - .config/configs/oldsession.yaml
+  - .config/models/model_registry.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'detector' appears in 4 files:
+  - .config/configs/oldsession.yaml
+  - .config/models/model_registry.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'inpainter' appears in 4 files:
+  - .config/configs/oldsession.yaml
+  - .config/models/model_registry.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'upscaler' appears in 5 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/studio_config.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/oldsession.yaml
+  - .config/models/model_registry.yaml
+
+Key 'colorizer' appears in 4 files:
+  - .config/configs/oldsession.yaml
+  - .config/models/model_registry.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'renderer' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'alignment' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'disable_font_border' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'font_size_offset' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'font_size_minimum' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'direction' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'uppercase' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'lowercase' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'gimp_font' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'no_hyphenation' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'font_color' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'line_spacing' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'font_size' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'rtl' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'revert_upscaling' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'upscale_ratio' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'translator' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'target_lang' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'no_text_lang_skip' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'skip_lang' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'gpt_config' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'translator_chain' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'selective_translation' appears in 4 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'detection_size' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'text_threshold' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'det_rotate' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'det_auto_rotate' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'det_invert' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'det_gamma_correct' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'box_threshold' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'unclip_ratio' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'colorization_size' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'denoise_sigma' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'inpainting_size' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'inpainting_precision' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'use_mocr_merge' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'min_text_length' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'ignore_bubble' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'prob' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'mask_dilation_offset' appears in 3 files:
+  - .config/configs/oldsession.yaml
+  - .config/configs/profiles.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'CHS' appears in 3 files:
+  - .config/configs/translator_capabilities.yaml
+  - .config/configs/supporttargetlang.yaml
+  - .config/configs/skip_languages.yaml
+
+Key 'ENG' appears in 3 files:
+  - .config/configs/translator_capabilities.yaml
+  - .config/configs/supporttargetlang.yaml
+  - .config/configs/skip_languages.yaml
+
+Key 'FRA' appears in 3 files:
+  - .config/configs/translator_capabilities.yaml
+  - .config/configs/supporttargetlang.yaml
+  - .config/configs/skip_languages.yaml
+
+Key 'DEU' appears in 3 files:
+  - .config/configs/translator_capabilities.yaml
+  - .config/configs/supporttargetlang.yaml
+  - .config/configs/skip_languages.yaml
+
+Key 'ITA' appears in 3 files:
+  - .config/configs/translator_capabilities.yaml
+  - .config/configs/supporttargetlang.yaml
+  - .config/configs/skip_languages.yaml
+
+Key 'JPN' appears in 3 files:
+  - .config/configs/translator_capabilities.yaml
+  - .config/configs/supporttargetlang.yaml
+  - .config/configs/skip_languages.yaml
+
+Key 'KOR' appears in 3 files:
+  - .config/configs/translator_capabilities.yaml
+  - .config/configs/supporttargetlang.yaml
+  - .config/configs/skip_languages.yaml
+
+Key 'enable_post_translation_check' appears in 3 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'post_check_max_retry_attempts' appears in 3 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'post_check_repetition_threshold' appears in 3 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/studio_config.yaml
+
+Key 'post_check_target_lang_threshold' appears in 3 files:
+  - .config/configs/schema_fallback.yaml
+  - .config/configs/oldsession.yaml
+  - .config/configs/studio_config.yaml

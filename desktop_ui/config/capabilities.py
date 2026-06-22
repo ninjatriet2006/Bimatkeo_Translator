@@ -8,6 +8,8 @@ import json
 import subprocess
 import urllib.request
 import time
+from desktop_ui.constants import *
+
 
 GLOBAL_ISO_MAP = {
     "en": "ENG", "vi": "VIN", "ja": "JPN", "ko": "KOR", 
@@ -57,15 +59,15 @@ class CapabilitiesMixin:
 
         default_capabilities = {
             "TRANSLATOR_GROUPS": {
-                "--- OFFLINE MODELS (No API Key) ---": [
+                CAT_OFFLINE_MODELS: [
                     "m2m100", "m2m100_big", "nllb", "nllb_big", "mbart50",
                     "jparacrawl", "jparacrawl_big", "qwen2", "qwen2_big", "offline"
                 ],
-                "--- API-BASED (Requires Setup) ---": [
+                CAT_API_BASED: [
                     "deepl", "gemini", "deepseek", "groq", "youdao", "baidu",
                     "caiyun", "sakura", "papago", "openai", "custom_openai"
                 ],
-                "--- OTHER ACTIONS ---": [
+                CAT_OTHER_ACTIONS: [
                     "original",
                     "none"
                 ]

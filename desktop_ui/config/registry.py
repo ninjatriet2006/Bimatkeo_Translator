@@ -5,6 +5,8 @@ from ruamel.yaml import YAML
 yaml = YAML()
 yaml.preserve_quotes = True
 yaml.default_flow_style = False
+from desktop_ui.constants import *
+
 
 _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platform.startswith('darwin') else "linux")
 _exe_ext = ".exe" if _os_suffix == "win" else ""
@@ -63,8 +65,8 @@ class RegistryMixin:
     }
 
     GROUP_NAMES = {
-        "offline_translator": "--- OFFLINE MODELS (No API Key) ---",
-        "ai_translator": "--- API-BASED (Requires Setup) ---",
+        "offline_translator": CAT_OFFLINE_MODELS,
+        "ai_translator": CAT_API_BASED,
     }
 
     # ------------------------------------------------------------------ load
@@ -178,7 +180,7 @@ class RegistryMixin:
                 if caps is None:
                     caps = {"__any__": "__all__"}
                 capabilities[key] = caps
-        groups["--- OTHER ACTIONS ---"] = ["original", "none"]
+        groups[CAT_OTHER_ACTIONS] = ["original", "none"]
         capabilities["original"] = {}
         capabilities["none"] = {}
         self.registry_translator_groups = groups
