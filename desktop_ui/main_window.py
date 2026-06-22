@@ -31,7 +31,6 @@ from .config_loader import ConfigLoader
 
 # Import modularized components
 from .mainwindow import (
-    get_provider_credentials,
     DynamicHeightListWidget,
     SearchableComboPopup,
     SearchableFontInstallDialog,

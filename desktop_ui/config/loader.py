@@ -37,7 +37,7 @@ class ConfigLoaderBase(BaseConfigLoader):
         os.makedirs(configs_dir, exist_ok=True)
         os.makedirs(models_dir, exist_ok=True)
 
-        root_configs = ["keys.yaml", "studio_config.yaml", "supporttargetlang.yaml", "api_profiles.json"]
+        root_configs = ["studio_config.yaml", "supporttargetlang.yaml", "api_profiles.json"]
         for f in root_configs:
             old_path = os.path.join(config_dir, f)
             new_path = os.path.join(configs_dir, f)
@@ -123,18 +123,6 @@ class ConfigLoaderBase(BaseConfigLoader):
         return defaults
 
 
-    def _load_keys_file(self):
-        """Loads variables from the keys.yaml file in the .config directory into a dict."""
-        keys = {}
-        keys_path = os.path.join(self.project_base_dir, ".config", "configs", "keys.yaml")
-        content = self._load_yaml_file(keys_path)
-        if isinstance(content, dict):
-            for k, v in content.items():
-                if k and isinstance(k, str):
-                    keys[k] = str(v) if v is not None else ""
-        return keys
-
     def get_env_var(self, name):
-        """Returns the value of an environment variable, checking keys.yaml first then os.environ."""
-        self._keys_vars = self._load_keys_file()
-        return self._keys_vars.get(name) or os.environ.get(name)
+        """Returns the value of an environment variable."""
+        return os.environ.get(name)

@@ -22,6 +22,8 @@ try:
     import app.plugins.recognizer.pixel_32px_impl
     import app.plugins.recognizer.pixel_48px_impl
     import app.plugins.recognizer.pixel_48px_ctc_impl
+    import app.plugins.translator.api_translator_impl
+    import app.plugins.translator.offline_translator_impl
 except ImportError as e:
     print(f"Warning: Failed to import some plugins - {e}")
 

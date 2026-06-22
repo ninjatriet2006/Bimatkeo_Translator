@@ -1209,21 +1209,8 @@ class WidgetBuildersMixin:
         return theme_frame
 
     def _create_api_manager_widget(self, info: dict) -> QWidget:
-        """Creates a self-contained widget for the API key manager button."""
-        container = QFrame()
-        layout = QHBoxLayout(container)
-        layout.setContentsMargins(0, 10, 0, 0)
-
-        label = QLabel(info.get("label", "API Keys:"))
-        layout.addWidget(label)
-        layout.addStretch()
-
-        button = QPushButton("Create / Open keys.yaml File")
-        button.setToolTip(info.get("tooltip", "Click to manage your API keys."))
-        button.clicked.connect(self._handle_create_keys_file)
-        layout.addWidget(button)
-
-        return container
+        """Returns an empty widget since keys.yaml is deprecated."""
+        return QWidget()
 
     def _create_font_combobox(self, info: dict) -> QWidget:
         """Creates a SearchableComboBox for fonts."""

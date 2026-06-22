@@ -1,6 +1,5 @@
 # type: ignore
 from .widgets_helper import (
-    get_provider_credentials,
     DynamicHeightListWidget,
     SearchableComboPopup,
     SearchableFontInstallDialog,

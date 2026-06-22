@@ -23,7 +23,8 @@ from desktop_ui.constants import *
 
 
 from .widgets_helper import (
-    get_provider_credentials, SearchableFontInstallDialog
+    DynamicHeightListWidget, SearchableComboBox, NoScrollComboBox,
+    SearchableFontInstallDialog
 )
 
 class FontDownloadWorker(QThread):
@@ -251,19 +252,12 @@ class HandlersMixin:
         from dotenv import load_dotenv
         load_dotenv(os.path.join(self.project_base_dir, ".env"))
 
-        gemini_creds = get_provider_credentials('gemini')
-        openai_creds = get_provider_credentials('openai')
-
         return {
-            "Default (Gemini)": {
-                "group": "Default",
-                "provider": "gemini",
-                **gemini_creds
-            },
-            "Default (OpenAI)": {
-                "group": "Default",
-                "provider": "openai",
-                **openai_creds
+            "My Custom API": {
+                "group": "Standalone",
+                "endpoint": "",
+                "model": "Auto",
+                "key": ""
             }
         }
 
@@ -328,9 +322,9 @@ class HandlersMixin:
         if group_widget:
             group_combo = group_widget.findChild(QComboBox)
             if group_combo:
-                all_groups = sorted(list(set(p.get("group", "Default") for p in profiles.values())))
+                all_groups = sorted(list(set(p.get("group", "Standalone") for p in profiles.values())))
                 if not all_groups:
-                    all_groups = ["Default"]
+                    all_groups = ["Standalone"]
                 group_combo.blockSignals(True)
                 group_combo.clear()
                 group_combo.addItems(all_groups)
@@ -376,9 +370,9 @@ class HandlersMixin:
         self._save_api_profiles(profiles)
         self.log("SUCCESS", f"Đã xóa nhóm API '{group_name}' và {len(to_delete)} hồ sơ liên quan.")
 
-        all_groups = sorted(list(set(p.get("group", "Default") for p in profiles.values())))
+        all_groups = sorted(list(set(p.get("group", "Standalone") for p in profiles.values())))
         if not all_groups:
-            all_groups = ["Default"]
+            all_groups = ["Standalone"]
         fallback_group = all_groups[0]
 
         group_combo.blockSignals(True)
@@ -1390,69 +1384,6 @@ class HandlersMixin:
             self.current_settings = copy.deepcopy(job['settings'])
             self._populate_settings_panel()
             self.log("INFO", f"Loaded settings from '''{job['name']}''' into the panel for editing.")
-
-    def _handle_create_keys_file(self):
-        """Checks for, creates, and opens the keys.yaml file in the .config/configs directory."""
-        keys_dir = os.path.join(self.project_base_dir, ".config", "configs")
-        os.makedirs(keys_dir, exist_ok=True)
-        keys_path = os.path.join(keys_dir, "keys.yaml")
-        self.log("INFO", f"Managing keys.yaml file at: {keys_path}")
-
-        KEYS_TEMPLATE = [
-            "# --- Baidu Translate ---",
-            "BAIDU_APP_ID: \"\"",
-            "BAIDU_SECRET_KEY: \"\"",
-            "\n# --- Youdao Translate ---",
-            "YOUDAO_APP_KEY: \"\"",
-            "YOUDAO_SECRET_KEY: \"\"",
-            "\n# --- DeepL Translate ---",
-            "DEEPL_AUTH_KEY: \"\"",
-            "\n# --- Caiyun Translate ---",
-            "CAIYUN_TOKEN: \"\"",
-            "\n# --- OpenAI ---",
-            "OPENAI_API_KEY: \"\"",
-            "OPENAI_MODEL: \"gpt-4o\"",
-            "OPENAI_API_BASE: \"https://api.openai.com/v1\"",
-            "OPENAI_HTTP_PROXY: \"\"",
-            "OPENAI_GLOSSARY_PATH: \"./dict/mit_glossary.txt\"",
-            "\n# --- Groq ---",
-            "GROQ_API_KEY: \"\"",
-            "GROQ_MODEL: \"mixtral-8x7b-32768\"",
-            "\n# --- Gemini ---",
-            "GEMINI_API_KEY: \"\"",
-            "GEMINI_MODEL: \"gemini-1.5-flash\"",
-            "\n# --- DeepSeek ---",
-            "DEEPSEEK_API_KEY: \"\"",
-            "DEEPSEEK_MODEL: \"deepseek-chat\"",
-            "DEEPSEEK_API_BASE: \"https://api.deepseek.com\"",
-            "\n# --- Sakura Translator ---",
-            "SAKURA_API_BASE: \"http://127.0.0.1:8080/v1\"",
-            "SAKURA_DICT_PATH: \"./dict/sakura_dict.txt\"",
-            "\n# --- Custom OpenAI (Ollama, etc.) ---",
-            "CUSTOM_OPENAI_API_KEY: \"ollama\"",
-            "CUSTOM_OPENAI_MODEL: \"\"",
-            "CUSTOM_OPENAI_API_BASE: \"http://localhost:11434/v1\"",
-        ]
-
-        try:
-            if not os.path.exists(keys_path):
-                self.log("INFO", "keys.yaml file not found. Creating a new template...")
-                with open(keys_path, '''w''', encoding='''utf-8''') as f:
-                    f.write("# This file stores your API keys and configuration parameters.\n")
-                    f.write("# Place your keys below. Do NOT share this file with anyone.\n\n")
-                    f.write("\n".join(KEYS_TEMPLATE))
-
-            if sys.platform == "win32":
-                os.startfile(keys_path)
-            elif sys.platform == "darwin":
-                subprocess.run(["open", keys_path])
-            else:
-                subprocess.run(["xdg-open", keys_path])
-
-        except Exception as e:
-            error_msg = f"Could not open the keys.yaml file. Please open it manually.\nPath: {keys_path}\nError: {e}"
-            self.log("ERROR", error_msg)
-            QMessageBox.warning(self, "Could Not Open File", error_msg)
 
     def _show_history_context_menu(self, position):
         """Creates and shows the context menu for the history list."""

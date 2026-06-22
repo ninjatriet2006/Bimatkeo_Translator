@@ -19,43 +19,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QSize, QEvent, QPoint
 from PySide6.QtGui import QColor, QPalette, QCursor
 
-# Helper to read credentials from environment / keys.yaml
-def get_provider_credentials(provider: str) -> dict:
-    # Try to load from keys.yaml first
-    keys_vars = {}
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    keys_path = os.path.join(base_dir, ".config", "configs", "keys.yaml")
-    if os.path.exists(keys_path):
-        try:
-            with open(keys_path, 'r', encoding='utf-8') as f:
-                content = yaml.load(f)
-            if isinstance(content, dict):
-                for k, v in content.items():
-                    if k:
-                        keys_vars[str(k)] = str(v) if v is not None else ""
-        except Exception:
-            pass
 
-    def get_val(env_name, default=""):
-        return keys_vars.get(env_name) or os.getenv(env_name, default)
-
-    if provider == 'gemini':
-        return {
-            "endpoint": get_val("GEMINI_API_ENDPOINT", "https://generativelanguage.googleapis.com"),
-            "model": get_val("GEMINI_API_MODEL", "Auto"),
-            "key": get_val("GEMINI_API_KEY", "")
-        }
-    elif provider == 'openai':
-        return {
-            "endpoint": get_val("OPENAI_API_ENDPOINT", "https://api.openai.com/v1"),
-            "model": get_val("OPENAI_API_MODEL", "Auto"),
-            "key": get_val("OPENAI_API_KEY", "")
-        }
-    return {
-        "endpoint": get_val(f"{provider.upper()}_API_ENDPOINT", ""),
-        "model": get_val(f"{provider.upper()}_API_MODEL", "Auto"),
-        "key": get_val(f"{provider.upper()}_API_KEY", "")
-    }
 
 
 class DynamicHeightListWidget(QListWidget):
