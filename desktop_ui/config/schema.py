@@ -44,7 +44,7 @@ class SchemaMixin:
                 with open(fallback_path, 'r', encoding='utf-8') as f:
                     schema_data = json.load(f)
                 self.studio_config["schema_cache"] = schema_data
-                self.save_studio_config()
+                self.save_studio_config()  # type: ignore
                 return schema_data
             except Exception as e:
                 print(f"[ERROR] Could not load schema fallback: {e}")
@@ -201,7 +201,7 @@ class SchemaMixin:
             return list(registry[field].keys())
 
         import yaml  # type: ignore
-        filename = self._get_yaml_filename(field)
+        filename = self._get_yaml_filename(field)  # type: ignore
         model_yaml_path = os.path.join(self.project_base_dir, ".config", filename)
         try:
             if os.path.exists(model_yaml_path):
