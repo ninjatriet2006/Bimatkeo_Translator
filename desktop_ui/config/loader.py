@@ -5,6 +5,8 @@ import sys
 _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platform.startswith('darwin') else "linux")
 _exe_ext = ".exe" if _os_suffix == "win" else ""
 
+from app.core.utils import get_python_executable
+
 class ConfigLoaderBase:
     # NOTE: _DEFAULT_CHECKS is now DERIVED from the model registry at runtime
     # (see RegistryMixin.load_registry, called early in __init__, which sets
@@ -16,7 +18,7 @@ class ConfigLoaderBase:
 
     def __init__(self, project_base_dir):
         self.project_base_dir = project_base_dir
-        self.python_executable = self._find_python_executable()
+        self.python_executable = get_python_executable(self.project_base_dir)
         self.cache_path = os.path.join(self.project_base_dir, "temp", "schema_cache.json")
         
         # Ensure directories exist and migrate old root files early
@@ -143,15 +145,6 @@ class ConfigLoaderBase:
                 yaml.dump(self.oldsession_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
         except Exception as e:
             print(f"[ConfigLoader] Error saving oldsession.yaml: {e}")
-
-    def _find_python_executable(self):
-        venv_path_win = os.path.join(self.project_base_dir, '.venv', 'Scripts', 'python.exe')
-        venv_path_unix = os.path.join(self.project_base_dir, '.venv', 'bin', 'python')
-        if os.path.exists(venv_path_win):
-            return venv_path_win
-        elif os.path.exists(venv_path_unix):
-            return venv_path_unix
-        return sys.executable
 
     def get_tasks_config(self):
         """Returns the loaded tasks configuration."""

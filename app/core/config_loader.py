@@ -4,10 +4,12 @@ import subprocess
 import sys
 import re
 
+from .utils import get_python_executable
+
 class ConfigLoader:
     def __init__(self, project_base_dir):
         self.project_base_dir = project_base_dir
-        self.python_executable = self._find_python_executable()
+        self.python_executable = get_python_executable(self.project_base_dir)
         self.cache_path = os.path.join(self.project_base_dir, "temp", "schema_cache.json")
         self.studio_config_path = os.path.join(self.project_base_dir, ".config", "configs", "studio_config.yaml")
 
@@ -38,15 +40,6 @@ class ConfigLoader:
                 yaml.dump(self.studio_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
         except Exception as e:
             print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
-
-    def _find_python_executable(self):
-        venv_path_win = os.path.join(self.project_base_dir, '.venv', 'Scripts', 'python.exe')
-        venv_path_unix = os.path.join(self.project_base_dir, '.venv', 'bin', 'python')
-        if os.path.exists(venv_path_win):
-            return venv_path_win
-        elif os.path.exists(venv_path_unix):
-            return venv_path_unix
-        return sys.executable
 
     def _load_backend_schema(self):
         if hasattr(self, 'studio_config') and self.studio_config and "schema_cache" in self.studio_config:
