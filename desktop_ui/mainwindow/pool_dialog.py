@@ -258,11 +258,8 @@ class ManagePoolsDialog(QDialog):
         endpoint = self.new_api_endpoint.text().strip()
         key = self.new_api_key.text().strip()
         
-        ep_lower = endpoint.lower() if endpoint else ""
-        if not endpoint or "generativelanguage" in ep_lower or "gemini" in ep_lower:
-            ai_provider = 'gemini'
-        else:
-            ai_provider = 'openai'
+        from app.core.api_utils import infer_ai_provider
+        ai_provider = infer_ai_provider(endpoint)
 
         if not endpoint and ai_provider != 'gemini':
             QMessageBox.warning(self, "Warning", "No API Endpoint URL provided. Please enter a valid URL.")

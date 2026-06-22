@@ -1955,8 +1955,8 @@ class HandlersMixin:
         
         if key == 'font_family':
             if current_text == "🔍 Install New Font...":
-                btn_search.show()
-                btn_search.setToolTip("Tìm kiếm và Cài đặt Font mới")
+                btn_tick.show()
+                btn_tick.setToolTip("Xác nhận Cài đặt Font mới")
             elif current_text == "📥 Update All Fonts...":
                 btn_tick.show()
                 btn_tick.setToolTip("Xác nhận Cập nhật toàn bộ danh sách Font")
@@ -1998,6 +1998,8 @@ class HandlersMixin:
                     self._trigger_all_configs_update()
             elif current_text == "📥 Update All Fonts...":
                 self._check_and_update_all_fonts(combo)
+            elif current_text == "🔍 Install New Font...":
+                self._prompt_font_install(combo)
                 
         elif action == 'download':
             if key == 'font_family':
@@ -2007,9 +2009,7 @@ class HandlersMixin:
                 
         elif action == 'search':
             if key == 'font_family':
-                if current_text == "🔍 Install New Font...":
-                    self._prompt_font_install(combo)
-                else:
+                if current_text != "🔍 Install New Font...":
                     self._find_similar_font(combo)
                     
         elif action == 'delete':
@@ -2109,7 +2109,9 @@ class HandlersMixin:
             
         # Simplified bulk update: just show a dialog saying it's queued (since full implementation is too complex for this script, we'll implement a basic one or mock it)
         # For now, we'll just loop through and call _trigger_model_software_update sequentially or tell user to do one by one.
-        QMessageBox.information(self, "Đang phát triển", "Tính năng tải hàng loạt sẽ được triển khai trong bản cập nhật sau. Vui lòng tải từng mô hình ở hiện tại.")
+        info_title = "In Development" if is_en else "Đang phát triển"
+        info_msg = "Bulk download feature will be implemented in a future update. Please download each model individually for now." if is_en else "Tính năng tải hàng loạt sẽ được triển khai trong bản cập nhật sau. Vui lòng tải từng mô hình ở hiện tại."
+        QMessageBox.information(self, info_title, info_msg)
 
     def _trigger_model_software_update(self, key: str):
         """Triggers a background mock process to simulate updating the software/model weights."""

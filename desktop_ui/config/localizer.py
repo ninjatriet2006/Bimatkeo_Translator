@@ -1,6 +1,18 @@
 import copy
 
 class LocalizerMixin:
+    def get_lang_data(self, language: str) -> dict:
+        if not self.localization:
+            return {}
+        lang_code = None
+        for code, lang_data in self.localization.items():
+            if lang_data.get("language_name") == language:
+                lang_code = code
+                break
+        if not lang_code:
+            lang_code = "vi" if language == "Tiếng Việt" else "en"
+        return self.localization.get(lang_code, {})
+
     def localize_ui_map(self, language: str):
         """Localizes the ui_map and tasks_config based on the selected language."""
         self.app_language = language
@@ -9,19 +21,7 @@ class LocalizerMixin:
         self.ui_map = copy.deepcopy(self._load_ui_map())
         self.tasks_config = copy.deepcopy(self._load_tasks_config())
 
-        if not self.localization:
-            return
- 
-        # Find lang_code dynamically by matching display name
-        lang_code = None
-        for code, lang_data in self.localization.items():
-            if lang_data.get("language_name") == language:
-                lang_code = code
-                break
-        if not lang_code:
-            lang_code = "vi" if language == "Tiếng Việt" else "en"
- 
-        lang_data = self.localization.get(lang_code, {})
+        lang_data = self.get_lang_data(language)
         if not lang_data:
             return
 

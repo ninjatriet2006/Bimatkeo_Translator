@@ -39,12 +39,8 @@ class WidgetBuildersMixin:
 
         # Resolve English tab name to handle localization dynamically
         raw_tab_name = tab_name
-        if hasattr(self, 'config_loader') and hasattr(self.config_loader, 'localization'):
-            lang_data = {}
-            for code, data in self.config_loader.localization.items():
-                if data.get("language_name") == self.config_loader.app_language:
-                    lang_data = data
-                    break
+        if hasattr(self, 'config_loader') and hasattr(self.config_loader, 'get_lang_data'):
+            lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
             if lang_data:
                 tab_translations = lang_data.get("tabs", {})
                 for eng_tab, loc_tab in tab_translations.items():
@@ -352,7 +348,7 @@ class WidgetBuildersMixin:
             
             right_layout.addWidget(widget, stretch=1)
 
-            if not context_key and info.get('key') in ['offline_translator', 'ai_translator', 'detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
+            if not context_key and info.get('key') in ['offline_translator', 'ai_translator', 'detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer', 'font_family']:
                 self._setup_dynamic_action_buttons(info.get('key'), widget, right_layout)
             elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_group_selector", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
                 spacer = QWidget()
@@ -538,8 +534,11 @@ class WidgetBuildersMixin:
                     if not exists:
                         last_idx = combo_box.count() - 1
                         combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-                combo_box.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-                combo_box.addItem("🔄 Cập nhật TẤT CẢ mô hình dịch...", "update_all_software_trigger")
+                is_en = self.current_settings.get('app_language', 'English') == 'English'
+                update_support_text = "🔄 Update translation support list..." if is_en else "🔄 Cập nhật danh sách hỗ trợ dịch..."
+                update_all_text = "🔄 Update ALL translation models..." if is_en else "🔄 Cập nhật TẤT CẢ mô hình dịch..."
+                combo_box.addItem(update_support_text, "update_trigger")
+                combo_box.addItem(update_all_text, "update_all_software_trigger")
             else:
                 # Optionmenu with separators (e.g. from TRANSLATOR_GROUPS)
                 for group_name, translators in mw.TRANSLATOR_GROUPS.items():
@@ -572,7 +571,9 @@ class WidgetBuildersMixin:
             
             # Thêm lựa chọn cập nhật tất cả cho các mô hình AI khác
             if key in ['detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
-                combo_box.addItem(f"🔄 Cập nhật TẤT CẢ mô hình {key}...", "update_all_software_trigger")
+                is_en = self.current_settings.get('app_language', 'English') == 'English'
+                update_all_key_text = f"🔄 Update ALL {key} models..." if is_en else f"🔄 Cập nhật TẤT CẢ mô hình {key}..."
+                combo_box.addItem(update_all_key_text, "update_all_software_trigger")
                 
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))
 
@@ -1223,12 +1224,7 @@ class WidgetBuildersMixin:
         return container
 
     def _create_font_combobox(self, info: dict) -> QWidget:
-        """Creates a widget container holding a SearchableComboBox and action buttons next to it."""
-        container = QWidget()
-        layout = QHBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(5)
-
+        """Creates a SearchableComboBox for fonts."""
         combo_box = SearchableComboBox()
         font_names = list(self.font_map.keys())
         
@@ -1257,39 +1253,15 @@ class WidgetBuildersMixin:
 
         self._style_custom_fonts_in_combobox(combo_box)
 
-        layout.addWidget(combo_box, stretch=1)
-
-        update_btn = QPushButton("🔄")
-        update_btn.setFixedSize(30, 30)
-        update_btn.setToolTip("Force update the currently selected font from Google Fonts")
-        update_btn.clicked.connect(lambda: self._force_update_current_font(combo_box))
-        layout.addWidget(update_btn)
-
-        find_similar_btn = QPushButton("🔍")
-        find_similar_btn.setFixedSize(30, 30)
-        find_similar_btn.setToolTip("Find similar font on Google Fonts")
-        find_similar_btn.clicked.connect(lambda: self._find_similar_font(combo_box))
-        layout.addWidget(find_similar_btn)
-
-        is_google = self._get_google_font_family_from_filename(default_font) is not None
-        update_btn.setVisible(is_google)
-        find_similar_btn.setVisible(not is_google)
-
         def on_combo_text_changed(text):
-            if text == "🔍 Install New Font...":
-                self._prompt_font_install(combo_box)
-            elif text == "📥 Update All Fonts...":
-                self._check_and_update_all_fonts(combo_box)
-            else:
+            if text not in ["🔍 Install New Font...", "📥 Update All Fonts..."]:
                 actual_font = combo_box.currentData()
                 if actual_font is None:
                     actual_font = text
                 self._last_selected_font = actual_font
                 is_google = self._get_google_font_family_from_filename(actual_font) is not None
-                update_btn.setVisible(is_google)
-                find_similar_btn.setVisible(not is_google)
                 
-                is_warning = not is_google and text not in ["🔍 Install New Font...", "📥 Update All Fonts..."]
+                is_warning = not is_google
                 combo_box.setProperty("warning", "true" if is_warning else "false")
                 combo_box.style().unpolish(combo_box)
                 combo_box.style().polish(combo_box)
@@ -1297,7 +1269,7 @@ class WidgetBuildersMixin:
                 self._on_setting_changed('font_family')
 
         combo_box.currentTextChanged.connect(on_combo_text_changed)
-        return container
+        return combo_box
 
     def _style_custom_fonts_in_combobox(self, combo_box: QComboBox):
         """Styles custom (non-Google) fonts in the combobox items with yellow/amber foreground color."""

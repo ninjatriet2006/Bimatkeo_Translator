@@ -586,11 +586,9 @@ class JobRunnerMixin:
                         for api_name in pools[pool_name]:
                             prof = api_profiles.get(api_name, {})
                             if prof:
-                                ep_lower = prof.get('endpoint', '').lower()
-                                if not ep_lower or "generativelanguage" in ep_lower or "gemini" in ep_lower:
-                                    inferred_provider = 'gemini'
-                                else:
-                                    inferred_provider = 'custom_openai'
+                                from app.core.api_utils import infer_ai_provider
+                                endpoint = prof.get('endpoint', '')
+                                inferred_provider = infer_ai_provider(endpoint)
                                     
                                 translator_dict['pool_apis'].append({
                                     'translator': inferred_provider,
@@ -599,11 +597,9 @@ class JobRunnerMixin:
                                     'api_key': prof.get('key', '')
                                 })
             else:
-                ep = settings.get('ai_endpoint', '').lower()
-                if not ep or "generativelanguage" in ep or "gemini" in ep:
-                    translator_dict['translator'] = 'gemini'
-                else:
-                    translator_dict['translator'] = 'custom_openai'
+                from app.core.api_utils import infer_ai_provider
+                ep = settings.get('ai_endpoint', '')
+                translator_dict['translator'] = infer_ai_provider(ep)
 
         if settings.get('translator_chain'):
             final_config.get("translator", {}).pop('translator', None)
@@ -611,7 +607,7 @@ class JobRunnerMixin:
         final_config['processing_device'] = settings.get('processing_device', 'CPU')
 
         if job_type in ['R', 'U', 'C']:
-            task_key_map = {'raw_output': 'raw_output', 'upscale': 'upscale', 'colorize': 'colorize'}
+            task_key_map = {'R': 'raw_output', 'U': 'upscale', 'C': 'colorize'}
             task_info = self.config_loader.tasks_config.get(task_key_map.get(job_type), {})
             backend_overrides = task_info.get("backend_config", {})
             for cat, overrides in backend_overrides.items():

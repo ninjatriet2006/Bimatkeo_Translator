@@ -25,7 +25,14 @@ def priority_sort_key(m_name: str):
         return (0, m_lower)
     return (5, m_lower)
 
-def fetch_remote_ai_models(endpoint: str, key: str, ai_provider: str) -> List[str]:
+def infer_ai_provider(endpoint: str) -> str:
+    """Infers the AI provider based on the endpoint string."""
+    ep_lower = endpoint.lower() if endpoint else ""
+    if not ep_lower or "generativelanguage" in ep_lower or "gemini" in ep_lower:
+        return 'gemini'
+    return 'custom_openai'
+
+def fetch_remote_ai_models(endpoint: str, api_key: str, ai_provider: str) -> List[str]:
     """Fetches AI models from remote provider (Gemini or OpenAI compatible)."""
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
