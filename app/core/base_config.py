@@ -13,16 +13,19 @@ class BaseConfigLoader:
     factory_defaults: Dict[str, Any]
     tasks_config: Dict[str, Any]
 
-    def save_studio_config(self):
+    def _save_yaml_file(self, path: str, data: Any) -> None:
         from ruamel.yaml import YAML
         yaml = YAML()
         yaml.preserve_quotes = True
         yaml.default_flow_style = False  # type: ignore
         try:
-            with open(self.studio_config_path, "w", encoding="utf-8") as f:
-                yaml.dump(self.studio_config, f)
+            with open(path, "w", encoding="utf-8") as f:
+                yaml.dump(data, f)
         except Exception as e:
-            print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
+            print(f"[ConfigLoader] Error saving {os.path.basename(path)}: {e}")
+
+    def save_studio_config(self):
+        self._save_yaml_file(self.studio_config_path, self.studio_config)
 
     def _load_yaml_file(self, path: str) -> Dict[str, Any]:
         """Loads a YAML file and returns its content as a dictionary."""

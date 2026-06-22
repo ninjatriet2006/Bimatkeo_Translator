@@ -58,8 +58,7 @@ class SchemaMixin:
 
         Priority: the model registry (single source of truth). The registry
         already populated self._model_checks via load_registry, so we just read
-        the ordered keys from it. Falls back to the legacy .config YAML files
-        only when the registry has no entry for this field.
+        the ordered keys from it.
         """
         if field == "dict_profile":
             return list(self.dict_profiles.get("profiles", {}).keys())
@@ -68,33 +67,6 @@ class SchemaMixin:
         if field in registry and registry[field]:
             return list(registry[field].keys())
 
-        from ruamel.yaml import YAML
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        yaml.default_flow_style = False  # type: ignore
-        filename = self._get_yaml_filename(field)  # type: ignore
-        model_yaml_path = os.path.join(self.project_base_dir, ".config", filename)
-        try:
-            if os.path.exists(model_yaml_path):
-                with open(model_yaml_path, 'r', encoding='utf-8') as f:
-                    content = yaml.load(f)
-                models_list = []
-                if isinstance(content, dict) and "models" in content:
-                    models_list = content["models"]
-                elif isinstance(content, list):
-                    models_list = content
-                
-                self.register_model_checks(field, models_list)
-                
-                names = []
-                for item in models_list:
-                    if isinstance(item, str):
-                        names.append(item)
-                    elif isinstance(item, dict) and "name" in item:
-                        names.append(str(item["name"]))
-                return names
-        except Exception as e:
-            print(f"[ConfigLoader] Error reading custom models for {field}: {e}")
         return None
 
     def register_model_checks(self, field, model_list):

@@ -111,15 +111,7 @@ class ConfigLoaderBase(BaseConfigLoader):
 
 
     def save_oldsession_config(self):
-        from ruamel.yaml import YAML
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        yaml.default_flow_style = False
-        try:
-            with open(self.oldsession_path, "w", encoding="utf-8") as f:
-                yaml.dump(self.oldsession_config, f)
-        except Exception as e:
-            print(f"[ConfigLoader] Error saving oldsession.yaml: {e}")
+        self._save_yaml_file(self.oldsession_path, self.oldsession_config)
 
 
     def get_factory_defaults(self):
@@ -133,22 +125,13 @@ class ConfigLoaderBase(BaseConfigLoader):
 
     def _load_keys_file(self):
         """Loads variables from the keys.yaml file in the .config directory into a dict."""
-        from ruamel.yaml import YAML
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        yaml.default_flow_style = False
         keys = {}
         keys_path = os.path.join(self.project_base_dir, ".config", "configs", "keys.yaml")
-        if os.path.exists(keys_path):
-            try:
-                with open(keys_path, 'r', encoding='utf-8') as f:
-                    content = yaml.load(f)
-                if isinstance(content, dict):
-                    for k, v in content.items():
-                        if k and isinstance(k, str):
-                            keys[k] = str(v) if v is not None else ""
-            except Exception as e:
-                print(f"[ConfigLoader] Error loading keys.yaml: {e}")
+        content = self._load_yaml_file(keys_path)
+        if isinstance(content, dict):
+            for k, v in content.items():
+                if k and isinstance(k, str):
+                    keys[k] = str(v) if v is not None else ""
         return keys
 
     def get_env_var(self, name):
