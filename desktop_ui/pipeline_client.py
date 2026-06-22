@@ -85,6 +85,7 @@ class Pipeline:
                 encoding='utf-8',
                 env=env
             )
+            assert self.process is not None and self.process.stdout is not None
             
             while True:
                 line = self.process.stdout.readline()

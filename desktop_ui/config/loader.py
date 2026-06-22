@@ -6,8 +6,9 @@ _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platfo
 _exe_ext = ".exe" if _os_suffix == "win" else ""
 
 from app.core.utils import get_python_executable
+from app.core.base_config import BaseConfigLoader
 
-class ConfigLoaderBase:
+class ConfigLoaderBase(BaseConfigLoader):
     # NOTE: _DEFAULT_CHECKS is now DERIVED from the model registry at runtime
     # (see RegistryMixin.load_registry, called early in __init__, which sets
     # self._DEFAULT_CHECKS as an instance attribute). This class-level value is
@@ -90,11 +91,11 @@ class ConfigLoaderBase:
         # Load the model registry FIRST (single source of truth).
         # This derives self._DEFAULT_CHECKS and registry-based groups/capabilities
         # before repair/capabilities/schema logic consumes them.
-        self.load_registry()
+        self.load_registry()  # type: ignore
 
         # Expose attributes from translator capabilities YAML
-        capabilities_data = self._load_translator_capabilities()
-        self.languages = self._load_backend_languages()
+        capabilities_data = self._load_translator_capabilities()  # type: ignore
+        self.languages = self._load_backend_languages()  # type: ignore
         
         self.translator_groups = capabilities_data.get("TRANSLATOR_GROUPS", {})
         self.log_colors = capabilities_data.get("LOG_COLORS", {
@@ -113,13 +114,13 @@ class ConfigLoaderBase:
             raise RuntimeError("Failed to load backend configuration schema.")
 
         # Run config initialization and repair before building data
-        self._initialize_and_repair_config()
+        self._initialize_and_repair_config()  # type: ignore
 
         self.ui_map = self._load_ui_map()
         self.tasks_config = self._load_tasks_config()
 
         self.app_language = self.studio_config.get("app_language", "English")
-        self.localize_ui_map(self.app_language)
+        self.localize_ui_map(self.app_language)  # type: ignore
 
         # The data is built and stored directly as attributes, not through getter methods
         self.factory_defaults = self._parse_factory_defaults()
@@ -128,7 +129,7 @@ class ConfigLoaderBase:
         # Run the one-time model fallback sweep (once per machine). Repairs any
         # stored profile/default that points at a deleted or not-set-up model.
         # No-op after the first successful run on this machine. Never raises.
-        self.optimize_profiles_once()
+        self.optimize_profiles_once()  # type: ignore
 
 
     def save_oldsession_config(self):

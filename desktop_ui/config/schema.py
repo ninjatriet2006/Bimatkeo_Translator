@@ -29,7 +29,7 @@ class SchemaMixin:
         for prop in root_props.values():
             ref_path = prop.get("allOf", [{}])[0].get('$ref')
             if ref_path:
-                config_def = self._get_definition_from_ref(ref_path)
+                config_def = self._get_definition_from_ref(ref_path)  # type: ignore
                 if config_def and "properties" in config_def:
                     all_properties.update(config_def["properties"])
 
@@ -49,7 +49,7 @@ class SchemaMixin:
             if prop_def and isinstance(prop_def, dict):
                 ref_path = prop_def.get("allOf", [{}])[0].get('$ref')
                 if ref_path:
-                    enum_def = self._get_definition_from_ref(ref_path)
+                    enum_def = self._get_definition_from_ref(ref_path)  # type: ignore
                     if enum_def and "enum" in enum_def:
                         custom_choices = self._load_custom_models(key)
                         merged_info['values'] = custom_choices if custom_choices is not None else enum_def["enum"]
