@@ -2109,14 +2109,18 @@ class HandlersMixin:
                 
         # Remove from local_versions
         config_dir = os.path.join(base_dir, ".config", "models")
-        local_versions_file = os.path.join(config_dir, "local_versions.json")
+        local_versions_file = os.path.join(config_dir, "local_versions.yaml")
         if os.path.exists(local_versions_file):
+            from ruamel.yaml import YAML
+            yaml = YAML()
+            yaml.preserve_quotes = True
+            yaml.default_flow_style = False
             with open(local_versions_file, "r", encoding="utf-8") as lf:
-                local_versions = json.load(lf)
+                local_versions = yaml.load(lf)
             if model_name in local_versions:
                 del local_versions[model_name]
                 with open(local_versions_file, "w", encoding="utf-8") as lf:
-                    json.dump(local_versions, lf, indent=4)
+                    yaml.dump(local_versions, lf)
                     
         QMessageBox.information(self, "Thành công", f"Đã xóa mô hình '{model_name}'.")
         if hasattr(self, '_refresh_combobox_values'):
@@ -2181,19 +2185,27 @@ class HandlersMixin:
                     self.progress.emit(10, f"Đang tải cấu hình nguồn của {translator_name}...")
                     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
                     config_dir = os.path.join(base_dir, ".config", "models")
-                    sources_file = os.path.join(config_dir, "model_sources.yaml")
-                    local_versions_file = os.path.join(config_dir, "local_versions.json")
+                    registry_file = os.path.join(config_dir, "model_registry.yaml")
+                    local_versions_file = os.path.join(config_dir, "local_versions.yaml")
                     
-                    if not os.path.exists(sources_file):
-                        self.finished.emit(False, "Không tìm thấy file cấu hình model_sources.yaml.")
+                    if not os.path.exists(registry_file):
+                        self.finished.emit(False, "Không tìm thấy file cấu hình model_registry.yaml.")
                         return
                         
-                    with open(sources_file, "r", encoding="utf-8") as sf:
-                        sources = yaml.safe_load(sf)
+                    with open(registry_file, "r", encoding="utf-8") as sf:
+                        registry = yaml.load(sf)
                         
-                    url = sources.get(translator_name)
+                    url = None
+                    if registry and "fields" in registry:
+                        for field_name, items in registry["fields"].items():
+                            for item in items:
+                                if item and isinstance(item, dict) and item.get("key") == translator_name:
+                                    url = item.get("source")
+                                    break
+                            if url: break
+                            
                     if not url:
-                        self.finished.emit(False, f"Không tìm thấy cấu hình nguồn tải cho bộ dịch '{translator_name}' trong model_sources.yaml.")
+                        self.finished.emit(False, f"Không tìm thấy cấu hình nguồn tải (thuộc tính 'source') cho '{translator_name}' trong model_registry.yaml.")
                         return
                     
                     self.progress.emit(30, "Đang kiểm tra kết nối nguồn tải...")
@@ -2225,8 +2237,12 @@ class HandlersMixin:
                     
                     local_versions = {}
                     if os.path.exists(local_versions_file):
+                        from ruamel.yaml import YAML
+                        yaml = YAML()
+                        yaml.preserve_quotes = True
+                        yaml.default_flow_style = False
                         with open(local_versions_file, "r", encoding="utf-8") as lf:
-                            local_versions = json.load(lf)
+                            local_versions = yaml.load(lf)
                             
                     current_version = local_versions.get(translator_name, "none")
                     
@@ -2370,7 +2386,7 @@ class HandlersMixin:
                     # Update local version
                     local_versions[translator_name] = latest_version
                     with open(local_versions_file, "w", encoding="utf-8") as lf:
-                        json.dump(local_versions, lf, indent=4)
+                        yaml.dump(local_versions, lf)
                         
                     # Create models folder based on captured config
                     if check_file_path:
