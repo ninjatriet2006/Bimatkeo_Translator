@@ -515,6 +515,7 @@ class WidgetBuildersMixin:
 
         if info.get("widget") == "optionmenu_languages":
             # Populate languages excluding Auto-Detect
+            combo_box.addItem("--- Select ---", "none")
             for name, code in sorted(mw.LANGUAGES.items()):
                 if code != "auto":
                     combo_box.addItem(name, code)

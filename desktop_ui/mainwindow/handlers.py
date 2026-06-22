@@ -766,6 +766,7 @@ class HandlersMixin:
             current_val = offline_combo.currentData()
             offline_combo.blockSignals(True)
             offline_combo.clear()
+            offline_combo.addItem("--- Select ---", "none")
             
             filtered_offline = [t for t in self.original_offline_translators if supports_target(t)]
             setup_items = []
@@ -805,6 +806,7 @@ class HandlersMixin:
             current_val = ai_combo.currentData()
             ai_combo.blockSignals(True)
             ai_combo.clear()
+            ai_combo.addItem("--- Select ---", "none")
             filtered_ai = [t for t in self.original_ai_translators if supports_target(t)]
             setup_items = []
             not_setup_items = []
@@ -946,18 +948,22 @@ class HandlersMixin:
 
         lang_combo.blockSignals(True)
         lang_combo.clear()
+        lang_combo.addItem("--- Select ---", "none")
         if not supported_display_names:
             lang_combo.addItem("No Supported Targets")
             lang_combo.setEnabled(False)
         else:
-            lang_combo.addItems(sorted(supported_display_names))
+            for name in sorted(supported_display_names):
+                lang_combo.addItem(name, mw.LANGUAGES[name])
             lang_combo.setEnabled(True)
         lang_combo.blockSignals(False)
 
-        if current_selection in supported_display_names:
+        if current_selection == "--- Select ---" or current_selection == "none":
+            lang_combo.setCurrentIndex(0)
+        elif current_selection in supported_display_names:
             lang_combo.setCurrentText(current_selection)
-        elif "English" in supported_display_names:
-            lang_combo.setCurrentText("English")
+        else:
+            lang_combo.setCurrentIndex(0)
 
     def _get_value_from_widget(self, key: str, widget: QWidget) -> any:
         """Retrieves the current value from a given widget by its key."""
@@ -1498,7 +1504,7 @@ class HandlersMixin:
         """Scans the project'''s /fonts folder to create a name-to-filepath map."""
         self.font_map = {}
         found_any = False
-        for folder in ["fonts", os.path.join("MangaStudio_Data", "fonts")]:
+        for folder in ["fonts", os.path.join(".config", "configs", "fonts")]:
             fonts_dir = os.path.join(self.project_base_dir, folder)
             if os.path.isdir(fonts_dir):
                 found_any = True

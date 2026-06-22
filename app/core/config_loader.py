@@ -11,7 +11,7 @@ class ConfigLoader:
         self.cache_path = os.path.join(self.project_base_dir, "temp", "schema_cache.json")
         self.studio_config_path = os.path.join(self.project_base_dir, ".config", "configs", "studio_config.yaml")
 
-        import yaml
+        import yaml  # type: ignore
         self.studio_config = {}
         if os.path.exists(self.studio_config_path):
             try:
@@ -32,7 +32,7 @@ class ConfigLoader:
         self.full_config_data = self._build_full_config_data()
 
     def save_studio_config(self):
-        import yaml
+        import yaml  # type: ignore
         try:
             with open(self.studio_config_path, "w", encoding="utf-8") as f:
                 yaml.dump(self.studio_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
@@ -105,7 +105,7 @@ class ConfigLoader:
         if hasattr(self, 'studio_config') and self.studio_config and "ui_map" in self.studio_config:
             ui_map = self.studio_config["ui_map"]
         else:
-            map_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'ui_map.json')
+            map_path = os.path.join(self.project_base_dir, '.config', 'configs', 'ui_map.json')
             try:
                 with open(map_path, 'r', encoding='utf-8') as f:
                     ui_map = json.load(f)
@@ -126,7 +126,7 @@ class ConfigLoader:
         """Loads the special tasks configuration."""
         if hasattr(self, 'studio_config') and self.studio_config and "tasks" in self.studio_config:
             return self.studio_config["tasks"]
-        tasks_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'tasks.json')
+        tasks_path = os.path.join(self.project_base_dir, '.config', 'configs', 'tasks.json')
         try:
             with open(tasks_path, 'r', encoding='utf-8') as f:
                 print("[ConfigLoader] Loading tasks configuration...")
@@ -143,6 +143,8 @@ class ConfigLoader:
             parts = ref_path.split('/')[1:]
             node = self.backend_schema
             for part in parts:
+                if not isinstance(node, dict):
+                    return None
                 node = node[part]
             return node
         except Exception:
@@ -170,7 +172,7 @@ class ConfigLoader:
         all_properties = {}
 
         # 1. Gather all root-level properties
-        root_props = self.backend_schema.get("properties", {})
+        root_props = self.backend_schema.get("properties", {}) if self.backend_schema else {}
         all_properties.update(root_props)
 
         # 2. Gather all nested properties from complex types (e.g., DetectorConfig)

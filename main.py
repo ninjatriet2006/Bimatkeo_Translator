@@ -10,11 +10,11 @@
 
 import os
 import sys
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox  # type: ignore
 
 # --- Path Configuration ---
 # This is crucial for the modular structure to work correctly.
-# It ensures that Python can find the 'app' module inside the 'MangaStudio_Data' directory.
+# It ensures that Python can find the 'app' module inside the project directory.
 
 # Get the absolute path of the directory where this script is located (the project root)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

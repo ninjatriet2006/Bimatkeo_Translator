@@ -2,16 +2,27 @@ import os
 import json
 import re
 import subprocess
+from typing import Any, Dict
 
 class SchemaMixin:
+    project_base_dir: str
+    cache_path: str
+    studio_config: Dict[str, Any]
+    backend_schema: Dict[str, Any] | None
+    ui_map: Dict[str, Any]
+    factory_defaults: Dict[str, Any]
+    dict_profiles: Dict[str, Any]
+    
+    def save_studio_config(self) -> None: ...
+    def _get_yaml_filename(self, field: str) -> str: ...
     def _load_backend_schema(self):
         # 1. Try loading from studio_config.yaml
         if hasattr(self, 'studio_config') and self.studio_config and "schema_cache" in self.studio_config:
             print("[ConfigLoader] Loading schema from studio_config.yaml...")
             return self.studio_config["schema_cache"]
 
-        # 2. Try loading static schema file from project directory first (legacy cache)
-        static_path = os.path.join(self.project_base_dir, "MangaStudio_Data", "schema_cache.json")
+        # 2. Try loading from static schema cache if exists
+        static_path = os.path.join(self.project_base_dir, ".config", "configs", "schema_cache.json")
         if os.path.exists(static_path):
             try:
                 with open(static_path, 'r', encoding='utf-8') as f:
@@ -68,7 +79,7 @@ class SchemaMixin:
         if hasattr(self, 'studio_config') and self.studio_config and "ui_map" in self.studio_config:
             ui_map = self.studio_config["ui_map"]
         else:
-            map_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'ui_map.json')
+            map_path = os.path.join(self.project_base_dir, '.config', 'configs', 'ui_map.json')
             try:
                 with open(map_path, 'r', encoding='utf-8') as f:
                     ui_map = json.load(f)
@@ -89,7 +100,7 @@ class SchemaMixin:
         """Loads the special tasks configuration from tasks.json."""
         if hasattr(self, 'studio_config') and self.studio_config and "tasks" in self.studio_config:
             return self.studio_config["tasks"]
-        tasks_path = os.path.join(self.project_base_dir, 'MangaStudio_Data', 'tasks.json')
+        tasks_path = os.path.join(self.project_base_dir, '.config', 'configs', 'tasks.json')
         try:
             with open(tasks_path, 'r', encoding='utf-8') as f:
                 print("[ConfigLoader] Loading tasks configuration...")
@@ -106,6 +117,8 @@ class SchemaMixin:
             parts = ref_path.split('/')[1:]
             node = self.backend_schema
             for part in parts:
+                if not isinstance(node, dict):
+                    return None
                 node = node[part]
             return node
         except Exception:
@@ -133,7 +146,7 @@ class SchemaMixin:
         all_properties = {}
 
         # 1. Gather all root-level properties
-        root_props = self.backend_schema.get("properties", {})
+        root_props = self.backend_schema.get("properties", {}) if self.backend_schema else {}
         all_properties.update(root_props)
 
         # 2. Gather all nested properties from complex types (e.g., DetectorConfig)
@@ -190,7 +203,7 @@ class SchemaMixin:
         if field in registry and registry[field]:
             return list(registry[field].keys())
 
-        import yaml
+        import yaml  # type: ignore
         filename = self._get_yaml_filename(field)
         model_yaml_path = os.path.join(self.project_base_dir, ".config", filename)
         try:
