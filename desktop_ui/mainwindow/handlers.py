@@ -10,6 +10,7 @@ import sys
 import json
 import time
 import copy
+import string
 import subprocess
 from PySide6.QtWidgets import (
     QWidget, QComboBox, QCheckBox, QLineEdit, QButtonGroup, QMessageBox,
@@ -1307,32 +1308,15 @@ class HandlersMixin:
         font_size = f"{base_font_size * (percentage / 100.0)}pt"
 
         if theme_name == "Default Qt":
-            minimal_style = f"""
-                QWidget {{ font-size: {font_size}; }}
-                QComboBox[warning="true"] {{ color: #888888; }}
-                QPushButton {{
-                    background-color: #f0f0f0;
-                    color: #000000;
-                    border: 1px solid #c0c0c0;
-                    padding: 5px;
-                    border-radius: 3px;
-                }}
-                QPushButton:hover {{
-                    background-color: #e0e0e0;
-                }}
-                QPushButton:checked {{
-                    background-color: #3a7ebf;
-                    color: white;
-                    border: 2px solid #3a7ebf;
-                    font-weight: bold;
-                }}
-                QPushButton:checked:hover {{
-                    background-color: #2c5e8f;
-                    border: 2px solid #2c5e8f;
-                    color: white;
-                }}
-            """
-            self.setStyleSheet(minimal_style)
+            qss_path = os.path.join(self.project_base_dir, "themes", "default.qss")
+            if os.path.exists(qss_path):
+                with open(qss_path, "r", encoding="utf-8") as f:
+                    qss_content = f.read()
+                template = string.Template(qss_content)
+                minimal_style = template.safe_substitute(font_size=font_size)
+                self.setStyleSheet(minimal_style)
+            else:
+                self.setStyleSheet(f"QWidget {{ font-size: {font_size}; }}")
             self.theme_colors = {}
             self.log("INFO", "Reverted to default Qt theme.")
             return
@@ -1344,148 +1328,30 @@ class HandlersMixin:
         colors = theme_data["style"].get("colors", {})
         self.theme_colors = colors
         
-        bg_main = colors.get("background_main", "#2d2d2d")
-        bg_frame = colors.get("background_frame", "#2d2d2d")
-        btn_primary = colors.get("primary_button", "#3a7ebf")
-        btn_hover = colors.get("primary_button_hover", "#56a9e8")
-        slider_groove = colors.get("slider_groove", "#242424")
-        slider_handle = colors.get("slider_handle", "#3a7ebf")
-        txt_main = colors.get("text_main", "#dce4ee")
-        border = colors.get("border", "#555555")
-        accent = colors.get("accent", "#4a9fcf")
-        arrow_icon_path = self._get_themed_arrow_icon_path(txt_main, theme_name)
+        arrow_icon_path = self._get_themed_arrow_icon_path(colors.get("text_main", "#dce4ee"), theme_name)
+        
+        mapping = {
+            "font_size": font_size,
+            "background_main": colors.get("background_main", "#2d2d2d"),
+            "background_frame": colors.get("background_frame", "#2d2d2d"),
+            "primary_button": colors.get("primary_button", "#3a7ebf"),
+            "primary_button_hover": colors.get("primary_button_hover", "#56a9e8"),
+            "slider_groove": colors.get("slider_groove", "#242424"),
+            "slider_handle": colors.get("slider_handle", "#3a7ebf"),
+            "text_main": colors.get("text_main", "#dce4ee"),
+            "border": colors.get("border", "#555555"),
+            "accent": colors.get("accent", "#4a9fcf"),
+            "arrow_icon_path": arrow_icon_path
+        }
 
-        style_sheet = f"""
-            QWidget {{
-                font-size: {font_size};
-                background-color: {bg_main};
-                color: {txt_main};
-            }}
-            QFrame#StyledPanel, QFrame#LeftPanel {{
-                background-color: {bg_frame};
-                border: 1px solid {border};
-                border-radius: 5px;
-            }}
-            QPushButton {{
-                background-color: {btn_primary};
-                color: {txt_main};
-                border: 1px solid {border};
-                padding: 5px;
-                border-radius: 3px;
-            }}
-            QPushButton:hover {{
-                background-color: {btn_hover};
-            }}
-            QPushButton:checked {{
-                background-color: {accent};
-                color: white;
-                border: 2px solid {accent};
-            }}
-            QPushButton:checked:hover {{
-                background-color: {accent};
-                border: 2px solid {accent};
-                color: white;
-            }}
-            QPushButton:disabled {{ background-color: #555555; color: #888888; }}
-            
-            QComboBox, QLineEdit {{
-                background-color: {bg_main};
-                color: {txt_main};
-                border: 1px solid {border};
-                border-radius: 3px;
-                padding: 4px;
-            }}
-            QComboBox {{
-                padding-right: 24px;
-            }}
-            QComboBox[warning="true"] {{
-                color: #888888;
-            }}
-            QComboBox::drop-down {{
-                subcontrol-origin: padding;
-                subcontrol-position: top right;
-                width: 20px;
-                border: none;
-            }}
-            QComboBox::down-arrow {{
-                image: url({arrow_icon_path});
-                width: 12px;
-                height: 12px;
-            }}
-            QComboBox QAbstractItemView {{
-                background-color: {bg_main};
-                color: {txt_main};
-                border: 1px solid {border};
-                selection-background-color: {accent};
-            }}
-
-            QCheckBox::indicator {{
-            width: 14px;
-            height: 14px;
-            border: 1px solid {border};
-            border-radius: 3px;
-            }}
-            QCheckBox::indicator:unchecked {{ 
-                background-color: {bg_main}; 
-            }}
-            QCheckBox::indicator:checked {{
-                background-color: {accent};
-                border-color: {accent};
-            }}
-
-            QSlider::groove:horizontal {{
-                border: 1px solid {border};
-                background: {slider_groove};
-                height: 4px;
-                border-radius: 2px;
-            }}
-            QSlider::handle:horizontal {{
-                background: {slider_handle};
-                border: 1px solid {slider_handle};
-                width: 14px;
-                margin: -6px 0; 
-                border-radius: 7px;
-            }}
-            QSlider::handle:horizontal:hover {{
-                background: {btn_hover};
-                border: 1px solid {btn_hover};
-            }}
-            QListWidget, QTextEdit {{
-                background-color: {bg_main};
-                color: {txt_main};
-                border: 1px solid {border};
-                border-radius: 3px;
-            }}
-            QTabWidget::pane {{
-                background-color: {bg_main};
-                border: 1px solid {border};
-                border-radius: 5px;
-            }}
-            QTabBar::tab {{
-                background: {bg_main};
-                padding: 6px;
-                border: 1px solid {border};
-                border-bottom: none;
-            }}
-            QTabBar::tab:selected {{
-                background: {bg_frame};
-                color: {txt_main};
-                border-bottom: 1px solid {bg_frame};
-            }}
-            QTabBar::tab:!selected {{
-                background: {bg_main};
-                color: {txt_main};
-            }}
-            QTabBar::tab:!selected:hover {{
-                background: {bg_frame};
-            }}
-            QToolTip {{
-                color: {txt_main};
-                background-color: {bg_frame};
-                border: 1px solid {border};
-            }}
-        """
-        self.setStyleSheet(style_sheet)
+        qss_path = os.path.join(self.project_base_dir, "themes", "template.qss")
+        if os.path.exists(qss_path):
+            with open(qss_path, "r", encoding="utf-8") as f:
+                qss_content = f.read()
+            template = string.Template(qss_content)
+            style_sheet = template.safe_substitute(mapping)
+            self.setStyleSheet(style_sheet)
+        
         self.log("INFO", f"Theme '''{theme_name}''' applied successfully.")
 
     def _show_queue_context_menu(self, position):
