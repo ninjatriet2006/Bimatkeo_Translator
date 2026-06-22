@@ -19,19 +19,7 @@ class SchemaMixin:
         if not self.ui_map:
             return {}
         full_data = {}
-        all_properties = {}
-
-        # 1. Gather all root-level properties
-        root_props = self.backend_schema.get("properties", {}) if self.backend_schema else {}
-        all_properties.update(root_props)
-
-        # 2. Gather all nested properties from complex types (e.g., DetectorConfig)
-        for prop in root_props.values():
-            ref_path = prop.get("allOf", [{}])[0].get('$ref')
-            if ref_path:
-                config_def = self._get_definition_from_ref(ref_path)  # type: ignore
-                if config_def and "properties" in config_def:
-                    all_properties.update(config_def["properties"])
+        all_properties = self._get_flat_properties()
 
         # 3. Build the final data structure using the UI map as the guide
         for key, ui_info in self.ui_map.items():

@@ -119,6 +119,20 @@ class BaseConfigLoader:
         except Exception:
             return None
 
+    def _get_flat_properties(self) -> Dict[str, Any]:
+        """Gathers all root and nested properties from the schema."""
+        all_properties = {}
+        root_props = self.backend_schema.get("properties", {}) if self.backend_schema else {}
+        all_properties.update(root_props)
+
+        for prop in root_props.values():
+            ref_path = prop.get("allOf", [{}])[0].get('$ref')
+            if ref_path:
+                config_def = self._get_definition_from_ref(ref_path)
+                if config_def and "properties" in config_def:
+                    all_properties.update(config_def["properties"])
+        return all_properties
+
     def _parse_factory_defaults(self):
         """Deep-parses the schema to get ALL default values, including nested ones."""
         if not self.backend_schema:

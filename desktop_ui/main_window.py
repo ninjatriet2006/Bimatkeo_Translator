@@ -314,18 +314,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         self.settings_tab_view = QTabWidget()
         container_layout.addWidget(self.settings_tab_view)
 
-        config_data = self.config_loader.full_config_data
-        tab_order = self.config_loader.get_tab_order()
-        
-        grouped_settings = build_grouped_settings_tabs(config_data, tab_order)
-
-        for tab_name in tab_order:
-            settings_list = grouped_settings.get(tab_name, [])
-            tab_content_widget = self._build_dynamic_tab_content(tab_name, settings_list)
-            self.settings_tab_view.addTab(tab_content_widget, tab_name)
-
-        tasks_tab_content = self._build_tasks_tab_content()
-        self.settings_tab_view.addTab(tasks_tab_content, "Tasks 🛠️")
+        self._populate_all_tabs()
 
         return container_widget
 

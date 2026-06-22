@@ -450,6 +450,13 @@ class WidgetBuildersMixin:
         self.config_loader.full_config_data = self.config_loader._build_full_config_data()
         
         # Re-build tabs
+        self._populate_all_tabs()
+        
+        # Restore index if valid
+        if current_tab_idx < self.settings_tab_view.count():
+            self.settings_tab_view.setCurrentIndex(current_tab_idx)
+
+    def _populate_all_tabs(self):
         config_data = self.config_loader.full_config_data
         tab_order = self.config_loader.get_tab_order()
         
@@ -462,10 +469,6 @@ class WidgetBuildersMixin:
 
         tasks_tab_content = self._build_tasks_tab_content()
         self.settings_tab_view.addTab(tasks_tab_content, "Tasks 🛠️")
-        
-        # Restore index if valid
-        if current_tab_idx < self.settings_tab_view.count():
-            self.settings_tab_view.setCurrentIndex(current_tab_idx)
 
     def _create_segmented_button(self, info: dict) -> QWidget:
         """Creates a group of toggleable buttons."""

@@ -3,16 +3,10 @@ import sys
 import json
 import subprocess
 
-class Pipeline:
-    """Decoupled UI-side Pipeline client that runs the backend in a separate subprocess."""
+from app.core.pipeline import Pipeline as BackendPipeline
 
-    def __init__(self, app, python_executable, temp_dir):
-        self.app = app
-        self.python_executable = python_executable
-        self.temp_dir = temp_dir
-        os.makedirs(self.temp_dir, exist_ok=True)
-        self.process = None
-        self._stopped_by_user = False
+class Pipeline(BackendPipeline):
+    """Decoupled UI-side Pipeline client that runs the backend in a separate subprocess."""
 
     def _get_subprocess_env(self, project_base_dir):
         env = os.environ.copy()

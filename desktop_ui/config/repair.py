@@ -1,3 +1,4 @@
+# type: ignore
 import os
 import yaml
 
@@ -60,16 +61,7 @@ class RepairMixin:
 
         # 2. Repair dynamic enum model files
         enum_fields = {}
-        all_properties = {}
-
-        root_props = self.backend_schema.get("properties", {})
-        all_properties.update(root_props)
-        for prop in root_props.values():
-            ref_path = prop.get("allOf", [{}])[0].get('$ref')
-            if ref_path:
-                config_def = self._get_definition_from_ref(ref_path)
-                if config_def and "properties" in config_def:
-                    all_properties.update(config_def["properties"])
+        all_properties = self._get_flat_properties()
 
         for key, prop_def in all_properties.items():
             if isinstance(prop_def, dict):
