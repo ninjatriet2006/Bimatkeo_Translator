@@ -1,10 +1,18 @@
-import copy
+from desktop_ui.mainwindow.widgets_helper import SearchableComboBox
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                                QLineEdit, QPushButton, QListWidget, QComboBox,
                                QMessageBox, QGroupBox, QFormLayout, QWidget)
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
+import threading
+import json
+import urllib.request
+import urllib.error
+import ssl
 
 class ManagePoolsDialog(QDialog):
+    models_fetched_signal = Signal(list)
+    fetch_finished_signal = Signal()
+
     def __init__(self, main_window):
         super().__init__(main_window)
         self.main_window = main_window
@@ -18,18 +26,28 @@ class ManagePoolsDialog(QDialog):
         self._build_ui()
         self._refresh_pool_selector()
         
+        self.models_fetched_signal.connect(self._show_fetched_models)
+        self.fetch_finished_signal.connect(self._on_fetch_finished)
+        
     def _build_ui(self):
         layout = QVBoxLayout(self)
         
         # --- Top: Pool Selection / Creation ---
         pool_sel_layout = QHBoxLayout()
         pool_sel_layout.addWidget(QLabel("Select Pool:"))
-        self.pool_combo = QComboBox()
-        self.pool_combo.setEditable(True)
+        self.pool_combo = SearchableComboBox()
         self.pool_combo.currentTextChanged.connect(self._on_pool_changed)
         pool_sel_layout.addWidget(self.pool_combo, stretch=1)
         
-        self.delete_pool_btn = QPushButton("Delete Pool")
+        self.add_pool_btn = QPushButton("+")
+        self.add_pool_btn.setFixedWidth(30)
+        self.add_pool_btn.setToolTip("Create a new pool")
+        self.add_pool_btn.clicked.connect(self._create_new_pool)
+        pool_sel_layout.addWidget(self.add_pool_btn)
+        
+        self.delete_pool_btn = QPushButton("-")
+        self.delete_pool_btn.setFixedWidth(30)
+        self.delete_pool_btn.setToolTip("Delete this pool")
         self.delete_pool_btn.clicked.connect(self._delete_pool)
         pool_sel_layout.addWidget(self.delete_pool_btn)
         
@@ -75,20 +93,34 @@ class ManagePoolsDialog(QDialog):
         # New API
         form_layout = QFormLayout()
         self.new_api_name = QLineEdit()
-        self.new_api_provider = QComboBox()
-        self.new_api_provider.addItems(["gemini", "openai", "deepseek", "groq", "youdao", "baidu", "caiyun", "sakura", "papago", "custom_openai"])
         self.new_api_endpoint = QLineEdit()
-        self.new_api_model = QLineEdit()
+        
+        self.new_api_model = SearchableComboBox()
+        self.new_api_model.setEditable(True)
+        self.new_api_model.addItem("Auto")
+        self.new_api_model.setCurrentText("Auto")
+        
+        model_layout = QHBoxLayout()
+        model_layout.setContentsMargins(0,0,0,0)
+        model_layout.addWidget(self.new_api_model, stretch=1)
+        self.fetch_models_btn = QPushButton("Fetch")
+        self.fetch_models_btn.setFixedWidth(50)
+        self.fetch_models_btn.setToolTip("Fetch Models")
+        self.fetch_models_btn.clicked.connect(self._fetch_models)
+        model_layout.addWidget(self.fetch_models_btn)
+        
+        model_container = QWidget()
+        model_container.setLayout(model_layout)
+        
         self.new_api_key = QLineEdit()
         self.new_api_key.setEchoMode(QLineEdit.EchoMode.Password)
         
         form_layout.addRow("API Name:", self.new_api_name)
-        form_layout.addRow("Provider:", self.new_api_provider)
         form_layout.addRow("Endpoint URL:", self.new_api_endpoint)
-        form_layout.addRow("Model:", self.new_api_model)
+        form_layout.addRow("Model:", model_container)
         form_layout.addRow("API Key:", self.new_api_key)
         
-        self.add_new_btn = QPushButton("Create & Add to Pool")
+        self.add_new_btn = QPushButton("Create && Add to Pool")
         self.add_new_btn.clicked.connect(self._add_new_to_pool)
         
         add_layout.addLayout(form_layout)
@@ -113,14 +145,15 @@ class ManagePoolsDialog(QDialog):
     def _refresh_pool_selector(self):
         self.pool_combo.blockSignals(True)
         self.pool_combo.clear()
+        self.pool_combo.addItem("--- Select ---")
         self.pool_combo.addItems(list(self.pools.keys()))
         self.pool_combo.blockSignals(False)
-        if self.pool_combo.count() > 0:
-            self._on_pool_changed(self.pool_combo.currentText())
+        if self.pool_combo.count() > 1:
+            self._on_pool_changed(self.pool_combo.itemText(1))
 
     def _on_pool_changed(self, pool_name):
         self.api_list.clear()
-        if pool_name in self.pools:
+        if pool_name and pool_name != "--- Select ---" and pool_name in self.pools:
             for api_name in self.pools[pool_name]:
                 self.api_list.addItem(api_name)
 
@@ -155,9 +188,8 @@ class ManagePoolsDialog(QDialog):
             
         profile = {
             "group": "Pools",
-            "provider": self.new_api_provider.currentText(),
             "endpoint": self.new_api_endpoint.text().strip(),
-            "model": self.new_api_model.text().strip(),
+            "model": self.new_api_model.currentText().strip(),
             "key": self.new_api_key.text().strip()
         }
         
@@ -174,14 +206,16 @@ class ManagePoolsDialog(QDialog):
         self.new_api_name.clear()
         self.new_api_endpoint.clear()
         self.new_api_model.clear()
+        self.new_api_model.addItem("Auto")
+        self.new_api_model.setCurrentText("Auto")
         self.new_api_key.clear()
         
         QMessageBox.information(self, "Success", f"New API Profile '{name}' created and added to the pool.")
 
     def _save_pool(self):
         pool_name = self.pool_combo.currentText().strip()
-        if not pool_name:
-            QMessageBox.warning(self, "Error", "Pool Name cannot be empty.")
+        if not pool_name or pool_name == "--- Select ---":
+            QMessageBox.warning(self, "Error", "Please select a valid pool to save.")
             return
             
         apis = []
@@ -195,9 +229,22 @@ class ManagePoolsDialog(QDialog):
         self.pool_combo.setCurrentText(pool_name)
         QMessageBox.information(self, "Success", f"Pool '{pool_name}' saved.")
 
+    def _create_new_pool(self):
+        import PySide6.QtWidgets as QtWidgets
+        name, ok = QtWidgets.QInputDialog.getText(self, "New Pool", "Enter new Pool Name:")
+        if ok and name.strip():
+            name = name.strip()
+            if name in self.pools:
+                QMessageBox.warning(self, "Error", f"Pool '{name}' already exists.")
+                return
+            self.pools[name] = []
+            self.main_window._save_pool_profiles(self.pools)
+            self._refresh_pool_selector()
+            self.pool_combo.setCurrentText(name)
+
     def _delete_pool(self):
         pool_name = self.pool_combo.currentText().strip()
-        if pool_name in self.pools:
+        if pool_name and pool_name != "--- Select ---" and pool_name in self.pools:
             reply = QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete pool '{pool_name}'?",
                                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                          QMessageBox.StandardButton.No)
@@ -206,3 +253,117 @@ class ManagePoolsDialog(QDialog):
                 self.main_window._save_pool_profiles(self.pools)
                 self._refresh_pool_selector()
                 self.api_list.clear()
+
+    def _fetch_models(self):
+        endpoint = self.new_api_endpoint.text().strip()
+        key = self.new_api_key.text().strip()
+        
+        ep_lower = endpoint.lower() if endpoint else ""
+        if not endpoint or "generativelanguage" in ep_lower or "gemini" in ep_lower:
+            ai_provider = 'gemini'
+        else:
+            ai_provider = 'openai'
+
+        if not endpoint and ai_provider != 'gemini':
+            QMessageBox.warning(self, "Warning", "No API Endpoint URL provided. Please enter a valid URL.")
+            return
+
+        self.fetch_models_btn.setEnabled(False)
+        self.fetch_models_btn.setText("...")
+
+        def thread_target():
+            models = []
+            def is_blacklisted(model_name):
+                name_lower = model_name.lower()
+                blacklist_keywords = [
+                    "embedding", "tts", "whisper", "dall-e", "moderation", 
+                    "classifier", "aqa", "sib", "babbage", "davinci", "ada"
+                ]
+                return any(kw in name_lower for kw in blacklist_keywords)
+
+            try:
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+
+                if ai_provider == 'gemini':
+                    base_url = endpoint.rstrip('/') if endpoint else "https://generativelanguage.googleapis.com/v1beta"
+                    url = f"{base_url}/models?key={key}"
+                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, context=ctx, timeout=10) as response:
+                        res_data = json.loads(response.read().decode('utf-8'))
+                        gemini_models = []
+                        for m in res_data.get('models', []):
+                            m_name = m.get('name', '').replace('models/', '')
+                            if is_blacklisted(m_name): continue
+                            gemini_models.append((m_name, m.get('inputTokenLimit', 0)))
+                        gemini_models.sort(key=lambda x: (-x[1], x[0]))
+                        models = [x[0] for x in gemini_models]
+                else:
+                    base_url = endpoint.rstrip('/')
+                    url = base_url + '/models'
+                    headers = {'User-Agent': 'Mozilla/5.0', 'Content-Type': 'application/json'}
+                    if key: headers['Authorization'] = f"Bearer {key}"
+                    
+                    req = urllib.request.Request(url, headers=headers)
+                    raw_models = []
+                    try:
+                        with urllib.request.urlopen(req, context=ctx, timeout=10) as response:
+                            res_data = json.loads(response.read().decode('utf-8'))
+                            if 'data' in res_data and isinstance(res_data['data'], list):
+                                raw_models = [item['id'] for item in res_data['data'] if 'id' in item]
+                            elif 'models' in res_data and isinstance(res_data['models'], list):
+                                raw_models = [item['name'] for item in res_data['models'] if 'name' in item]
+                    except urllib.error.HTTPError as e:
+                        if '11434' in base_url or 'ollama' in base_url.lower():
+                            ollama_url = base_url.replace('/v1', '') + '/api/tags'
+                            req = urllib.request.Request(ollama_url, headers={'User-Agent': 'Mozilla/5.0'})
+                            with urllib.request.urlopen(req, context=ctx, timeout=10) as response:
+                                res_data = json.loads(response.read().decode('utf-8'))
+                                raw_models = [item['name'] for item in res_data.get('models', []) if 'name' in item]
+                        else:
+                            raise e
+
+                    filtered_models = [m for m in raw_models if not is_blacklisted(m)]
+                    
+                    def priority_sort_key(m_name):
+                        m_lower = m_name.lower()
+                        if any(x in m_lower for x in ["gpt-4o", "o1", "o3", "deepseek-chat", "mixtral", "llama3"]): return (-10, m_lower)
+                        if any(x in m_lower for x in ["gpt-4", "deepseek", "llama"]): return (-5, m_lower)
+                        if "gpt-3.5" in m_lower: return (0, m_lower)
+                        return (5, m_lower)
+
+                    models = sorted(list(set(filtered_models)), key=priority_sort_key)
+
+                if not models:
+                    raise Exception("No suitable model IDs found in response.")
+
+                self.models_fetched_signal.emit(models)
+            except Exception as e:
+                print(f"[ERROR] Failed to fetch models: {e}")
+                self.models_fetched_signal.emit([])
+            finally:
+                self.fetch_finished_signal.emit()
+
+        threading.Thread(target=thread_target, daemon=True).start()
+
+    def _show_fetched_models(self, models):
+        if not models:
+            QMessageBox.warning(self, "Warning", "Failed to fetch models or no models found.")
+            return
+            
+        current_text = self.new_api_model.currentText()
+        self.new_api_model.blockSignals(True)
+        self.new_api_model.clear()
+        self.new_api_model.addItem("Auto")
+        self.new_api_model.addItems(models)
+        
+        if current_text and (current_text in models or current_text == "Auto"):
+            self.new_api_model.setCurrentText(current_text)
+        else:
+            self.new_api_model.setCurrentText("Auto")
+        self.new_api_model.blockSignals(False)
+
+    def _on_fetch_finished(self):
+        self.fetch_models_btn.setEnabled(True)
+        self.fetch_models_btn.setText("Fetch")

@@ -565,8 +565,14 @@ class JobRunnerMixin:
                         for api_name in pools[pool_name]:
                             prof = api_profiles.get(api_name, {})
                             if prof:
+                                ep_lower = prof.get('endpoint', '').lower()
+                                if not ep_lower or "generativelanguage" in ep_lower or "gemini" in ep_lower:
+                                    inferred_provider = 'gemini'
+                                else:
+                                    inferred_provider = 'custom_openai'
+                                    
                                 translator_dict['pool_apis'].append({
-                                    'translator': prof.get('provider', 'gemini'),
+                                    'translator': inferred_provider,
                                     'endpoint': prof.get('endpoint', ''),
                                     'model': prof.get('model', ''),
                                     'api_key': prof.get('key', '')

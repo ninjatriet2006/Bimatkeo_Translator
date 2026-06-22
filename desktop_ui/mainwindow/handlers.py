@@ -11,6 +11,7 @@ import json
 import time
 import copy
 import string
+import threading
 import subprocess
 from PySide6.QtWidgets import (
     QWidget, QComboBox, QCheckBox, QLineEdit, QButtonGroup, QMessageBox,
@@ -286,6 +287,7 @@ class HandlersMixin:
 
     def _show_fetched_models(self, models, button):
         if not models:
+            QMessageBox.warning(self, "Warning", "Failed to fetch models or no models found.")
             return
             
         model_widget = self.setting_widgets.get('ai_model')
