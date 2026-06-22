@@ -12,9 +12,6 @@ class SchemaMixin:
     ui_map: Dict[str, Any]
     factory_defaults: Dict[str, Any]
     dict_profiles: Dict[str, Any]
-    
-    def save_studio_config(self) -> None: ...
-    def _get_yaml_filename(self, field: str) -> str: ...
     def _load_backend_schema(self):
         # 1. Try loading from studio_config.yaml
         if hasattr(self, 'studio_config') and self.studio_config and "schema_cache" in self.studio_config:
