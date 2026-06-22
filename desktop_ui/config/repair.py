@@ -2,7 +2,13 @@
 import os
 import yaml
 
+from typing import Dict, Any
+
 class RepairMixin:
+    project_base_dir: str
+    _DEFAULT_CHECKS: dict
+    def _get_flat_properties(self) -> Dict[str, Any]: return {}
+    def _get_definition_from_ref(self, arg) -> Dict[str, Any]: return {}
     def _get_yaml_filename(self, field: str) -> str:
         field_lower = field.lower()
         if field_lower in ["alignment", "direction", "inpainting_precision", "renderer"]:

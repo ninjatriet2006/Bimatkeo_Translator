@@ -1,6 +1,7 @@
 # type: ignore
 import os
 import sys
+import yaml
 
 _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platform.startswith('darwin') else "linux")
 _exe_ext = ".exe" if _os_suffix == "win" else ""
@@ -8,7 +9,11 @@ _exe_ext = ".exe" if _os_suffix == "win" else ""
 from app.core.utils import get_python_executable
 from app.core.base_config import BaseConfigLoader
 
+from typing import Callable
+
 class ConfigLoaderBase(BaseConfigLoader):
+    _default_log_colors: Callable
+    _build_full_config_data: Callable
     # NOTE: _DEFAULT_CHECKS is now DERIVED from the model registry at runtime
     # (see RegistryMixin.load_registry, called early in __init__, which sets
     # self._DEFAULT_CHECKS as an instance attribute). This class-level value is
@@ -44,34 +49,12 @@ class ConfigLoaderBase(BaseConfigLoader):
         self.studio_config_path = os.path.join(configs_dir, "studio_config.yaml")
         self.oldsession_path = os.path.join(configs_dir, "oldsession.yaml")
 
-        # Load studio_config.yaml early
-        import yaml
-        self.studio_config = {}
-        if os.path.exists(self.studio_config_path):
-            try:
-                with open(self.studio_config_path, "r", encoding="utf-8") as f:
-                    self.studio_config = yaml.safe_load(f) or {}
-            except Exception as e:
-                print(f"[ConfigLoader] Error loading studio_config.yaml: {e}")
-
-        # Load oldsession.yaml for UI session state
-        self.oldsession_config = {}
-        if os.path.exists(self.oldsession_path):
-            try:
-                with open(self.oldsession_path, "r", encoding="utf-8") as f:
-                    self.oldsession_config = yaml.safe_load(f) or {}
-            except Exception as e:
-                print(f"[ConfigLoader] Error loading oldsession.yaml: {e}")
-
-        # Load dict_profiles.yaml early
+        # Load configs
+        self.studio_config = self._load_yaml_file(self.studio_config_path)
+        self.oldsession_config = self._load_yaml_file(self.oldsession_path)
+        
         self.dict_profiles_path = os.path.join(configs_dir, "dict_profiles.yaml")
-        self.dict_profiles = {}
-        if os.path.exists(self.dict_profiles_path):
-            try:
-                with open(self.dict_profiles_path, "r", encoding="utf-8") as f:
-                    self.dict_profiles = yaml.safe_load(f) or {}
-            except Exception as e:
-                print(f"[ConfigLoader] Error loading dict_profiles.yaml: {e}")
+        self.dict_profiles = self._load_yaml_file(self.dict_profiles_path)
 
         # Load languages from .config/langs/ early
         langs_dir = os.path.join(config_dir, "langs")
@@ -98,15 +81,7 @@ class ConfigLoaderBase(BaseConfigLoader):
         self.languages = self._load_backend_languages()  # type: ignore
         
         self.translator_groups = capabilities_data.get("TRANSLATOR_GROUPS", {})
-        self.log_colors = capabilities_data.get("LOG_COLORS", {
-            "ERROR": "#E74C3C",
-            "SUCCESS": "#2ECC71",
-            "PIPELINE": "#5DADE2",
-            "WARNING": "#F39C12",
-            "INFO": "white",
-            "DEBUG": "gray",
-            "RAW": "gray"
-        })
+        self.log_colors = capabilities_data.get("LOG_COLORS", self._default_log_colors())
         self.translator_capabilities = capabilities_data.get("TRANSLATOR_CAPABILITIES", {})
 
         self.backend_schema = self._load_backend_schema()

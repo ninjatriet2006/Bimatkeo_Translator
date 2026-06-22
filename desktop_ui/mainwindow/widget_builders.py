@@ -1211,11 +1211,20 @@ class WidgetBuildersMixin:
         if default_font not in font_names:
             font_names.insert(0, default_font)
 
-        combo_box.addItems(font_names)
+        for font in font_names:
+            is_google = self._get_google_font_family_from_filename(font) is not None
+            display_text = font if is_google else f"{font} (Unavailable in fonts stores)"
+            combo_box.addItem(display_text, userData=font)
         combo_box.addItem("🔍 Install New Font...")
         combo_box.addItem("📥 Update All Fonts...")
 
-        combo_box.setCurrentText(default_font)
+        # Set current index using data
+        idx = combo_box.findData(default_font)
+        if idx != -1:
+            combo_box.setCurrentIndex(idx)
+        else:
+            combo_box.setCurrentText(default_font)
+            
         self._last_selected_font = default_font
 
         self._style_custom_fonts_in_combobox(combo_box)
@@ -1239,17 +1248,20 @@ class WidgetBuildersMixin:
         find_similar_btn.setVisible(not is_google)
 
         def on_combo_text_changed(text):
-            if text == "📥 Install New Font...":
+            if text == "🔍 Install New Font...":
                 self._prompt_font_install(combo_box)
-            elif text == "🔄 Update All Fonts...":
+            elif text == "📥 Update All Fonts...":
                 self._check_and_update_all_fonts(combo_box)
             else:
-                self._last_selected_font = text
-                is_google = self._get_google_font_family_from_filename(text) is not None
+                actual_font = combo_box.currentData()
+                if actual_font is None:
+                    actual_font = text
+                self._last_selected_font = actual_font
+                is_google = self._get_google_font_family_from_filename(actual_font) is not None
                 update_btn.setVisible(is_google)
                 find_similar_btn.setVisible(not is_google)
                 
-                is_warning = not is_google and text not in ["📥 Install New Font...", "🔄 Update All Fonts..."]
+                is_warning = not is_google and text not in ["🔍 Install New Font...", "📥 Update All Fonts..."]
                 combo_box.setProperty("warning", "true" if is_warning else "false")
                 combo_box.style().unpolish(combo_box)
                 combo_box.style().polish(combo_box)
@@ -1263,14 +1275,20 @@ class WidgetBuildersMixin:
         """Styles custom (non-Google) fonts in the combobox items with yellow/amber foreground color."""
         for i in range(combo_box.count()):
             text = combo_box.itemText(i)
-            if text not in ["📥 Install New Font...", "🔄 Update All Fonts..."]:
-                is_google = self._get_google_font_family_from_filename(text) is not None
+            if text not in ["🔍 Install New Font...", "📥 Update All Fonts..."]:
+                actual_font = combo_box.itemData(i)
+                if actual_font is None:
+                    actual_font = text
+                is_google = self._get_google_font_family_from_filename(actual_font) is not None
                 if not is_google:
-                    combo_box.setItemData(i, QColor("#FFC107"), Qt.ItemDataRole.ForegroundRole)
+                    combo_box.setItemData(i, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
                     
         curr_text = combo_box.currentText()
-        is_google_curr = self._get_google_font_family_from_filename(curr_text) is not None
-        is_warn = not is_google_curr and curr_text not in ["📥 Install New Font...", "🔄 Update All Fonts..."]
+        actual_curr_font = combo_box.currentData()
+        if actual_curr_font is None:
+            actual_curr_font = curr_text
+        is_google_curr = self._get_google_font_family_from_filename(actual_curr_font) is not None
+        is_warn = not is_google_curr and curr_text not in ["🔍 Install New Font...", "📥 Update All Fonts..."]
         combo_box.setProperty("warning", "true" if is_warn else "false")
         combo_box.style().unpolish(combo_box)
         combo_box.style().polish(combo_box)

@@ -184,7 +184,6 @@ class SearchableComboPopup(QWidget):
                 border-radius: 2px;
                 background-color: transparent;
                 border: none;
-                color: {txt};
             }}
             QListWidget::item:hover {{
                 background-color: {hover};
@@ -238,7 +237,7 @@ class SearchableComboPopup(QWidget):
         self.current_visible_mappings = []
         selected_row = -1
         
-        is_font_combo = self.combo.findText("📥 Install New Font...") != -1
+        is_font_combo = self.combo.findText("🔍 Install New Font...") != -1
         
         for text, is_enabled, orig_index, user_data in self.items_data:
             if search_text in text.lower():
@@ -246,11 +245,13 @@ class SearchableComboPopup(QWidget):
                 if not is_enabled:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
                     item.setForeground(QColor("#888888"))
-                elif is_font_combo and text not in ["📥 Install New Font...", "🔄 Update All Fonts..."]:
+                elif is_font_combo and text not in ["🔍 Install New Font...", "📥 Update All Fonts..."]:
                     if self.main_win and hasattr(self.main_win, "_get_google_font_family_from_filename"):
-                        is_google = self.main_win._get_google_font_family_from_filename(text) is not None
+                        # user_data is available in self.items_data
+                        actual_font = user_data if user_data else text
+                        is_google = self.main_win._get_google_font_family_from_filename(actual_font) is not None
                         if not is_google:
-                            item.setForeground(QColor("#FFC107"))
+                            item.setForeground(QColor("#888888"))
                             item.setToolTip("Custom font (manual copy, not from Google Fonts)")
                 elif "(Not Setup)" in text:
                     item.setForeground(QColor("#a8a8a8"))

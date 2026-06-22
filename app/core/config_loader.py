@@ -14,14 +14,7 @@ class ConfigLoader(BaseConfigLoader):
         self.cache_path = os.path.join(self.project_base_dir, "temp", "schema_cache.json")
         self.studio_config_path = os.path.join(self.project_base_dir, ".config", "configs", "studio_config.yaml")
 
-        import yaml  # type: ignore
-        self.studio_config = {}
-        if os.path.exists(self.studio_config_path):
-            try:
-                with open(self.studio_config_path, "r", encoding="utf-8") as f:
-                    self.studio_config = yaml.safe_load(f) or {}
-            except Exception as e:
-                print(f"[ConfigLoader] Error loading studio_config.yaml: {e}")
+        self.studio_config = self._load_yaml_file(self.studio_config_path)
 
         self.backend_schema = self._load_backend_schema()
         self.ui_map = self._load_ui_map()

@@ -21,6 +21,17 @@ class BaseConfigLoader:
         except Exception as e:
             print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
 
+    def _load_yaml_file(self, path: str) -> Dict[str, Any]:
+        """Loads a YAML file and returns its content as a dictionary."""
+        if os.path.exists(path):
+            import yaml  # type: ignore
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"[ConfigLoader] Error loading YAML file {os.path.basename(path)}: {e}")
+        return {}
+
     def _load_backend_schema(self):
         if hasattr(self, 'studio_config') and self.studio_config and "schema_cache" in self.studio_config:
             return self.studio_config["schema_cache"]

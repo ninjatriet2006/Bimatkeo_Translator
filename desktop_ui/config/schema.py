@@ -5,6 +5,7 @@ import subprocess
 from typing import Any, Dict
 
 class SchemaMixin:
+    def _get_flat_properties(self) -> Dict[str, Any]: return {}
     project_base_dir: str
     cache_path: str
     studio_config: Dict[str, Any]

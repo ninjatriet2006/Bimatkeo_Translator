@@ -16,6 +16,11 @@ GLOBAL_ISO_MAP = {
 }
 
 class CapabilitiesMixin:
+    project_base_dir: str
+    localization: dict
+    dict_profiles: dict
+    _DEFAULT_CHECKS: dict
+    def _initialize_and_repair_config(self) -> None: pass
     def _load_translator_capabilities(self):
         """Returns translator groups + capabilities.
 

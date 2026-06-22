@@ -839,23 +839,34 @@ class HandlersMixin:
             offline_combo.clear()
             offline_combo.addItem("--- Select ---", "none")
             
-            filtered_offline = [t for t in self.original_offline_translators if supports_target(t)]
             setup_items = []
             not_setup_items = []
-            for val in filtered_offline:
+            for val in self.original_offline_translators:
+                supported = supports_target(val)
                 exists = self.config_loader.check_model_existence(val, field='offline_translator')
+                
+                label = self.config_loader.format_display_label(val, 'offline_translator')
+                if not exists:
+                    label += " (Not Setup)"
+                if not supported:
+                    label += " (Unavailable for this language)"
+                    
                 if exists:
-                    setup_items.append(val)
+                    setup_items.append((val, label, not supported))
                 else:
-                    not_setup_items.append(val)
+                    not_setup_items.append((val, label, not supported))
             
-            setup_items.sort(key=natural_sort_key)
-            not_setup_items.sort(key=natural_sort_key)
+            setup_items.sort(key=lambda x: natural_sort_key(x[0]))
+            not_setup_items.sort(key=lambda x: natural_sort_key(x[0]))
             
-            for val in setup_items:
-                offline_combo.addItem(self.config_loader.format_display_label(val, 'offline_translator'), val)
-            for val in not_setup_items:
-                offline_combo.addItem(f"{self.config_loader.format_display_label(val, 'offline_translator')} (Not Setup)", val)
+            for val, label, is_unsupported in setup_items:
+                offline_combo.addItem(label, val)
+                if is_unsupported:
+                    last_idx = offline_combo.count() - 1
+                    offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+                    
+            for val, label, is_unsupported in not_setup_items:
+                offline_combo.addItem(label, val)
                 last_idx = offline_combo.count() - 1
                 offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             offline_combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
@@ -878,23 +889,34 @@ class HandlersMixin:
             ai_combo.blockSignals(True)
             ai_combo.clear()
             ai_combo.addItem("--- Select ---", "none")
-            filtered_ai = [t for t in self.original_ai_translators if supports_target(t)]
             setup_items = []
             not_setup_items = []
-            for val in filtered_ai:
+            for val in self.original_ai_translators:
+                supported = supports_target(val)
                 exists = self.config_loader.check_model_existence(val, field='ai_translator')
+                
+                label = self.config_loader.format_display_label(val, 'ai_translator')
+                if not exists:
+                    label += " (Not Setup)"
+                if not supported:
+                    label += " (Unavailable for this language)"
+                    
                 if exists:
-                    setup_items.append(val)
+                    setup_items.append((val, label, not supported))
                 else:
-                    not_setup_items.append(val)
+                    not_setup_items.append((val, label, not supported))
             
-            setup_items.sort(key=natural_sort_key)
-            not_setup_items.sort(key=natural_sort_key)
+            setup_items.sort(key=lambda x: natural_sort_key(x[0]))
+            not_setup_items.sort(key=lambda x: natural_sort_key(x[0]))
             
-            for val in setup_items:
-                ai_combo.addItem(self.config_loader.format_display_label(val, 'ai_translator'), val)
-            for val in not_setup_items:
-                ai_combo.addItem(f"{self.config_loader.format_display_label(val, 'ai_translator')} (Not Setup)", val)
+            for val, label, is_unsupported in setup_items:
+                ai_combo.addItem(label, val)
+                if is_unsupported:
+                    last_idx = ai_combo.count() - 1
+                    ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+                    
+            for val, label, is_unsupported in not_setup_items:
+                ai_combo.addItem(label, val)
                 last_idx = ai_combo.count() - 1
                 ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             ai_combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
@@ -941,36 +963,46 @@ class HandlersMixin:
         translator_combo.clear()
 
         for group_name, translators in mw.TRANSLATOR_GROUPS.items():
-            filtered_translators = [t for t in translators if supports_target(t)]
-            if not filtered_translators:
-                continue
-                
             field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
             
             setup_items = []
             not_setup_items = []
-            for t in filtered_translators:
+            for t in translators:
+                supported = supports_target(t)
                 exists = self.config_loader.check_model_existence(t, field=field_name)
+                
+                label = self.config_loader.format_display_label(t, field_name)
+                if not exists:
+                    label += " (Not Setup)"
+                if not supported:
+                    label += " (Unavailable for this language)"
+                    
                 if exists:
-                    setup_items.append(t)
+                    setup_items.append((t, label, not supported))
                 else:
-                    not_setup_items.append(t)
+                    not_setup_items.append((t, label, not supported))
                     
             import re
             def natural_sort_key(s):
                 return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
                 
-            setup_items.sort(key=natural_sort_key)
-            not_setup_items.sort(key=natural_sort_key)
+            setup_items.sort(key=lambda x: natural_sort_key(x[0]))
+            not_setup_items.sort(key=lambda x: natural_sort_key(x[0]))
+            
+            if not setup_items and not not_setup_items:
+                continue
             
             item_index = translator_combo.count()
             translator_combo.addItem(group_name)
             translator_combo.model().item(item_index).setEnabled(False)
             
-            for t in setup_items:
-                translator_combo.addItem(self.config_loader.format_display_label(t, field_name), t)
-            for t in not_setup_items:
-                translator_combo.addItem(f"{self.config_loader.format_display_label(t, field_name)} (Not Setup)", t)
+            for t, label, is_unsupported in setup_items:
+                translator_combo.addItem(label, t)
+                if is_unsupported:
+                    last_idx = translator_combo.count() - 1
+                    translator_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+            for t, label, is_unsupported in not_setup_items:
+                translator_combo.addItem(label, t)
                 last_idx = translator_combo.count() - 1
                 translator_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
         
@@ -1072,7 +1104,12 @@ class HandlersMixin:
             return None
         elif widget_type in ["api_profile_selector", "api_group_selector", "ai_model_selector", "combobox_fonts"]:
             combo = widget.findChild(QComboBox) if not isinstance(widget, QComboBox) else widget
-            return combo.currentText() if combo else None
+            if not combo:
+                return None
+            if widget_type == "combobox_fonts":
+                val = combo.currentData()
+                return val if val is not None else combo.currentText()
+            return combo.currentText()
         elif widget_type == "open_yaml_button":
             return info.get("default", "skip_languages.yaml")
         elif widget_type == "slider":
@@ -1173,8 +1210,18 @@ class HandlersMixin:
             combo = widget.findChild(QComboBox) if not isinstance(widget, QComboBox) else widget
             if combo:
                 combo.blockSignals(True)
-                combo.setCurrentText(str(value))
+                if widget_type == "combobox_fonts":
+                    idx = combo.findData(str(value))
+                    if idx != -1:
+                        combo.setCurrentIndex(idx)
+                    else:
+                        combo.setCurrentText(str(value))
+                else:
+                    combo.setCurrentText(str(value))
                 combo.blockSignals(False)
+                
+                if widget_type == "combobox_fonts" and hasattr(self, "_style_custom_fonts_in_combobox"):
+                    self._style_custom_fonts_in_combobox(combo)
         elif widget_type == "ai_model_selector":
             combo = widget.findChild(QComboBox)
             if combo:
@@ -1262,7 +1309,7 @@ class HandlersMixin:
         if theme_name == "Default Qt":
             minimal_style = f"""
                 QWidget {{ font-size: {font_size}; }}
-                QComboBox[warning="true"] {{ color: #FFC107; }}
+                QComboBox[warning="true"] {{ color: #888888; }}
                 QPushButton {{
                     background-color: #f0f0f0;
                     color: #000000;
@@ -1352,7 +1399,7 @@ class HandlersMixin:
                 padding-right: 24px;
             }}
             QComboBox[warning="true"] {{
-                color: #FFC107;
+                color: #888888;
             }}
             QComboBox::drop-down {{
                 subcontrol-origin: padding;
