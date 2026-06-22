@@ -50,58 +50,7 @@ class Pipeline:
             
         project_base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         cmd = [self.python_executable, "-m", "app.core.pipeline", "--task-config", config_file_path]
-        
-        try:
-            env = self._get_subprocess_env(project_base_dir)
-            self.process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                cwd=project_base_dir,
-                encoding='utf-8',
-                env=env
-            )
-            
-            while True:
-                line = self.process.stdout.readline()
-                if not line:
-                    break
-                line = line.strip()
-                if not line:
-                    continue
-                    
-                if line.startswith("[LOG:"):
-                    try:
-                        right_bracket = line.find("]")
-                        prefix = line[5:right_bracket]
-                        msg = line[right_bracket+2:]
-                        log_callback(prefix, msg)
-                    except Exception:
-                        log_callback("INFO", line)
-                elif line == "[FINISHED:SUCCESS]":
-                    pass
-                elif line == "[FINISHED:FAILED]":
-                    pass
-                else:
-                    log_callback("RAW", line)
-                    
-            self.process.wait()
-            success = (self.process.returncode == 0)
-            
-            try:
-                os.remove(config_file_path)
-            except Exception:
-                pass
-                
-            return success and not self._stopped_by_user
-        except Exception as e:
-            log_callback("ERROR", f"Failed to run backend subprocess: {e}")
-            try:
-                os.remove(config_file_path)
-            except Exception:
-                pass
-            return False
+        return self._run_subprocess(cmd, config_file_path, project_base_dir, log_callback)
 
     def run_single_image_test(self, test_image_path, output_path, config_dict, log_callback, is_verbose=False):
         self._stopped_by_user = False
@@ -122,7 +71,9 @@ class Pipeline:
             
         project_base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         cmd = [self.python_executable, "-m", "app.core.pipeline", "--task-config", config_file_path, "--test-image", test_image_path]
-        
+        return self._run_subprocess(cmd, config_file_path, project_base_dir, log_callback)
+
+    def _run_subprocess(self, cmd, config_file_path, project_base_dir, log_callback):
         try:
             env = self._get_subprocess_env(project_base_dir)
             self.process = subprocess.Popen(

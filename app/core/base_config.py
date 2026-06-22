@@ -1,0 +1,145 @@
+import os
+import json
+import re
+from typing import Dict, Any, Optional
+
+class BaseConfigLoader:
+    project_base_dir: str
+    cache_path: str
+    studio_config_path: str
+    studio_config: Dict[str, Any]
+    backend_schema: Optional[Dict[str, Any]]
+    ui_map: Dict[str, Any]
+    factory_defaults: Dict[str, Any]
+    tasks_config: Dict[str, Any]
+
+    def save_studio_config(self):
+        import yaml  # type: ignore
+        try:
+            with open(self.studio_config_path, "w", encoding="utf-8") as f:
+                yaml.dump(self.studio_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        except Exception as e:
+            print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
+
+    def _load_backend_schema(self):
+        if hasattr(self, 'studio_config') and self.studio_config and "schema_cache" in self.studio_config:
+            return self.studio_config["schema_cache"]
+
+        if os.path.exists(self.cache_path):
+            try:
+                with open(self.cache_path, 'r', encoding='utf-8') as f:
+                    print("[ConfigLoader] Loading schema from cache...")
+                    return json.load(f)
+            except Exception:
+                pass
+
+        fallback_path = os.path.join(self.project_base_dir, ".config", "configs", "schema_fallback.json")
+        print("[ConfigLoader] Loading static configuration schema from fallback...")
+        if os.path.exists(fallback_path):
+            try:
+                with open(fallback_path, 'r', encoding='utf-8') as f:
+                    schema_data = json.load(f)
+                if not hasattr(self, "studio_config"):
+                    self.studio_config = {}
+                self.studio_config["schema_cache"] = schema_data
+                self.save_studio_config()
+                return schema_data
+            except Exception as e:
+                print(f"[ERROR] Could not load schema fallback: {e}")
+                return None
+        else:
+            print("[ERROR] No schema fallback found!")
+            return None
+    
+    def _parse_schema_output(self, stdout):
+        """Extracts the JSON portion of the schema output."""
+        try:
+            return json.loads(stdout)
+        except json.JSONDecodeError:
+            cleaned_stdout = self._strip_ansi(stdout)
+            json_start = cleaned_stdout.find('{')
+            json_end = cleaned_stdout.rfind('}')
+            if json_start == -1 or json_end == -1 or json_end < json_start:
+                return None
+            try:
+                return json.loads(cleaned_stdout[json_start:json_end + 1])
+            except json.JSONDecodeError:
+                return None
+
+    def _strip_ansi(self, text):
+        ansi_escape = re.compile(r'\x1B\[[0-9;]*[A-Za-z]')
+        return ansi_escape.sub('', text)
+
+    def _load_ui_map(self):
+        if hasattr(self, 'studio_config') and self.studio_config and "ui_map" in self.studio_config:
+            ui_map = self.studio_config["ui_map"]
+        else:
+            map_path = os.path.join(self.project_base_dir, '.config', 'configs', 'ui_map.json')
+            try:
+                with open(map_path, 'r', encoding='utf-8') as f:
+                    ui_map = json.load(f)
+            except Exception as e:
+                print(f"[ERROR] UI map loading failed: {e}")
+                ui_map = {}
+                
+        # Programmatically override output_format to always use dropdown (optionmenu)
+        if isinstance(ui_map, dict) and "output_format" in ui_map:
+            if isinstance(ui_map["output_format"], dict):
+                ui_map["output_format"]["widget"] = "optionmenu"
+                if "options" in ui_map["output_format"]:
+                    ui_map["output_format"].pop("options", None)
+                    
+        return ui_map
+
+    def _load_tasks_config(self):
+        """Loads the special tasks configuration."""
+        if hasattr(self, 'studio_config') and self.studio_config and "tasks" in self.studio_config:
+            return self.studio_config["tasks"]
+        tasks_path = os.path.join(self.project_base_dir, '.config', 'configs', 'tasks.json')
+        try:
+            with open(tasks_path, 'r', encoding='utf-8') as f:
+                print("[ConfigLoader] Loading tasks configuration...")
+                return json.load(f)
+        except FileNotFoundError:
+            print(f"[ERROR] tasks.json not found at: {tasks_path}")
+            return {}
+        except Exception as e:
+            print(f"[ERROR] Tasks config loading failed: {e}")
+            return {}
+    
+    def _get_definition_from_ref(self, ref_path):
+        try:
+            parts = ref_path.split('/')[1:]
+            node = self.backend_schema
+            for part in parts:
+                if not isinstance(node, dict):
+                    return None
+                node = node[part]
+            return node
+        except Exception:
+            return None
+
+    def _parse_factory_defaults(self):
+        """Deep-parses the schema to get ALL default values, including nested ones."""
+        if not self.backend_schema:
+            return {}
+        defaults = {}
+        properties = self.backend_schema.get("properties", {})
+
+        for prop_key, prop_value in properties.items():
+            if "default" in prop_value and isinstance(prop_value.get("default"), dict):
+                defaults.update(prop_value["default"])
+            elif "default" in prop_value:
+                defaults[prop_key] = prop_value["default"]
+        return defaults
+
+    def get_tasks_config(self):
+        """Returns the loaded tasks configuration."""
+        return getattr(self, "tasks_config", {})
+
+    def get_factory_defaults(self):
+        return getattr(self, "factory_defaults", {})
+
+    def get_tab_order(self):
+        ui_map = getattr(self, "ui_map", {})
+        return ui_map.get("__tab_order__", [])

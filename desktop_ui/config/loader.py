@@ -130,13 +130,6 @@ class ConfigLoaderBase:
         # No-op after the first successful run on this machine. Never raises.
         self.optimize_profiles_once()
 
-    def save_studio_config(self):
-        import yaml
-        try:
-            with open(self.studio_config_path, "w", encoding="utf-8") as f:
-                yaml.dump(self.studio_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
-        except Exception as e:
-            print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
 
     def save_oldsession_config(self):
         import yaml
@@ -146,9 +139,6 @@ class ConfigLoaderBase:
         except Exception as e:
             print(f"[ConfigLoader] Error saving oldsession.yaml: {e}")
 
-    def get_tasks_config(self):
-        """Returns the loaded tasks configuration."""
-        return self.tasks_config
 
     def get_factory_defaults(self):
         defaults = self.factory_defaults.copy()
@@ -158,8 +148,6 @@ class ConfigLoaderBase:
                 defaults[key] = ui_info["default"]
         return defaults
 
-    def get_tab_order(self):
-        return self.ui_map.get("__tab_order__", [])
 
     def _load_keys_file(self):
         """Loads variables from the keys.yaml file in the .config directory into a dict."""

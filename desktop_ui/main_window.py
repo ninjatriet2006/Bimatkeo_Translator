@@ -40,6 +40,7 @@ from .mainwindow import (
     ConsoleMixin,
     HandlersMixin
 )
+from .mainwindow.ui_utils import build_grouped_settings_tabs
 
 # Dynamic configuration mapping placeholders (shared globally)
 LANGUAGES = {}
@@ -315,14 +316,11 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
 
         config_data = self.config_loader.full_config_data
         tab_order = self.config_loader.get_tab_order()
-        grouped_settings = {tab_name: [] for tab_name in tab_order}
-        for key, info in config_data.items():
-            group = info.get("group", "Other")
-            if group in grouped_settings:
-                grouped_settings[group].append(info)
+        
+        grouped_settings = build_grouped_settings_tabs(config_data, tab_order)
 
         for tab_name in tab_order:
-            settings_list = sorted(grouped_settings.get(tab_name, []), key=lambda x: x.get('order', 999))
+            settings_list = grouped_settings.get(tab_name, [])
             tab_content_widget = self._build_dynamic_tab_content(tab_name, settings_list)
             self.settings_tab_view.addTab(tab_content_widget, tab_name)
 
