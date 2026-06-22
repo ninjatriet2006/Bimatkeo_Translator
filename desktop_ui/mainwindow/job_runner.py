@@ -11,10 +11,30 @@ import shutil
 import threading
 import copy
 import time
+import multiprocessing
+import queue
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QListWidgetItem, QApplication, QWidget, QSlider, QComboBox, QCheckBox, QLineEdit, QPushButton, QButtonGroup
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap, QColor
 from PIL import Image
+
+def _pipeline_process_worker(job_or_path, output_path, config_dict, is_verbose, output_format, log_queue, result_queue, temp_dir, python_exec, is_single_test=False):
+    from app.core.pipeline import Pipeline
+    
+    def log_callback(level, message):
+        log_queue.put((level, message))
+        
+    try:
+        pipeline = Pipeline(None, python_exec, temp_dir)
+        if is_single_test:
+            success = pipeline.run_single_image_test(job_or_path, output_path, config_dict, log_callback, is_verbose)
+        else:
+            success = pipeline.run(job_or_path, output_path, config_dict, log_callback, is_verbose, output_format)
+            
+        result_queue.put({"success": success})
+    except Exception as e:
+        log_queue.put(("ERROR", f"Critical Process Error: {e}"))
+        result_queue.put({"success": False})
 
 class JobRunnerMixin:
     def _add_job(self):
@@ -383,12 +403,13 @@ class JobRunnerMixin:
 
         is_verbose = test_job['settings'].get("enable_verbose_output", False)
 
-        success = self.pipeline.run_single_image_test(
+        success = self._run_pipeline_in_process(
             self.test_image_path,
             final_output_dir,
             final_config,
-            self.log,
-            is_verbose
+            is_verbose,
+            "png",
+            is_single_test=True
         )
 
         if success:
@@ -598,6 +619,52 @@ class JobRunnerMixin:
 
         return final_config
 
+    def _run_pipeline_in_process(self, job_or_path, output_path, config_dict, is_verbose, output_format, is_single_test=False):
+        log_queue = multiprocessing.Queue()
+        result_queue = multiprocessing.Queue()
+        
+        self.current_process = multiprocessing.Process(
+            target=_pipeline_process_worker,
+            args=(job_or_path, output_path, config_dict, is_verbose, output_format, log_queue, result_queue, self.pipeline.temp_dir, self.pipeline.python_executable, is_single_test)
+        )
+        self.current_process.start()
+        
+        success = False
+        while self.current_process.is_alive():
+            while True:
+                try:
+                    level, msg = log_queue.get_nowait()
+                    self.log(level, msg)
+                except queue.Empty:
+                    break
+            
+            if self._stopped_by_user:
+                self.current_process.terminate()
+                self.current_process.join()
+                self.log("PIPELINE", "Process terminated by user.")
+                return False
+                
+            time.sleep(0.1)
+            QApplication.processEvents()
+            
+        while True:
+            try:
+                level, msg = log_queue.get_nowait()
+                self.log(level, msg)
+            except queue.Empty:
+                break
+                
+        try:
+            result = result_queue.get_nowait()
+            success = result.get("success", False)
+        except queue.Empty:
+            if self.current_process.exitcode != 0 and not self._stopped_by_user:
+                self.log("ERROR", f"Process crashed unexpectedly! Exit code: {self.current_process.exitcode}")
+            success = False
+            
+        self.current_process = None
+        return success
+
     def _run_pipeline(self):
         """
         Processes all '''Ready''' jobs in the queue sequentially.
@@ -689,7 +756,7 @@ class JobRunnerMixin:
                         final_config = self._build_final_config_for_job(job_for_batch)
                         is_verbose = settings.get("enable_verbose_output", False)
                         
-                        batch_success = self.pipeline.run(job_for_batch, final_output_path, final_config, self.log, is_verbose, output_format)
+                        batch_success = self._run_pipeline_in_process(job_for_batch, final_output_path, final_config, is_verbose, output_format, is_single_test=False)
                         shutil.rmtree(temp_batch_dir)
 
                         if not batch_success:
@@ -709,7 +776,7 @@ class JobRunnerMixin:
 
                     final_config = self._build_final_config_for_job(job_for_run)
                     is_verbose = settings.get("enable_verbose_output", False)
-                    success = self.pipeline.run(job_for_run, final_output_path, final_config, self.log, is_verbose, output_format)
+                    success = self._run_pipeline_in_process(job_for_run, final_output_path, final_config, is_verbose, output_format, is_single_test=False)
                     shutil.rmtree(temp_source_dir)
 
                 job['status'] = "Completed" if success else ("Stopped" if self._stopped_by_user else "Failed")
@@ -736,7 +803,9 @@ class JobRunnerMixin:
 
         self.log("PIPELINE", "Stop command received. Terminating backend process...")
         self._stopped_by_user = True
-        self.pipeline.stop(self.log)
+        
+        if hasattr(self, 'current_process') and self.current_process and self.current_process.is_alive():
+            self.current_process.terminate()
 
     def _toggle_ui_state(self, is_running: bool, running_job_id: str = None):
         """
