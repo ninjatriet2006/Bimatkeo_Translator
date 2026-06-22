@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Matrix Code
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#0D0208'
+    # Màu nền của các khung/panels
+    background_frame: '#000000'
+    # Màu nền của nút bấm chính
+    primary_button: '#00A800'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#39FF14'
+    # Màu nền rãnh trượt
+    slider_groove: '#003B00'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#39FF14'
+    # Màu chữ cơ bản
+    text_main: '#00FF00'
+    # Màu viền
+    border: '#004F00'
+    # Màu nhấn (accent color)
+    accent: '#00FF00'
+    checkbox_indicator: '#00FF00'

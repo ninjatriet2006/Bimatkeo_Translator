@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Default Dark
+author: MangaStudio
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#242424'
+    # Màu nền của các khung/panels
+    background_frame: '#323232'
+    # Màu nền của nút bấm chính
+    primary_button: '#3a7ebf'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#56a9e8'
+    # Màu nền rãnh trượt
+    slider_groove: '#242424'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#3a7ebf'
+    # Màu chữ cơ bản
+    text_main: '#dce4ee'
+    # Màu viền
+    border: '#555555'
+    # Màu nhấn (accent color)
+    accent: '#4a9fcf'
+    checkbox_indicator: '#dce4ee'

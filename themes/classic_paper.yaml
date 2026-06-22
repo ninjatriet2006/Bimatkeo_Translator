@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Classic Paper
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#FDF5E6'
+    # Màu nền của các khung/panels
+    background_frame: '#FAEBD7'
+    # Màu nền của nút bấm chính
+    primary_button: '#A0522D'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#BC8F8F'
+    # Màu nền rãnh trượt
+    slider_groove: '#F5DEB3'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#8B4513'
+    # Màu chữ cơ bản
+    text_main: '#5A4F41'
+    # Màu viền
+    border: '#D2B48C'
+    # Màu nhấn (accent color)
+    accent: '#8B4513'
+    checkbox_indicator: '#5A4F41'

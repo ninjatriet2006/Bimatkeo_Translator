@@ -1,6 +1,9 @@
 # type: ignore
 import os
-import yaml
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+yaml.default_flow_style = False
 
 from typing import Dict, Any
 
@@ -46,7 +49,7 @@ class RepairMixin:
         if os.path.exists(read_path):
             try:
                 with open(read_path, 'r', encoding='utf-8') as f:
-                    content = yaml.safe_load(f)
+                    content = yaml.load(f)
                 if isinstance(content, dict):
                     for k, v in content.items():
                         if k and v and isinstance(k, (str, int, float)) and isinstance(v, (str, int, float)):
@@ -59,7 +62,7 @@ class RepairMixin:
 
         try:
             with open(lang_yaml_path, 'w', encoding='utf-8') as f:
-                yaml.dump(repaired_langs, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                yaml.dump(repaired_langs, f)
             if os.path.exists(old_lang_path) and lang_yaml_path != old_lang_path:
                 os.remove(old_lang_path)
         except Exception as e:
@@ -113,7 +116,7 @@ class RepairMixin:
             if os.path.exists(model_yaml_path):
                 try:
                     with open(model_yaml_path, 'r', encoding='utf-8') as f:
-                        content = yaml.safe_load(f)
+                        content = yaml.load(f)
                     if isinstance(content, dict) and "models" in content:
                         models_list = content["models"]
                     elif isinstance(content, list):
@@ -156,6 +159,6 @@ class RepairMixin:
 
             try:
                 with open(model_yaml_path, 'w', encoding='utf-8') as f:
-                    yaml.dump({"models": repaired_models}, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                    yaml.dump({"models": repaired_models}, f)
             except Exception as e:
                 print(f"[ConfigLoader] Error writing {filename}: {e}")

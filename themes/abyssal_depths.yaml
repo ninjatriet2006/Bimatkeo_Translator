@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Abyssal Depths
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#000020'
+    # Màu nền của các khung/panels
+    background_frame: '#000033'
+    # Màu nền của nút bấm chính
+    primary_button: '#005090'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#4080C0'
+    # Màu nền rãnh trượt
+    slider_groove: '#104070'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#90D0FF'
+    # Màu chữ cơ bản
+    text_main: '#E0E8FF'
+    # Màu viền
+    border: '#2060A0'
+    # Màu nhấn (accent color)
+    accent: '#4080C0'
+    checkbox_indicator: '#E0E8FF'

@@ -1,7 +1,10 @@
 # type: ignore
 import os
 import sys
-import yaml
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+yaml.default_flow_style = False
 
 _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platform.startswith('darwin') else "linux")
 _exe_ext = ".exe" if _os_suffix == "win" else ""
@@ -67,7 +70,7 @@ class ConfigLoaderBase(BaseConfigLoader):
                         lang_code = os.path.splitext(filename)[0]
                         file_path = os.path.join(langs_dir, filename)
                         with open(file_path, "r", encoding="utf-8") as f:
-                            self.localization[lang_code] = yaml.safe_load(f) or {}
+                            self.localization[lang_code] = yaml.load(f) or {}
             except Exception as e:
                 print(f"[ConfigLoader] Error loading files in langs directory: {e}")
 
@@ -108,10 +111,13 @@ class ConfigLoaderBase(BaseConfigLoader):
 
 
     def save_oldsession_config(self):
-        import yaml
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
         try:
             with open(self.oldsession_path, "w", encoding="utf-8") as f:
-                yaml.dump(self.oldsession_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                yaml.dump(self.oldsession_config, f)
         except Exception as e:
             print(f"[ConfigLoader] Error saving oldsession.yaml: {e}")
 
@@ -127,13 +133,16 @@ class ConfigLoaderBase(BaseConfigLoader):
 
     def _load_keys_file(self):
         """Loads variables from the keys.yaml file in the .config directory into a dict."""
-        import yaml
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
         keys = {}
         keys_path = os.path.join(self.project_base_dir, ".config", "configs", "keys.yaml")
         if os.path.exists(keys_path):
             try:
                 with open(keys_path, 'r', encoding='utf-8') as f:
-                    content = yaml.safe_load(f)
+                    content = yaml.load(f)
                 if isinstance(content, dict):
                     for k, v in content.items():
                         if k and isinstance(k, str):

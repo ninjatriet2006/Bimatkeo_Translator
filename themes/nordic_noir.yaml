@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Nordic Noir
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#2E3440'
+    # Màu nền của các khung/panels
+    background_frame: '#3B4252'
+    # Màu nền của nút bấm chính
+    primary_button: '#5E81AC'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#81A1C1'
+    # Màu nền rãnh trượt
+    slider_groove: '#4C566A'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#88C0D0'
+    # Màu chữ cơ bản
+    text_main: '#ECEFF4'
+    # Màu viền
+    border: '#4C566A'
+    # Màu nhấn (accent color)
+    accent: '#88C0D0'
+    checkbox_indicator: '#ECEFF4'

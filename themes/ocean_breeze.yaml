@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Ocean Breeze
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#E1F5FE'
+    # Màu nền của các khung/panels
+    background_frame: '#B3E5FC'
+    # Màu nền của nút bấm chính
+    primary_button: '#03A9F4'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#29B6F6'
+    # Màu nền rãnh trượt
+    slider_groove: '#81D4FA'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#01579B'
+    # Màu chữ cơ bản
+    text_main: '#01579B'
+    # Màu viền
+    border: '#4FC3F7'
+    # Màu nhấn (accent color)
+    accent: '#03A9F4'
+    checkbox_indicator: '#01579B'

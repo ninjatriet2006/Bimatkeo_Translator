@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Lavender Dream
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#F3E5F5'
+    # Màu nền của các khung/panels
+    background_frame: '#E1BEE7'
+    # Màu nền của nút bấm chính
+    primary_button: '#9C27B0'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#AB47BC'
+    # Màu nền rãnh trượt
+    slider_groove: '#CE93D8'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#6A1B9A'
+    # Màu chữ cơ bản
+    text_main: '#311B92'
+    # Màu viền
+    border: '#BA68C8'
+    # Màu nhấn (accent color)
+    accent: '#9C27B0'
+    checkbox_indicator: '#311B92'

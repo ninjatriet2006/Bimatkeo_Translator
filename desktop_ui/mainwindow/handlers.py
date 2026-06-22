@@ -312,14 +312,18 @@ class HandlersMixin:
     def _get_api_profiles_file_path(self) -> str:
         base_dir = os.path.join(self.project_base_dir, '.config', 'configs')
         os.makedirs(base_dir, exist_ok=True)
-        return os.path.join(base_dir, 'api_profiles.json')
+        return os.path.join(base_dir, 'api_profiles.yaml')
 
     def _load_api_profiles(self) -> dict:
         path = self._get_api_profiles_file_path()
         if os.path.exists(path):
+            from ruamel.yaml import YAML
+            yaml = YAML()
+            yaml.preserve_quotes = True
+            yaml.default_flow_style = False
             try:
                 with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    return yaml.load(f) or {}
             except Exception as e:
                 print(f"[ERROR] Failed to load API profiles: {e}")
         
@@ -343,10 +347,14 @@ class HandlersMixin:
         }
 
     def _save_api_profiles(self, profiles: dict):
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
         path = self._get_api_profiles_file_path()
         try:
             with open(path, 'w', encoding='utf-8') as f:
-                json.dump(profiles, f, indent=4)
+                yaml.dump(profiles, f)
         except Exception as e:
             print(f"[ERROR] Failed to save API profiles: {e}")
 
@@ -569,22 +577,28 @@ class HandlersMixin:
 
     def _load_preset_profiles(self) -> dict:
         import os
-        import yaml
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
         path = self._get_preset_profiles_file_path()
         if os.path.exists(path):
             try:
                 with open(path, 'r', encoding='utf-8') as f:
-                    return yaml.safe_load(f) or {}
+                    return yaml.load(f) or {}
             except Exception as e:
                 print(f"[ERROR] Failed to load preset profiles: {e}")
         return {}
 
     def _save_preset_profiles(self, profiles: dict):
-        import yaml
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
         path = self._get_preset_profiles_file_path()
         try:
             with open(path, 'w', encoding='utf-8') as f:
-                yaml.dump(profiles, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                yaml.dump(profiles, f)
         except Exception as e:
             print(f"[ERROR] Failed to save preset profiles: {e}")
 
@@ -1287,12 +1301,16 @@ class HandlersMixin:
             self.theme_combobox.addItems(sorted(self.available_themes.keys()))
             return
 
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
         for filename in os.listdir(themes_dir):
-            if filename.endswith(".json"):
+            if filename.endswith(".yaml"):
                 try:
                     filepath = os.path.join(themes_dir, filename)
                     with open(filepath, 'r', encoding='utf-8') as f:
-                        theme_data = json.load(f)
+                        theme_data = yaml.load(f) or {}
                         theme_name = theme_data.get("name", filename)
                         self.available_themes[theme_name] = theme_data
                 except Exception as e:
@@ -2154,7 +2172,10 @@ class HandlersMixin:
                 import urllib.error
                 import json
                 import os
-                import yaml
+                from ruamel.yaml import YAML
+                yaml = YAML()
+                yaml.preserve_quotes = True
+                yaml.default_flow_style = False
                 
                 try:
                     self.progress.emit(10, f"Đang tải cấu hình nguồn của {translator_name}...")

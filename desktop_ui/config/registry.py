@@ -1,7 +1,10 @@
 import os
 import sys
 import random
-import yaml
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+yaml.default_flow_style = False
 
 _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platform.startswith('darwin') else "linux")
 _exe_ext = ".exe" if _os_suffix == "win" else ""
@@ -87,7 +90,7 @@ class RegistryMixin:
         if os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    raw = yaml.safe_load(f)
+                    raw = yaml.load(f)
             except Exception as e:
                 print(f"[Registry] Failed to parse model_registry.yaml: {e}. Using seed.")
                 raw = None
@@ -107,7 +110,7 @@ class RegistryMixin:
         try:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w", encoding="utf-8") as f:
-                yaml.dump(data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                yaml.dump(data, f)
             print("[Registry] Wrote seed model_registry.yaml (self-heal).")
         except Exception as e:
             print(f"[Registry] Could not write seed registry: {e}")
@@ -371,7 +374,7 @@ class RegistryMixin:
             if os.path.exists(profiles_path):
                 try:
                     with open(profiles_path, "r", encoding="utf-8") as f:
-                        profiles = yaml.safe_load(f) or {}
+                        profiles = yaml.load(f) or {}
                     if isinstance(profiles, dict):
                         dirty = False
                         for name, settings in profiles.items():
@@ -381,8 +384,7 @@ class RegistryMixin:
                                 total_changes.extend((name, k, o, n) for (k, o, n) in changes)
                         if dirty:
                             with open(profiles_path, "w", encoding="utf-8") as f:
-                                yaml.dump(profiles, f, allow_unicode=True,
-                                          default_flow_style=False, sort_keys=False)
+                                yaml.dump(profiles, f)
                 except Exception as e:
                     print(f"[Registry] optimize: failed sweeping profiles.yaml: {e}")
 

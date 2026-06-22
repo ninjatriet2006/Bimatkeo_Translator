@@ -7,7 +7,10 @@
 
 import os
 import sys
-import yaml
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+yaml.default_flow_style = False
 from PySide6.QtWidgets import (
     QMainWindow, QLabel, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QMessageBox, QListWidget, QListWidgetItem,
@@ -25,7 +28,7 @@ def get_provider_credentials(provider: str) -> dict:
     if os.path.exists(keys_path):
         try:
             with open(keys_path, 'r', encoding='utf-8') as f:
-                content = yaml.safe_load(f)
+                content = yaml.load(f)
             if isinstance(content, dict):
                 for k, v in content.items():
                     if k:

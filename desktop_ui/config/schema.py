@@ -68,13 +68,16 @@ class SchemaMixin:
         if field in registry and registry[field]:
             return list(registry[field].keys())
 
-        import yaml  # type: ignore
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False  # type: ignore
         filename = self._get_yaml_filename(field)  # type: ignore
         model_yaml_path = os.path.join(self.project_base_dir, ".config", filename)
         try:
             if os.path.exists(model_yaml_path):
                 with open(model_yaml_path, 'r', encoding='utf-8') as f:
-                    content = yaml.safe_load(f)
+                    content = yaml.load(f)
                 models_list = []
                 if isinstance(content, dict) and "models" in content:
                     models_list = content["models"]

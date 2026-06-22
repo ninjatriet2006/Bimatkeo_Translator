@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Dracula
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#282a36'
+    # Màu nền của các khung/panels
+    background_frame: '#44475a'
+    # Màu nền của nút bấm chính
+    primary_button: '#bd93f9'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#caa9fa'
+    # Màu nền rãnh trượt
+    slider_groove: '#6272a4'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#ff79c6'
+    # Màu chữ cơ bản
+    text_main: '#f8f8f2'
+    # Màu viền
+    border: '#6272a4'
+    # Màu nhấn (accent color)
+    accent: '#ff79c6'
+    checkbox_indicator: '#f8f8f2'

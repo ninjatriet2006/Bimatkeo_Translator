@@ -20,7 +20,10 @@ class Pipeline:
         1. Reading skip_languages.yaml and converting set-to-true languages to a comma-separated string translator.skip_lang.
         2. Reading dict_profiles.yaml, getting the selected profile's dictionaries/prompts, writing them to temp files, and setting their paths in the config.
         """
-        import yaml
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         
         # 1. Process skip languages
@@ -29,7 +32,7 @@ class Pipeline:
         if os.path.exists(skip_yaml_path):
             try:
                 with open(skip_yaml_path, "r", encoding="utf-8") as f:
-                    skip_data = yaml.safe_load(f)
+                    skip_data = yaml.load(f)
                 if isinstance(skip_data, dict):
                     enabled_langs = [code for code, enabled in skip_data.items() if enabled is True]
                     skip_lang_str = ",".join(enabled_langs)
@@ -44,7 +47,7 @@ class Pipeline:
         if os.path.exists(dict_profiles_path):
             try:
                 with open(dict_profiles_path, "r", encoding="utf-8") as f:
-                    dict_data = yaml.safe_load(f)
+                    dict_data = yaml.load(f)
                 
                 selected_profile = translator_dict.get("dict_profile", "example")
                 profile_data = {}
@@ -85,7 +88,7 @@ class Pipeline:
                     gpt_config_data = profile_data.get("gpt_config", {})
                     gpt_config_path = os.path.join(temp_dir, f"gpt_config_{selected_profile}.yaml")
                     with open(gpt_config_path, "w", encoding="utf-8") as f:
-                        yaml.dump(gpt_config_data, f, allow_unicode=True, default_flow_style=False)
+                        yaml.dump(gpt_config_data, f)
                     config_dict["gpt_config"] = gpt_config_path
                 
             except Exception as e:

@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Sakura Sunset
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#FFF0F5'
+    # Màu nền của các khung/panels
+    background_frame: '#FFE4E1'
+    # Màu nền của nút bấm chính
+    primary_button: '#DB7093'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#FF85A2'
+    # Màu nền rãnh trượt
+    slider_groove: '#FFE4E1'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#C71585'
+    # Màu chữ cơ bản
+    text_main: '#6A5ACD'
+    # Màu viền
+    border: '#DDA0DD'
+    # Màu nhấn (accent color)
+    accent: '#C71585'
+    checkbox_indicator: '#6A5ACD'

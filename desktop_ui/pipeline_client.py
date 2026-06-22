@@ -13,9 +13,12 @@ class Pipeline(BackendPipeline):
         keys_path = os.path.join(project_base_dir, ".config", "configs", "keys.yaml")
         if os.path.exists(keys_path):
             try:
-                import yaml
+                from ruamel.yaml import YAML
+                yaml = YAML()
+                yaml.preserve_quotes = True
+                yaml.default_flow_style = False
                 with open(keys_path, 'r', encoding='utf-8') as f:
-                    keys_data = yaml.safe_load(f)
+                    keys_data = yaml.load(f)
                 if isinstance(keys_data, dict):
                     for k, v in keys_data.items():
                         if k and v is not None:

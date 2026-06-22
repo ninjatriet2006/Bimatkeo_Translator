@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Minty Fresh
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#E8F5E9'
+    # Màu nền của các khung/panels
+    background_frame: '#C8E6C9'
+    # Màu nền của nút bấm chính
+    primary_button: '#4CAF50'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#66BB6A'
+    # Màu nền rãnh trượt
+    slider_groove: '#A5D6A7'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#2E7D32'
+    # Màu chữ cơ bản
+    text_main: '#212121'
+    # Màu viền
+    border: '#A5D6A7'
+    # Màu nhấn (accent color)
+    accent: '#4CAF50'
+    checkbox_indicator: '#212121'

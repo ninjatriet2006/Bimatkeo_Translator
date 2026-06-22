@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Graphite
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#1E1E1E'
+    # Màu nền của các khung/panels
+    background_frame: '#2D2D2D'
+    # Màu nền của nút bấm chính
+    primary_button: '#616161'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#757575'
+    # Màu nền rãnh trượt
+    slider_groove: '#424242'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#9E9E9E'
+    # Màu chữ cơ bản
+    text_main: '#E0E0E0'
+    # Màu viền
+    border: '#424242'
+    # Màu nhấn (accent color)
+    accent: '#9E9E9E'
+    checkbox_indicator: '#E0E0E0'

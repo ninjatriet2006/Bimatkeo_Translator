@@ -6,3 +6,4 @@ python-dotenv
 torch
 PySide6
 pyyaml
+ruamel.yaml

@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Golden Sands
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#FFF8E1'
+    # Màu nền của các khung/panels
+    background_frame: '#FFECB3'
+    # Màu nền của nút bấm chính
+    primary_button: '#FFA726'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#FFB74D'
+    # Màu nền rãnh trượt
+    slider_groove: '#FFE082'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#E65100'
+    # Màu chữ cơ bản
+    text_main: '#4E342E'
+    # Màu viền
+    border: '#FFD54F'
+    # Màu nhấn (accent color)
+    accent: '#E65100'
+    checkbox_indicator: '#4E342E'

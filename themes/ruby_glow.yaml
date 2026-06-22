@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Ruby Glow
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#2B2B2B'
+    # Màu nền của các khung/panels
+    background_frame: '#3C3F41'
+    # Màu nền của nút bấm chính
+    primary_button: '#C70039'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#FF5733'
+    # Màu nền rãnh trượt
+    slider_groove: '#5A5A5A'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#900C3F'
+    # Màu chữ cơ bản
+    text_main: '#F0F0F0'
+    # Màu viền
+    border: '#5A5A5A'
+    # Màu nhấn (accent color)
+    accent: '#FF5733'
+    checkbox_indicator: '#F0F0F0'

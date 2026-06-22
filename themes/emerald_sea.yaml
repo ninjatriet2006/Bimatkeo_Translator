@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Emerald Sea
+author: Gemini
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#F0FFF0'
+    # Màu nền của các khung/panels
+    background_frame: '#E0FFFF'
+    # Màu nền của nút bấm chính
+    primary_button: '#20B2AA'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#2E8B57'
+    # Màu nền rãnh trượt
+    slider_groove: '#AFEEEE'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#FF4500'
+    # Màu chữ cơ bản
+    text_main: '#006400'
+    # Màu viền
+    border: '#4682B4'
+    # Màu nhấn (accent color)
+    accent: '#FF4500'
+    checkbox_indicator: '#006400'

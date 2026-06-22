@@ -14,20 +14,26 @@ class BaseConfigLoader:
     tasks_config: Dict[str, Any]
 
     def save_studio_config(self):
-        import yaml  # type: ignore
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False  # type: ignore
         try:
             with open(self.studio_config_path, "w", encoding="utf-8") as f:
-                yaml.dump(self.studio_config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                yaml.dump(self.studio_config, f)
         except Exception as e:
             print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
 
     def _load_yaml_file(self, path: str) -> Dict[str, Any]:
         """Loads a YAML file and returns its content as a dictionary."""
         if os.path.exists(path):
-            import yaml  # type: ignore
+            from ruamel.yaml import YAML
+            yaml = YAML()
+            yaml.preserve_quotes = True
+            yaml.default_flow_style = False  # type: ignore
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    return yaml.safe_load(f) or {}
+                    return yaml.load(f) or {}
             except Exception as e:
                 print(f"[ConfigLoader] Error loading YAML file {os.path.basename(path)}: {e}")
         return {}
@@ -44,12 +50,11 @@ class BaseConfigLoader:
             except Exception:
                 pass
 
-        fallback_path = os.path.join(self.project_base_dir, ".config", "configs", "schema_fallback.json")
+        fallback_path = os.path.join(self.project_base_dir, ".config", "configs", "schema_fallback.yaml")
         print("[ConfigLoader] Loading static configuration schema from fallback...")
         if os.path.exists(fallback_path):
             try:
-                with open(fallback_path, 'r', encoding='utf-8') as f:
-                    schema_data = json.load(f)
+                schema_data = self._load_yaml_file(fallback_path)
                 if not hasattr(self, "studio_config"):
                     self.studio_config = {}
                 self.studio_config["schema_cache"] = schema_data
@@ -85,10 +90,9 @@ class BaseConfigLoader:
         if hasattr(self, 'studio_config') and self.studio_config and "ui_map" in self.studio_config:
             ui_map = self.studio_config["ui_map"]
         else:
-            map_path = os.path.join(self.project_base_dir, '.config', 'configs', 'ui_map.json')
+            map_path = os.path.join(self.project_base_dir, '.config', 'configs', 'ui_map.yaml')
             try:
-                with open(map_path, 'r', encoding='utf-8') as f:
-                    ui_map = json.load(f)
+                ui_map = self._load_yaml_file(map_path)
             except Exception as e:
                 print(f"[ERROR] UI map loading failed: {e}")
                 ui_map = {}
@@ -106,13 +110,14 @@ class BaseConfigLoader:
         """Loads the special tasks configuration."""
         if hasattr(self, 'studio_config') and self.studio_config and "tasks" in self.studio_config:
             return self.studio_config["tasks"]
-        tasks_path = os.path.join(self.project_base_dir, '.config', 'configs', 'tasks.json')
+        tasks_path = os.path.join(self.project_base_dir, '.config', 'configs', 'tasks.yaml')
         try:
-            with open(tasks_path, 'r', encoding='utf-8') as f:
-                print("[ConfigLoader] Loading tasks configuration...")
-                return json.load(f)
+            if not os.path.exists(tasks_path):
+                raise FileNotFoundError()
+            print("[ConfigLoader] Loading tasks configuration...")
+            return self._load_yaml_file(tasks_path)
         except FileNotFoundError:
-            print(f"[ERROR] tasks.json not found at: {tasks_path}")
+            print(f"[ERROR] tasks.yaml not found at: {tasks_path}")
             return {}
         except Exception as e:
             print(f"[ERROR] Tasks config loading failed: {e}")

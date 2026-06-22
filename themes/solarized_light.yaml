@@ -1,0 +1,30 @@
+# ==========================================
+# Bimatkeo Translator Theme Configuration
+# ==========================================
+
+# Tên của theme
+name: Solarized Light
+author: MangaStudio
+# Cấu hình màu sắc chính
+style:
+  # Bảng màu
+  colors:
+    # Màu nền chính của ứng dụng
+    background_main: '#fdf6e3'
+    # Màu nền của các khung/panels
+    background_frame: '#eee8d5'
+    # Màu nền của nút bấm chính
+    primary_button: '#268bd2'
+    # Màu nền của nút bấm khi di chuột qua
+    primary_button_hover: '#3ea2e0'
+    # Màu nền rãnh trượt
+    slider_groove: '#eee8d5'
+    # Màu của tay cầm thanh trượt
+    slider_handle: '#268bd2'
+    # Màu chữ cơ bản
+    text_main: '#657b83'
+    # Màu viền
+    border: '#93a1a1'
+    # Màu nhấn (accent color)
+    accent: '#268bd2'
+    checkbox_indicator: '#657b83'

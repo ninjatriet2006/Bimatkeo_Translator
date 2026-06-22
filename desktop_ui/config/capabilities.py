@@ -1,6 +1,9 @@
 # type: ignore
 import os
-import yaml
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+yaml.default_flow_style = False
 import json
 import subprocess
 import urllib.request
@@ -35,7 +38,7 @@ class CapabilitiesMixin:
         if os.path.exists(yaml_path):
             try:
                 with open(yaml_path, 'r', encoding='utf-8') as f:
-                    loaded = yaml.safe_load(f)
+                    loaded = yaml.load(f)
                 if isinstance(loaded, dict):
                     yaml_data = loaded
             except Exception as e:
@@ -147,7 +150,7 @@ class CapabilitiesMixin:
         try:
             if os.path.exists(yaml_path):
                 with open(yaml_path, 'r', encoding='utf-8') as f:
-                    langs = yaml.safe_load(f)
+                    langs = yaml.load(f)
                 if isinstance(langs, dict):
                     formatted_langs = {}
                     for code, name in langs.items():
@@ -295,7 +298,7 @@ class CapabilitiesMixin:
         db_format = {str(code): str(name) for name, code in lang_data.items()}
         try:
             with open(yaml_path, 'w', encoding='utf-8') as f:
-                yaml.dump(db_format, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                yaml.dump(db_format, f)
             self.languages = lang_data
             self._initialize_and_repair_config()
             return True
@@ -308,7 +311,7 @@ class CapabilitiesMixin:
         yaml_path = os.path.join(self.project_base_dir, ".config", "configs", "translator_capabilities.yaml")
         try:
             with open(yaml_path, 'w', encoding='utf-8') as f:
-                yaml.dump(capabilities_data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                yaml.dump(capabilities_data, f)
             self.translator_groups = capabilities_data.get("TRANSLATOR_GROUPS", {})
             self.translator_capabilities = capabilities_data.get("TRANSLATOR_CAPABILITIES", {})
             self.log_colors = capabilities_data.get("LOG_COLORS", self.log_colors)
