@@ -34,3 +34,12 @@ Tất cả các AI Assistant (Agent) khi làm việc trong dự án này **BẮT
 - Khi User yêu cầu "quét toàn bộ", "làm cho đến khi hết", hoặc "kiểm tra tất cả", AI **BẮT BUỘC** phải tự động thực hiện các vòng rà soát sâu (Deep Scan) bằng tất cả các công cụ có sẵn (`grep_search`, `list_dir`, `view_file`) cho đến khi vét cạn 100% thông tin.
 - **Cấm báo cáo nhỏ giọt:** Tuyệt đối không được tìm thấy 1-2 lỗi/tính năng rồi báo cáo ngay lập tức. Phải tự động lặp lại vòng lặp tìm kiếm cho đến khi hệ thống báo "không còn gì" rồi mới tổng hợp thành một báo cáo duy nhất.
 - Không được bắt User phải prompt "Tiếp tục kiểm tra" nhiều lần. Trách nhiệm quét triệt để và tự xác nhận độ hoàn thiện thuộc về AI.
+
+---
+
+## 7. QUY TẮC DỌN DẸP FILE TEST (TEST CLEANUP)
+- Bất cứ khi nào tạo ra các file test, file chạy thử, file nháp để kiểm chứng mã nguồn hoặc lỗi, AI **BẮT BUỘC** phải tự động xóa bỏ những file đó sau khi chạy xong để không để lại rác trong thư mục dự án.
+
+## 8. QUY TẮC GIAO TIẾP VÀ TRẢ LỜI (COMMUNICATION)
+- Không nịnh nọt, không chào hỏi dài dòng, không xin lỗi vòng vo.
+- Cung cấp kết quả và báo cáo ngắn gọn, đi thẳng vào vấn đề nhất có thể để tiết kiệm token output và giúp lập trình viên dễ dàng đọc hiểu.
