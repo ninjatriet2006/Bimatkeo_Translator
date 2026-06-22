@@ -151,8 +151,8 @@ class SchemaMixin:
             merged_info = ui_info.copy()
             merged_info['key'] = key
 
-            # Use the already parsed factory default if it exists
-            if key in self.factory_defaults:
+            # If ui_map has a default, keep it. Otherwise, use factory_defaults
+            if 'default' not in merged_info and key in self.factory_defaults:
                 merged_info['default'] = self.factory_defaults[key]
 
             # Add enum values (for dropdowns) if they exist

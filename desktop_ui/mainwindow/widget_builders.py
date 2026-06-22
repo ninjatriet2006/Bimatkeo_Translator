@@ -555,7 +555,6 @@ class WidgetBuildersMixin:
         else:
             if key in ['detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
                 combo_box.addItem("--- Select ---", "none")
-                info["default"] = "none"  # Force default to none for new users
             for val in values:
                 exists = self.config_loader.check_model_existence(val, field=key)
                 display_name = self.config_loader.format_display_label(val, key)

@@ -168,8 +168,7 @@ class ConfigLoaderBase:
         # Merge defaults from ui_map.json for UI-only settings
         for key, ui_info in self.ui_map.items():
             if not key.startswith("__") and "default" in ui_info:
-                if key not in defaults:
-                    defaults[key] = ui_info["default"]
+                defaults[key] = ui_info["default"]
         return defaults
 
     def get_tab_order(self):
