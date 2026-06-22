@@ -48,7 +48,7 @@ TRANSLATOR_CAPABILITIES = {}
 LOG_COLORS = {}
 
 
-class TranslatorStudioApp(QMainWindow, WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, HandlersMixin):
+class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, HandlersMixin, QMainWindow):
 
     log_signal = Signal(str, str)
     pipeline_finished_signal = Signal()
