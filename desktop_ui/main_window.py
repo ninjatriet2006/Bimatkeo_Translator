@@ -24,7 +24,7 @@ from PySide6.QtCore import Qt, QSize, QTimer, Signal, QByteArray, QEvent, QPoint
 from PySide6.QtGui import QFont, QCursor, QStandardItemModel, QFontDatabase, QPixmap, QPainter, QColor, QPalette
 
 # Core non-UI imports
-from .pipeline_client import Pipeline
+from app.core.pipeline import Pipeline
 from .config_loader import ConfigLoader
 
 # Import modularized components
