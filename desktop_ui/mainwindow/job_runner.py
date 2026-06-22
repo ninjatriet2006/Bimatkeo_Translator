@@ -551,11 +551,32 @@ class JobRunnerMixin:
         if category == 'Offline':
             translator_dict['translator'] = settings.get('offline_translator', 'none')
         else:
-            ep = settings.get('ai_endpoint', '').lower()
-            if not ep or "generativelanguage" in ep or "gemini" in ep:
-                translator_dict['translator'] = 'gemini'
+            ai_mode = settings.get('ai_mode', 'Standalone API')
+            if ai_mode == 'Pool APIs':
+                pool_name = settings.get('pool_name', '')
+                translator_dict['translator'] = 'pool'
+                translator_dict['pool_name'] = pool_name
+                translator_dict['pool_apis'] = []
+                
+                if hasattr(self, '_load_pool_profiles') and hasattr(self, '_load_api_profiles'):
+                    pools = self._load_pool_profiles()
+                    api_profiles = self._load_api_profiles()
+                    if pool_name in pools:
+                        for api_name in pools[pool_name]:
+                            prof = api_profiles.get(api_name, {})
+                            if prof:
+                                translator_dict['pool_apis'].append({
+                                    'translator': prof.get('provider', 'gemini'),
+                                    'endpoint': prof.get('endpoint', ''),
+                                    'model': prof.get('model', ''),
+                                    'api_key': prof.get('key', '')
+                                })
             else:
-                translator_dict['translator'] = 'custom_openai'
+                ep = settings.get('ai_endpoint', '').lower()
+                if not ep or "generativelanguage" in ep or "gemini" in ep:
+                    translator_dict['translator'] = 'gemini'
+                else:
+                    translator_dict['translator'] = 'custom_openai'
 
         if settings.get('translator_chain'):
             final_config.get("translator", {}).pop('translator', None)

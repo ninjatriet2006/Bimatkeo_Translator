@@ -131,6 +131,16 @@ class HandlersMixin:
         if 'offline_translator' in self.setting_rows:
             self.setting_rows['offline_translator'].setVisible(show_offline)
 
+        ai_mode = self.current_settings.get('ai_mode', 'Standalone API')
+        show_standalone = show_ai and (ai_mode == 'Standalone API')
+        show_pool = show_ai and (ai_mode == 'Pool APIs')
+
+        if 'ai_mode' in self.setting_rows:
+            self.setting_rows['ai_mode'].setVisible(show_ai)
+            
+        if 'pool_name' in self.setting_rows:
+            self.setting_rows['pool_name'].setVisible(show_pool)
+
         # Show all AI fields when AI / Online is selected
         profile_selected = self.current_settings.get('api_name', '').strip()
         has_profile = bool(profile_selected and profile_selected.lower() not in ["none", "--- select ---"])
@@ -138,9 +148,9 @@ class HandlersMixin:
         for ai_key in ['api_group', 'api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
             if ai_key in self.setting_rows:
                 if ai_key in ['api_group', 'api_name', 'ai_translator']:
-                    self.setting_rows[ai_key].setVisible(show_ai)
+                    self.setting_rows[ai_key].setVisible(show_standalone)
                 else:
-                    self.setting_rows[ai_key].setVisible(show_ai and has_profile)
+                    self.setting_rows[ai_key].setVisible(show_standalone and has_profile)
 
     def _on_translator_category_changed(self):
         """Handles changes in translator category (Offline vs AI)."""
@@ -602,6 +612,61 @@ class HandlersMixin:
         except Exception as e:
             print(f"[ERROR] Failed to save preset profiles: {e}")
 
+    def _get_pool_profiles_file_path(self) -> str:
+        import os
+        base_dir = os.path.join(self.project_base_dir, '.config', 'configs')
+        os.makedirs(base_dir, exist_ok=True)
+        return os.path.join(base_dir, 'pool_profiles.yaml')
+
+    def _load_pool_profiles(self) -> dict:
+        import os
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
+        path = self._get_pool_profiles_file_path()
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    data = yaml.load(f) or {}
+                    return data.get('pools', {})
+            except Exception as e:
+                print(f"[ERROR] Failed to load pool profiles: {e}")
+        return {}
+
+    def _save_pool_profiles(self, pools: dict):
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
+        path = self._get_pool_profiles_file_path()
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                yaml.dump({'pools': pools}, f)
+        except Exception as e:
+            print(f"[ERROR] Failed to save pool profiles: {e}")
+
+    def _open_manage_pools_dialog(self):
+        from desktop_ui.mainwindow.pool_dialog import ManagePoolsDialog
+        dialog = ManagePoolsDialog(self)
+        if dialog.exec():
+            # Dialog saved something, we need to refresh the pool selector UI
+            pool_widget = self.setting_widgets.get('pool_name')
+            if pool_widget:
+                combo = pool_widget.findChild(QComboBox)
+                if combo:
+                    pools = self._load_pool_profiles()
+                    current_text = combo.currentText()
+                    combo.blockSignals(True)
+                    combo.clear()
+                    combo.addItem("--- Select ---")
+                    combo.addItems(list(pools.keys()))
+                    if current_text in pools:
+                        combo.setCurrentText(current_text)
+                    else:
+                        combo.setCurrentText("--- Select ---")
+                    combo.blockSignals(False)
+
     def _refresh_profile_list(self):
         """Reloads the list of profiles from the unified config and updates the combobox."""
         try:
@@ -746,7 +811,7 @@ class HandlersMixin:
             button_group = widget.findChild(QButtonGroup)
             if button_group:
                 button_group.buttonClicked.connect(handler)
-                if key == 'translator_category':
+                if key in ['translator_category', 'ai_mode']:
                     button_group.buttonClicked.connect(lambda *args: self._on_translator_category_changed())
         elif widget_type == "api_profile_selector":
             combo = widget.findChild(QComboBox)

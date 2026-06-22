@@ -331,6 +331,8 @@ class WidgetBuildersMixin:
                 widget = self._create_api_group_selector(info)
             elif widget_type == "api_profile_selector":
                 widget = self._create_api_profile_selector(info)
+            elif widget_type == "pool_profile_selector":
+                widget = self._create_pool_profile_selector(info)
             elif widget_type == "ai_model_selector":
                 widget = self._create_ai_model_selector(info)
             elif widget_type == "api_key_manager":
@@ -352,7 +354,7 @@ class WidgetBuildersMixin:
 
             if not context_key and info.get('key') in ['offline_translator', 'ai_translator', 'detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
                 self._setup_dynamic_action_buttons(info.get('key'), widget, right_layout)
-            elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_group_selector", "api_profile_selector", "ai_model_selector"]:
+            elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_group_selector", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
                 spacer = QWidget()
                 spacer.setFixedWidth(30)
                 right_layout.addWidget(spacer)
@@ -1046,6 +1048,32 @@ class WidgetBuildersMixin:
         del_btn.setToolTip("Delete this profile from local config")
         del_btn.clicked.connect(self._delete_current_api_profile)
         layout.addWidget(del_btn)
+        
+        self.widget_references[info['key']] = combo
+        return container
+
+    def _create_pool_profile_selector(self, info: dict) -> QWidget:
+        container = QWidget()
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+        
+        combo = SearchableComboBox()
+        pools = self._load_pool_profiles()
+        filtered_pools = list(pools.keys())
+            
+        combo.addItem("--- Select ---")
+        combo.addItems(filtered_pools)
+        
+        default_val = self.current_settings.get('pool_name', info.get("default", ""))
+        combo.setCurrentText(str(default_val) if default_val else "--- Select ---")
+            
+        layout.addWidget(combo, stretch=1)
+        
+        manage_btn = QPushButton("Manage Pools")
+        manage_btn.setToolTip("Open Manage Pools Dialog")
+        manage_btn.clicked.connect(self._open_manage_pools_dialog)
+        layout.addWidget(manage_btn)
         
         self.widget_references[info['key']] = combo
         return container
