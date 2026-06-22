@@ -535,8 +535,8 @@ class WidgetBuildersMixin:
                         last_idx = combo_box.count() - 1
                         combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
                 is_en = self.current_settings.get('app_language', 'English') == 'English'
-                update_support_text = "🔄 Update translation support list..." if is_en else "🔄 Cập nhật danh sách hỗ trợ dịch..."
-                update_all_text = "🔄 Update ALL translation models..." if is_en else "🔄 Cập nhật TẤT CẢ mô hình dịch..."
+                update_support_text = "📥 Update translation support list..." if is_en else "📥 Cập nhật danh sách hỗ trợ dịch..."
+                update_all_text = "📥 Update ALL translation models..." if is_en else "📥 Cập nhật TẤT CẢ mô hình dịch..."
                 combo_box.addItem(update_support_text, "update_trigger")
                 combo_box.addItem(update_all_text, "update_all_software_trigger")
             else:
@@ -572,7 +572,7 @@ class WidgetBuildersMixin:
             # Thêm lựa chọn cập nhật tất cả cho các mô hình AI khác
             if key in ['detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
                 is_en = self.current_settings.get('app_language', 'English') == 'English'
-                update_all_key_text = f"🔄 Update ALL {key} models..." if is_en else f"🔄 Cập nhật TẤT CẢ mô hình {key}..."
+                update_all_key_text = f"📥 Update ALL {key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {key}..."
                 combo_box.addItem(update_all_key_text, "update_all_software_trigger")
                 
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))

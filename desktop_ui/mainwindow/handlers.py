@@ -766,7 +766,7 @@ class HandlersMixin:
                 
             if isinstance(widget, QComboBox):
                 text = widget.currentText()
-                if text in ["🔄 Cập nhật danh sách ngôn ngữ...", "🔄 Cập nhật danh sách hỗ trợ dịch..."]:
+                if text in ["📥 Cập nhật danh sách ngôn ngữ...", "📥 Cập nhật danh sách hỗ trợ dịch..."]:
                     self._trigger_online_config_update_from_combo(key, widget)
                     return
 
@@ -790,7 +790,7 @@ class HandlersMixin:
 
     def _on_translator_changed(self, translator_name: str):
         """Handles changes in the main translator selection."""
-        if translator_name == "🔄 Cập nhật danh sách hỗ trợ dịch...":
+        if translator_name == "📥 Cập nhật danh sách hỗ trợ dịch...":
             return
         if translator_name and " (Not Setup)" in translator_name:
             translator_name = translator_name.split(" (Not Setup)")[0]
@@ -858,8 +858,8 @@ class HandlersMixin:
                 offline_combo.addItem(label, val)
                 last_idx = offline_combo.count() - 1
                 offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            offline_combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-            offline_combo.addItem("🔄 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
+            offline_combo.addItem("📥 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
+            offline_combo.addItem("📥 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
             
             restored = False
             for i in range(offline_combo.count()):
@@ -908,8 +908,8 @@ class HandlersMixin:
                 ai_combo.addItem(label, val)
                 last_idx = ai_combo.count() - 1
                 ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            ai_combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-            ai_combo.addItem("🔄 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
+            ai_combo.addItem("📥 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
+            ai_combo.addItem("📥 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
             
             restored = False
             for i in range(ai_combo.count()):
@@ -1010,7 +1010,7 @@ class HandlersMixin:
 
     def _on_target_lang_changed(self, target_lang_name: str):
         """Handles changes in the target language selection."""
-        if target_lang_name == "🔄 Cập nhật danh sách ngôn ngữ...":
+        if target_lang_name == "📥 Cập nhật danh sách ngôn ngữ...":
             return
         self._filter_translator_dropdowns(target_lang_name)
 
@@ -1611,7 +1611,7 @@ class HandlersMixin:
                 main_font_combo.clear()
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
-                main_font_combo.addItem("🔄 Update All Fonts...")
+                main_font_combo.addItem("📥 Update All Fonts...")
                 self._style_custom_fonts_in_combobox(main_font_combo)
 
                 newly_installed_font = next((fn for fn in font_names if message_or_family.replace(" ", "").lower() in fn.replace("-", "").replace(" ", "").lower()), None)
@@ -1688,7 +1688,7 @@ class HandlersMixin:
                 main_font_combo.clear()
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
-                main_font_combo.addItem("🔄 Update All Fonts...")
+                main_font_combo.addItem("📥 Update All Fonts...")
                 self._style_custom_fonts_in_combobox(main_font_combo)
                 
                 newly_installed_font = next((fn for fn in font_names if message_or_family.replace(" ", "").lower() in fn.replace("-", "").replace(" ", "").lower()), None)
@@ -1892,7 +1892,7 @@ class HandlersMixin:
                 main_font_combo.clear()
                 main_font_combo.addItems(font_names)
                 main_font_combo.addItem("📥 Install New Font...")
-                main_font_combo.addItem("🔄 Update All Fonts...")
+                main_font_combo.addItem("📥 Update All Fonts...")
                 self._style_custom_fonts_in_combobox(main_font_combo)
                 
                 prev_font = getattr(self, "_last_selected_font", "Sans-serif")
@@ -2576,7 +2576,7 @@ class HandlersMixin:
             for name, code in sorted(mw.LANGUAGES.items()):
                 if code != "auto":
                     combo.addItem(name, code)
-            combo.addItem("🔄 Cập nhật danh sách ngôn ngữ...", "update_trigger")
+            combo.addItem("📥 Cập nhật danh sách ngôn ngữ...", "update_trigger")
         elif key == "offline_translator":
             values = mw.TRANSLATOR_GROUPS.get("--- OFFLINE MODELS (No API Key) ---", [])
             for val in values:
@@ -2586,8 +2586,8 @@ class HandlersMixin:
                 if not exists:
                     idx = combo.count() - 1
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-            combo.addItem("🔄 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
+            combo.addItem("📥 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
+            combo.addItem("📥 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
         elif key == "ai_translator":
             values = mw.TRANSLATOR_GROUPS.get("--- API-BASED (Requires Setup) ---", [])
             for val in values:
@@ -2597,8 +2597,8 @@ class HandlersMixin:
                 if not exists:
                     idx = combo.count() - 1
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            combo.addItem("🔄 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
-            combo.addItem("🔄 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
+            combo.addItem("📥 Cập nhật danh sách hỗ trợ dịch...", "update_trigger")
+            combo.addItem("📥 Cập nhật phần mềm/mô hình dịch...", "update_software_trigger")
                     
         current_val = self.current_settings.get(key)
         self._set_widget_value(key, current_val, combo)
