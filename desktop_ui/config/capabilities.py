@@ -1,3 +1,4 @@
+# type: ignore
 import os
 import yaml
 import json
