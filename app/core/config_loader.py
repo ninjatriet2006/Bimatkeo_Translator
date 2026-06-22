@@ -40,18 +40,12 @@ class ConfigLoader:
             print(f"[ConfigLoader] Error saving studio_config.yaml: {e}")
 
     def _find_python_executable(self):
-        venv_path_win = os.path.join(self.project_base_dir, 'venv', 'Scripts', 'python.exe')
-        venv_path_unix = os.path.join(self.project_base_dir, 'venv', 'bin', 'python')
-        venv_path_sibling_unix = os.path.join(self.project_base_dir, '..', 'venv', 'bin', 'python')
-        venv_path_sibling_win = os.path.join(self.project_base_dir, '..', 'venv', 'Scripts', 'python.exe')
+        venv_path_win = os.path.join(self.project_base_dir, '.venv', 'Scripts', 'python.exe')
+        venv_path_unix = os.path.join(self.project_base_dir, '.venv', 'bin', 'python')
         if os.path.exists(venv_path_win):
             return venv_path_win
         elif os.path.exists(venv_path_unix):
             return venv_path_unix
-        elif os.path.exists(venv_path_sibling_win):
-            return venv_path_sibling_win
-        elif os.path.exists(venv_path_sibling_unix):
-            return venv_path_sibling_unix
         return sys.executable
 
     def _load_backend_schema(self):
