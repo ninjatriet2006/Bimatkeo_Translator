@@ -29,9 +29,15 @@ class BaseAPITranslator(BaseTranslator):
             self.model = config.get("model", "")
             self.key = config.get("key", "")
             
-            glossary_path = config.get("glossary_path", "")
-            if glossary_path:
-                self.glossary_manager = GlossaryManager(glossary_path)
+            system_prompt_profile = config.get("system_prompt_profile", "None")
+            if system_prompt_profile and system_prompt_profile != "None":
+                self.prompt_builder = PromptBuilder(system_prompt_profile)
+                self.glossary_manager = GlossaryManager(system_prompt_profile)
+            else:
+                # Fallback to older glossary_path if present
+                glossary_path = config.get("glossary_path", "")
+                if glossary_path:
+                    self.glossary_manager = GlossaryManager(glossary_path)
                 
         except Exception as e:
             if self.log_callback:

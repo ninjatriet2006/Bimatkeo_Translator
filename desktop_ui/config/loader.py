@@ -56,8 +56,8 @@ class ConfigLoaderBase(BaseConfigLoader):
         self.studio_config = self._load_yaml_file(self.studio_config_path)
         self.oldsession_config = self._load_yaml_file(self.oldsession_path)
         
-        self.dict_profiles_path = os.path.join(configs_dir, "dict_profiles.yaml")
-        self.dict_profiles = self._load_yaml_file(self.dict_profiles_path)
+        self.system_prompts_path = os.path.join(configs_dir, "system_prompt.yaml")
+        self.system_prompts = self._load_yaml_file(self.system_prompts_path)
 
         # Load languages from .config/langs/ early
         langs_dir = os.path.join(config_dir, "langs")

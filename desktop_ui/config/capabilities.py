@@ -23,7 +23,7 @@ GLOBAL_ISO_MAP = {
 class CapabilitiesMixin:
     project_base_dir: str
     localization: dict
-    dict_profiles: dict
+    system_prompts: dict
     _DEFAULT_CHECKS: dict
     def _initialize_and_repair_config(self) -> None: pass
     def _load_translator_capabilities(self):
@@ -169,15 +169,15 @@ class CapabilitiesMixin:
                         return True
                 return False
                 
-            elif field_key == "dict_profile":
-                profiles = self.dict_profiles.get("profiles", {})
+            elif field_key == "system_prompt_profile":
+                profiles = self.system_prompts.get("profiles", {})
                 profile_data = None
                 if isinstance(profiles, dict) and model_name in profiles:
                     profile_data = profiles[model_name]
-                elif isinstance(self.dict_profiles, dict) and model_name in self.dict_profiles:
-                    profile_data = self.dict_profiles[model_name]
+                elif isinstance(self.system_prompts, dict) and model_name in self.system_prompts:
+                    profile_data = self.system_prompts[model_name]
                 if isinstance(profile_data, dict):
-                    if "pre_dict" in profile_data or "post_dict" in profile_data or "gpt_config" in profile_data:
+                    if "pre_dict" in profile_data or "post_dict" in profile_data or "role_description" in profile_data or "json_schema_rules" in profile_data:
                         return True
                 return False
 

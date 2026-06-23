@@ -12,7 +12,7 @@ class SchemaMixin:
     backend_schema: Dict[str, Any] | None
     ui_map: Dict[str, Any]
     factory_defaults: Dict[str, Any]
-    dict_profiles: Dict[str, Any]
+    system_prompts: Dict[str, Any]
 
 
     def _build_full_config_data(self):
@@ -60,8 +60,8 @@ class SchemaMixin:
         already populated self._model_checks via load_registry, so we just read
         the ordered keys from it.
         """
-        if field == "dict_profile":
-            return list(self.dict_profiles.get("profiles", {}).keys())
+        if field == "system_prompt_profile":
+            return list(self.system_prompts.get("profiles", {}).keys())
 
         registry = getattr(self, "model_registry", {})
         if field in registry and registry[field]:
