@@ -144,3 +144,83 @@ class GeminiTranslator(BaseAPITranslator):
             return result["candidates"][0]["content"]["parts"][0]["text"].strip()
         except KeyError:
             return ""
+
+@TranslatorFactory.register("deepl")
+class DeepLTranslator(BaseAPITranslator):
+    @classmethod
+    def get_supported_languages(cls) -> dict:
+        return {'__any__': '__all__'}
+
+    def _call_api(self, system_prompt: str, user_text: str) -> str:
+        if self.log_callback:
+            self.log_callback("WARNING", "DeepL translation schema is not yet implemented.")
+        return ""
+
+@TranslatorFactory.register("baidu")
+class BaiduTranslator(BaseAPITranslator):
+    @classmethod
+    def get_supported_languages(cls) -> dict:
+        return {'__any__': '__all__'}
+
+    def _call_api(self, system_prompt: str, user_text: str) -> str:
+        if self.log_callback:
+            self.log_callback("WARNING", "Baidu translation schema is not yet implemented.")
+        return ""
+
+@TranslatorFactory.register("youdao")
+class YoudaoTranslator(BaseAPITranslator):
+    @classmethod
+    def get_supported_languages(cls) -> dict:
+        return {'__any__': '__all__'}
+
+    def _call_api(self, system_prompt: str, user_text: str) -> str:
+        if self.log_callback:
+            self.log_callback("WARNING", "Youdao translation schema is not yet implemented.")
+        return ""
+
+@TranslatorFactory.register("caiyun")
+class CaiyunTranslator(BaseAPITranslator):
+    @classmethod
+    def get_supported_languages(cls) -> dict:
+        return {'__any__': '__all__'}
+
+    def _call_api(self, system_prompt: str, user_text: str) -> str:
+        if self.log_callback:
+            self.log_callback("WARNING", "Caiyun translation schema is not yet implemented.")
+        return ""
+
+@TranslatorFactory.register("papago")
+class PapagoTranslator(BaseAPITranslator):
+    @classmethod
+    def get_supported_languages(cls) -> dict:
+        return {
+            "KOR": ["ENG", "JPN", "CHS", "CHT", "FRA", "DEU", "RUS", "ESP", "ITA", "VIE", "THA", "IND"],
+            "JPN": ["ENG", "KOR", "CHS", "CHT"],
+            "CHS": ["ENG", "KOR", "JPN"],
+            "CHT": ["ENG", "KOR", "JPN"],
+            "ENG": ["KOR", "JPN", "CHS", "CHT", "FRA", "DEU", "ESP", "ITA"],
+            "FRA": ["ENG", "KOR"],
+            "ESP": ["ENG", "KOR"],
+            "ITA": ["ENG", "KOR"],
+            "DEU": ["ENG", "KOR"]
+        }
+
+    def _call_api(self, system_prompt: str, user_text: str) -> str:
+        if self.log_callback:
+            self.log_callback("WARNING", "Papago translation schema is not yet implemented.")
+        return ""
+
+@TranslatorFactory.register("sakura")
+class SakuraTranslator(BaseAPITranslator):
+    @classmethod
+    def get_supported_languages(cls) -> dict:
+        return {
+            "JPN": ["CHS", "CHT"],
+            "CHS": ["JPN"],
+            "CHT": ["JPN"]
+        }
+
+    def _call_api(self, system_prompt: str, user_text: str) -> str:
+        if self.log_callback:
+            self.log_callback("WARNING", "Sakura translation schema is not yet implemented.")
+        return ""

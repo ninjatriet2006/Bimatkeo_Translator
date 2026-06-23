@@ -46,7 +46,7 @@ from .mainwindow.ui_utils import build_grouped_settings_tabs
 # Dynamic configuration mapping placeholders (shared globally)
 LANGUAGES = {}
 TRANSLATOR_GROUPS = {}
-TRANSLATOR_CAPABILITIES = {}
+
 LOG_COLORS = {}
 
 
@@ -88,7 +88,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         offline_info = self.config_loader.full_config_data.get('offline_translator')
         ai_info = self.config_loader.full_config_data.get('ai_translator')
 
-        global TRANSLATOR_GROUPS, TRANSLATOR_CAPABILITIES, LOG_COLORS
+        global TRANSLATOR_GROUPS, LOG_COLORS
         TRANSLATOR_GROUPS.clear()
         
         offline_list = offline_info.get('values', []) if offline_info else []
@@ -99,10 +99,6 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         TRANSLATOR_GROUPS[CAT_API_BASED] = api_list
         TRANSLATOR_GROUPS[CAT_OTHER_ACTIONS] = other_list
 
-        # Update TRANSLATOR_CAPABILITIES dynamically from the dynamic YAML config loader
-        if hasattr(self.config_loader, 'translator_capabilities'):
-            TRANSLATOR_CAPABILITIES.clear()
-            TRANSLATOR_CAPABILITIES.update(self.config_loader.translator_capabilities)
 
         # Update LOG_COLORS dynamically from the dynamic YAML config loader
         if hasattr(self.config_loader, 'log_colors'):

@@ -952,7 +952,8 @@ class WidgetBuildersMixin:
         if not translator_combo:
             return
 
-        capabilities = mw.TRANSLATOR_CAPABILITIES.get(translator_name, {})
+        from app.core.factories import TranslatorFactory
+        capabilities = TranslatorFactory.get_capabilities(translator_name)
         code_to_name = {v: k for k, v in mw.LANGUAGES.items()}
 
         label = self.config_loader.format_display_label(translator_name, key)

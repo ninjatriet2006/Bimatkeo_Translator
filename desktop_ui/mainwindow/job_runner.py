@@ -586,20 +586,25 @@ class JobRunnerMixin:
                         for api_name in pools[pool_name]:
                             prof = api_profiles.get(api_name, {})
                             if prof:
-                                from app.core.api_utils import infer_ai_provider
                                 endpoint = prof.get('endpoint', '')
-                                inferred_provider = infer_ai_provider(endpoint)
+                                provider = prof.get('provider')
+                                if not provider:
+                                    from app.core.api_utils import infer_ai_provider
+                                    provider = infer_ai_provider(endpoint)
                                     
                                 translator_dict['pool_apis'].append({
-                                    'translator': inferred_provider,
+                                    'translator': provider,
                                     'endpoint': prof.get('endpoint', ''),
                                     'model': prof.get('model', ''),
                                     'api_key': prof.get('key', '')
                                 })
             else:
-                from app.core.api_utils import infer_ai_provider
-                ep = settings.get('ai_endpoint', '')
-                translator_dict['translator'] = infer_ai_provider(ep)
+                provider = settings.get('ai_translator')
+                if not provider or provider == 'none':
+                    from app.core.api_utils import infer_ai_provider
+                    ep = settings.get('ai_endpoint', '')
+                    provider = infer_ai_provider(ep)
+                translator_dict['translator'] = provider
 
         if settings.get('translator_chain'):
             final_config.get("translator", {}).pop('translator', None)

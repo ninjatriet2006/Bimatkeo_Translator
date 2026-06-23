@@ -51,6 +51,11 @@ class BaseColorizer(ABC):
 
 
 class BaseTranslator(ABC):
+    @classmethod
+    def get_supported_languages(cls) -> dict:
+        """Trả về dictionary chứa năng lực ngôn ngữ. VD: {'__any__': '__all__'} hoặc {'__any__': ['ENG', 'VIN']}"""
+        return {'__any__': '__all__'}
+
     @abstractmethod
     def load_weights(self, model_path: str) -> None:
         """Tải trọng số mô hình dịch thuật."""

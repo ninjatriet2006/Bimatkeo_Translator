@@ -85,7 +85,7 @@ class ConfigLoaderBase(BaseConfigLoader):
         
         self.translator_groups = capabilities_data.get("TRANSLATOR_GROUPS", {})
         self.log_colors = capabilities_data.get("LOG_COLORS", self._default_log_colors())
-        self.translator_capabilities = capabilities_data.get("TRANSLATOR_CAPABILITIES", {})
+
 
         self.backend_schema = self._load_backend_schema()
         if not self.backend_schema:

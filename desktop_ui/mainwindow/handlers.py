@@ -783,9 +783,10 @@ class HandlersMixin:
     def _is_translator_supported_for_target(self, translator_name: str, target_code: str) -> bool:
         """Kiểm tra xem mô hình dịch thuật có hỗ trợ ngôn ngữ đích không."""
         from .. import main_window as mw
+        from app.core.factories import TranslatorFactory
         if translator_name in ["none", "original"]:
             return True
-        capabilities = mw.TRANSLATOR_CAPABILITIES.get(translator_name, {'__any__': '__all__'})
+        capabilities = TranslatorFactory.get_capabilities(translator_name)
         if capabilities.get('__any__') == '__all__':
             return True
         for source_lang, target_langs in capabilities.items():
@@ -1006,7 +1007,8 @@ class HandlersMixin:
         if translator_name and " (Not Setup)" in translator_name:
             translator_name = translator_name.split(" (Not Setup)")[0]
 
-        capabilities = mw.TRANSLATOR_CAPABILITIES.get(translator_name, {'__any__': '__all__'})
+        from app.core.factories import TranslatorFactory
+        capabilities = TranslatorFactory.get_capabilities(translator_name)
         supported_codes = set()
 
         if capabilities.get('__any__') == '__all__':
@@ -2452,9 +2454,7 @@ class HandlersMixin:
         self.original_offline_translators = list(offline_list)
         self.original_ai_translators = list(api_list)
         
-        if hasattr(self.config_loader, 'translator_capabilities'):
-            mw.TRANSLATOR_CAPABILITIES.clear()
-            mw.TRANSLATOR_CAPABILITIES.update(self.config_loader.translator_capabilities)
+
             
         if hasattr(self.config_loader, 'log_colors'):
             mw.LOG_COLORS.clear()

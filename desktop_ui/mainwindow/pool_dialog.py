@@ -93,6 +93,14 @@ class ManagePoolsDialog(QDialog):
         # New API
         form_layout = QFormLayout()
         self.new_api_name = QLineEdit()
+        self.new_api_provider = QComboBox()
+        from app.core.factories import TranslatorFactory
+        # Lấy danh sách tất cả các Schema đã được đăng ký trong hệ thống
+        providers = TranslatorFactory.get_registered_providers()
+        self.new_api_provider.addItems(providers)
+        if "openai" in providers:
+            self.new_api_provider.setCurrentText("openai")
+        
         self.new_api_endpoint = QLineEdit()
         
         self.new_api_model = SearchableComboBox()
@@ -116,6 +124,7 @@ class ManagePoolsDialog(QDialog):
         self.new_api_key.setEchoMode(QLineEdit.EchoMode.Password)
         
         form_layout.addRow("API Name:", self.new_api_name)
+        form_layout.addRow("Provider/Schema:", self.new_api_provider)
         form_layout.addRow("Endpoint URL:", self.new_api_endpoint)
         form_layout.addRow("Model:", model_container)
         form_layout.addRow("API Key:", self.new_api_key)
@@ -188,6 +197,7 @@ class ManagePoolsDialog(QDialog):
             
         profile = {
             "group": "Pools",
+            "provider": self.new_api_provider.currentText(),
             "endpoint": self.new_api_endpoint.text().strip(),
             "model": self.new_api_model.currentText().strip(),
             "key": self.new_api_key.text().strip()
@@ -257,12 +267,10 @@ class ManagePoolsDialog(QDialog):
     def _fetch_models(self):
         endpoint = self.new_api_endpoint.text().strip()
         key = self.new_api_key.text().strip()
+        ai_provider = self.new_api_provider.currentText()
         
-        from app.core.api_utils import infer_ai_provider
-        ai_provider = infer_ai_provider(endpoint)
-
-        if not endpoint and ai_provider != 'gemini':
-            QMessageBox.warning(self, "Warning", "No API Endpoint URL provided. Please enter a valid URL.")
+        if not endpoint:
+            QMessageBox.warning(self, "Warning", "Please enter a valid URL in Endpoint URL.")
             return
 
         self.fetch_models_btn.setEnabled(False)

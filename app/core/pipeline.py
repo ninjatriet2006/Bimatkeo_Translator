@@ -165,7 +165,35 @@ class Pipeline:
             except ValueError:
                 recognizer = RecognizerFactory.create("dummy_recognizer", log_callback=log_callback) if enable_ocr else None
                 
-            translator = TranslatorFactory.create("dummy_translator") if enable_translator else None
+            translator_dict = config_dict.get("translator", {})
+            translator = None
+            if enable_translator:
+                try:
+                    if 'pool_apis' in translator_dict and translator_dict['pool_apis']:
+                        # Dùng API đầu tiên trong Pool (có thể nâng cấp thành PoolTranslator xoay vòng sau)
+                        api_info = translator_dict['pool_apis'][0]
+                        provider_name = api_info.get('translator', 'openai')
+                        translator = TranslatorFactory.create(provider_name)
+                        translator.log_callback = log_callback
+                        translator.load_weights({
+                            "endpoint": api_info.get('endpoint'),
+                            "model": api_info.get('model'),
+                            "key": api_info.get('api_key'),
+                            "glossary_path": translator_dict.get('glossary_path', '')
+                        })
+                    else:
+                        provider_name = translator_dict.get('translator', 'openai')
+                        translator = TranslatorFactory.create(provider_name)
+                        translator.log_callback = log_callback
+                        translator.load_weights({
+                            "endpoint": translator_dict.get('ai_endpoint'),
+                            "model": translator_dict.get('ai_model'),
+                            "key": translator_dict.get('ai_api_key'),
+                            "glossary_path": translator_dict.get('glossary_path', '')
+                        })
+                except Exception as e:
+                    log_callback("ERROR", f"Failed to load translator: {e}")
+                    translator = None
             inpainter = InpainterFactory.create("dummy_inpainter") if enable_inpainter else None
             renderer = RendererFactory.create("dummy_renderer") if enable_renderer else None
 

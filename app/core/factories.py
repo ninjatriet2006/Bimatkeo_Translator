@@ -30,8 +30,25 @@ class BaseFactory:
             
         return instance
 
+    @classmethod
+    def get_registered_providers(cls) -> list:
+        """Trả về danh sách các provider (schema) đã đăng ký."""
+        if not hasattr(cls, '_registry'):
+            return []
+        return list(cls._registry.keys())
+
 class TranslatorFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}
+
+    @classmethod
+    def get_capabilities(cls, name: str) -> dict:
+        """Truy vấn năng lực ngôn ngữ hỗ trợ của một plugin cụ thể."""
+        if not hasattr(cls, '_registry') or name not in cls._registry:
+            return {'__any__': '__all__'}
+        impl_class = cls._registry[name]
+        if hasattr(impl_class, 'get_supported_languages'):
+            return impl_class.get_supported_languages()
+        return {'__any__': '__all__'}
 
 class DetectorFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}

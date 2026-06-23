@@ -53,7 +53,6 @@ class CapabilitiesMixin:
             print("[ConfigLoader] Loaded translator groups/capabilities from model registry.")
             return {
                 "TRANSLATOR_GROUPS": reg_groups,
-                "TRANSLATOR_CAPABILITIES": reg_caps,
                 "LOG_COLORS": yaml_data.get("LOG_COLORS", self._default_log_colors()),
             }
 
@@ -72,49 +71,7 @@ class CapabilitiesMixin:
                     "none"
                 ]
             },
-            "TRANSLATOR_CAPABILITIES": {
-                "deepl": {"__any__": "__all__"},
-                "gemini": {"__any__": "__all__"},
-                "deepseek": {"__any__": "__all__"},
-                "groq": {"__any__": "__all__"},
-                "youdao": {"__any__": "__all__"},
-                "baidu": {"__any__": "__all__"},
-                "caiyun": {"__any__": "__all__"},
-                "openai": {"__any__": "__all__"},
-                "custom_openai": {"__any__": "__all__"},
-                "papago": {
-                    "KOR": ["ENG", "JPN", "CHS", "CHT", "FRA", "DEU", "RUS", "ESP", "ITA", "VIE", "THA", "IND"],
-                    "JPN": ["ENG", "KOR", "CHS", "CHT"],
-                    "CHS": ["ENG", "KOR", "JPN"],
-                    "CHT": ["ENG", "KOR", "JPN"],
-                    "ENG": ["KOR", "JPN", "CHS", "CHT", "FRA", "DEU", "ESP", "ITA"],
-                    "FRA": ["ENG", "KOR"],
-                    "ESP": ["ENG", "KOR"],
-                    "ITA": ["ENG", "KOR"],
-                    "DEU": ["ENG", "KOR"]
-                },
-                "sakura": {
-                    "JPN": ["CHS", "CHT"],
-                    "CHS": ["JPN"],
-                    "CHT": ["JPN"]
-                },
-                "jparacrawl": {
-                    "JPN": ["ENG"]
-                },
-                "jparacrawl_big": {
-                    "JPN": ["ENG"]
-                },
-                "nllb": {"__any__": "__all__"},
-                "nllb_big": {"__any__": "__all__"},
-                "m2m100": {"__any__": "__all__"},
-                "m2m100_big": {"__any__": "__all__"},
-                "mbart50": {"__any__": "__all__"},
-                "qwen2": {"__any__": "__all__"},
-                "qwen2_big": {"__any__": "__all__"},
-                "offline": {"__any__": "__all__"},
-                "original": {},
-                "none": {}
-            },
+
             "LOG_COLORS": {
                 "ERROR": "#E74C3C",
                 "SUCCESS": "#2ECC71",
@@ -128,7 +85,7 @@ class CapabilitiesMixin:
         
         # Registry produced nothing usable; fall back to the legacy YAML if it
         # contains valid groups/capabilities, otherwise the minimal default.
-        if isinstance(yaml_data, dict) and "TRANSLATOR_GROUPS" in yaml_data and "TRANSLATOR_CAPABILITIES" in yaml_data:
+        if isinstance(yaml_data, dict) and "TRANSLATOR_GROUPS" in yaml_data:
             print("[ConfigLoader] Registry unavailable; loaded capabilities from translator_capabilities.yaml.")
             return yaml_data
 
@@ -315,7 +272,6 @@ class CapabilitiesMixin:
             with open(yaml_path, 'w', encoding='utf-8') as f:
                 yaml.dump(capabilities_data, f)
             self.translator_groups = capabilities_data.get("TRANSLATOR_GROUPS", {})
-            self.translator_capabilities = capabilities_data.get("TRANSLATOR_CAPABILITIES", {})
             self.log_colors = capabilities_data.get("LOG_COLORS", self.log_colors)
             self._initialize_and_repair_config()
             return True
@@ -323,128 +279,4 @@ class CapabilitiesMixin:
             print(f"[ConfigLoader] Error saving translator_capabilities.yaml: {e}")
             return False
 
-    def fetch_online_languages_libretranslate(self):
-        """Fetches supported target languages from public LibreTranslate API mirrors."""
-        urls = [
-            "https://translate.argosopentech.com/languages",
-            "https://libretranslate.com/languages"
-        ]
-        
-        last_error = None
-        data = None
-        for url in urls:
-            try:
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-                with urllib.request.urlopen(req, timeout=8) as response:
-                    data = json.loads(response.read().decode('utf-8'))
-                if data:
-                    break
-            except Exception as e:
-                last_error = e
-                continue
-                
-        if not data:
-            raise RuntimeError(f"Failed to fetch languages from LibreTranslate API: {last_error}")
-            
-        langs_dict = {}
-        for item in data:
-            code = item.get("code")
-            name = item.get("name")
-            if code and name:
-                app_code = GLOBAL_ISO_MAP.get(code.lower(), code.upper())
-                langs_dict[str(name)] = str(app_code)
-                
-        return langs_dict
 
-    def fetch_online_languages_lingva(self):
-        """Fetches supported languages from Lingva Translate API (a public frontend for Google Translate)."""
-        url = "https://translate.plausibility.cloud/api/v1/languages"
-        try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
-            with urllib.request.urlopen(req, timeout=8) as response:
-                data = json.loads(response.read().decode('utf-8'))
-        except Exception as e:
-            raise RuntimeError(f"Failed to fetch languages from Lingva API: {e}")
-            
-        langs_dict = {}
-        languages_list = data.get("languages", []) or data.get("targets", [])
-        if not languages_list and isinstance(data, list):
-            languages_list = data
-            
-        for item in languages_list:
-            code = item.get("code")
-            name = item.get("name")
-            if code and name:
-                app_code = GLOBAL_ISO_MAP.get(code.lower(), code.upper())
-                langs_dict[str(name)] = str(app_code)
-                
-        return langs_dict
-
-    def update_single_translator_capabilities(self, translator_name, api_key=None):
-        """
-        Updates target language capabilities for a single translator.
-        If api_key is provided for online translators (like DeepL), calls the real API.
-        Otherwise, uses a mock implementation to simulate fetching updated capabilities from online.
-        """
-        translator_name = translator_name.lower()
-        
-        if translator_name == "deepl" and api_key:
-            host = "api-free.deepl.com" if "-free" in api_key.lower() or len(api_key) < 40 else "api.deepl.com"
-            url = f"https://{host}/v2/languages?type=target"
-            try:
-                req = urllib.request.Request(url, headers={
-                    'Authorization': f'DeepL-Auth-Key {api_key}',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-                })
-                with urllib.request.urlopen(req, timeout=10) as response:
-                    data = json.loads(response.read().decode('utf-8'))
-                
-                supported_targets = []
-                for item in data:
-                    lang_code = item.get("language", "").lower()
-                    base_code = lang_code.split("-")[0]
-                    app_code = GLOBAL_ISO_MAP.get(base_code, base_code.upper())
-                    if app_code not in supported_targets:
-                        supported_targets.append(app_code)
-                
-                if supported_targets:
-                    capabilities_data = self._load_translator_capabilities()
-                    capabilities_data.setdefault("TRANSLATOR_CAPABILITIES", {})
-                    capabilities_data["TRANSLATOR_CAPABILITIES"]["deepl"] = {"__any__": supported_targets}
-                    self.save_capabilities_config(capabilities_data)
-                    return True, f"Successfully updated DeepL target languages: {len(supported_targets)} languages supported."
-            except Exception as e:
-                return False, f"Failed to call DeepL API: {e}"
-        
-        time.sleep(1.0) # Simulate network delay
-        
-        capabilities_data = self._load_translator_capabilities()
-        capabilities_data.setdefault("TRANSLATOR_CAPABILITIES", {})
-        
-        if translator_name in capabilities_data["TRANSLATOR_CAPABILITIES"]:
-            curr_caps = capabilities_data["TRANSLATOR_CAPABILITIES"][translator_name]
-            
-            if isinstance(curr_caps, dict):
-                if curr_caps.get("__any__") == "__all__":
-                    return True, f"Translator '{translator_name}' supports all languages. Configuration is already up-to-date."
-                else:
-                    updated = False
-                    for src, dsts in list(curr_caps.items()):
-                        if isinstance(dsts, list) and "MOK" not in dsts:
-                            dsts.append("MOK")
-                            updated = True
-                    
-                    if not updated:
-                        curr_caps["__any__"] = ["ENG", "VIN", "JPN", "MOK"]
-                    
-                    capabilities_data["TRANSLATOR_CAPABILITIES"][translator_name] = curr_caps
-                    self.save_capabilities_config(capabilities_data)
-                    return True, f"Mock Update: Successfully simulated update for '{translator_name}'. Added mock test code 'MOK'."
-            else:
-                capabilities_data["TRANSLATOR_CAPABILITIES"][translator_name] = {"__any__": ["ENG", "VIN", "JPN", "MOK"]}
-                self.save_capabilities_config(capabilities_data)
-                return True, f"Mock Update: Reinitialized capabilities for '{translator_name}' with test set."
-        else:
-            capabilities_data["TRANSLATOR_CAPABILITIES"][translator_name] = {"__any__": ["ENG", "VIN", "JPN", "MOK"]}
-            self.save_capabilities_config(capabilities_data)
-            return True, f"Mock Update: Created capabilities map for '{translator_name}'."
