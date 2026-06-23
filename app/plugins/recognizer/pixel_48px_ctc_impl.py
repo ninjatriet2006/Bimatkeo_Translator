@@ -16,12 +16,17 @@ class Pixel48pxCTCRecognizerImpl(BaseTextRecognizer):
             
         target_dir = os.path.dirname(model_path)
         expected_filename = os.path.basename(model_path)
-        url = "https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/48px_ctc.ckpt" 
-        
-        ModelDownloader.download_and_extract(
-            url=url, target_dir=target_dir, expected_files=[expected_filename],
-            log_callback=log_callback, extract=False
-        )
+        if not os.path.exists(model_path):
+            url = ModelDownloader.get_source_url_from_registry("ocr", "48px_ctc")
+            if url:
+                success = ModelDownloader.download_and_extract(
+                    url=url, target_dir=target_dir, expected_files=[expected_filename],
+                    log_callback=log_callback, extract=False
+                )
+                if not success:
+                    raise RuntimeError(f"Không thể khởi tạo mô hình 48px CTC tại {target_dir}")
+            else:
+                raise RuntimeError(f"Chưa có nguồn tải cho mô hình 48px CTC. Vui lòng tự nạp mô hình vào {target_dir}")
         
         if log_callback: log_callback("INFO", f"Mô hình 48px_CTC OCR đã nạp: {model_path}")
         self.model = "48px_CTC_Loaded_Model"

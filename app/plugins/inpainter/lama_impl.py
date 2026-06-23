@@ -15,20 +15,7 @@ class LamaInpainter_Impl(BaseInpainter):
         self.model_path = None
         self.is_loaded = False
 
-    def _get_source_url_from_registry(self, key: str) -> str:
-        registry_path = os.path.join(".config", "models", "model_registry.yaml")
-        if not os.path.exists(registry_path):
-            return ""
-        try:
-            with open(registry_path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-            inpainters = data.get("fields", {}).get("inpainter", [])
-            for item in inpainters:
-                if item.get("key") == key:
-                    return item.get("source", "")
-        except Exception as e:
-            print(f"[LaMa] Failed to parse registry: {e}")
-        return ""
+
 
     def load_model(self, model_path: str, **kwargs) -> None:
         self.model_path = model_path
@@ -40,7 +27,7 @@ class LamaInpainter_Impl(BaseInpainter):
             key = "manga_inpaint_v3"
             
         if not os.path.exists(self.model_path):
-            source_url = self._get_source_url_from_registry(key)
+            source_url = ModelDownloader.get_source_url_from_registry("inpainter", key)
             if source_url:
                 target_dir = os.path.dirname(self.model_path)
                 expected_files = [os.path.basename(self.model_path)]

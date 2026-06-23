@@ -16,15 +16,17 @@ class DBConvNeXtDetectorImpl(BaseTextDetector):
             
         target_dir = os.path.dirname(model_path)
         expected_filename = os.path.basename(model_path)
-        url = "https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/dbnet_convnext.ckpt" 
-        
-        success = ModelDownloader.download_and_extract(
-            url=url, target_dir=target_dir, expected_files=[expected_filename],
-            log_callback=log_callback, extract=False
-        )
-        
-        if not success:
-            raise RuntimeError(f"Không thể khởi tạo DBConvNeXt tại {target_dir}")
+        if not os.path.exists(model_path):
+            url = ModelDownloader.get_source_url_from_registry("detector", "dbconvnext")
+            if url:
+                success = ModelDownloader.download_and_extract(
+                    url=url, target_dir=target_dir, expected_files=[expected_filename],
+                    log_callback=log_callback, extract=False
+                )
+                if not success:
+                    raise RuntimeError(f"Không thể khởi tạo DBConvNeXt tại {target_dir}")
+            else:
+                raise RuntimeError(f"Chưa có nguồn tải cho DBConvNeXt. Vui lòng tự nạp mô hình vào {target_dir}")
             
         if log_callback: log_callback("INFO", f"Mô hình DBConvNeXt đã nạp: {model_path}")
         self.model = "DBConvNeXt_Loaded_Model"

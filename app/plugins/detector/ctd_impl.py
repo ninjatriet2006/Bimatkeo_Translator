@@ -18,19 +18,17 @@ class CTDetectorImpl(BaseTextDetector):
         expected_filename = os.path.basename(model_path)
         
         # Mẫu URL giả định tải mô hình CTD từ Github (Bản chất Wrapper)
-        url = "https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/comic-text-detector.pt" 
-        
-        # 1. Gọi hệ thống Downloader dùng chung để xử lý tải và giải nén nếu thiếu
-        success = ModelDownloader.download_and_extract(
-            url=url, 
-            target_dir=target_dir, 
-            expected_files=[expected_filename],
-            log_callback=log_callback,
-            extract=False
-        )
-        
-        if not success:
-            raise RuntimeError(f"Không thể khởi tạo mô hình CTD tại {target_dir}")
+        if not os.path.exists(model_path):
+            url = ModelDownloader.get_source_url_from_registry("detector", "ctd")
+            if url:
+                success = ModelDownloader.download_and_extract(
+                    url=url, target_dir=target_dir, expected_files=[expected_filename],
+                    log_callback=log_callback, extract=False
+                )
+                if not success:
+                    raise RuntimeError(f"Không thể khởi tạo CTD tại {target_dir}")
+            else:
+                raise RuntimeError(f"Chưa có nguồn tải cho CTD. Vui lòng tự nạp mô hình vào {target_dir}")
             
         # 2. Tại đây sẽ thực thi code nạp model lên VRAM (PyTorch/ONNX/OpenCV)
         if log_callback:

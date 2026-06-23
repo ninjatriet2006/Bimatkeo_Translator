@@ -2325,6 +2325,7 @@ class HandlersMixin:
                 if hasattr(self, '_refresh_combobox_values'):
                     self._refresh_combobox_values('offline_translator')
                     self._refresh_combobox_values('ai_translator')
+                    self._refresh_combobox_values(key)
             else:
                 self.log("ERROR", message)
                 QMessageBox.warning(self, "Cập nhật Thất bại", message)
@@ -2501,6 +2502,22 @@ class HandlersMixin:
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
             combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
+        elif key in ["detector", "ocr", "inpainter", "upscaler", "colorizer", "renderer"]:
+            values = self.config_loader.full_config_data.get(key, {}).get("values", [])
+            combo.addItem("--- Select ---", "none")
+            for item in values:
+                val = item.get("key")
+                exists = self.config_loader.check_model_existence(val, field=key)
+                display_name = self.config_loader.format_display_label(val, key)
+                if not exists:
+                    display_name = f"{display_name} (Not Setup)"
+                combo.addItem(display_name, val)
+                if not exists:
+                    idx = combo.count() - 1
+                    combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
+            is_en = self.current_settings.get('app_language', 'English') == 'English'
+            update_all_key_text = f"📥 Update ALL {key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {key}..."
+            combo.addItem(update_all_key_text, "update_all_software_trigger")
                     
         current_val = self.current_settings.get(key)
         self._set_widget_value(key, current_val, combo)

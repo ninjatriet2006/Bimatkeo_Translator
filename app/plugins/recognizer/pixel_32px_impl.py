@@ -16,12 +16,17 @@ class Pixel32pxRecognizerImpl(BaseTextRecognizer):
             
         target_dir = os.path.dirname(model_path)
         expected_filename = os.path.basename(model_path)
-        url = "https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/32px_ocr.zip" 
-        
-        success = ModelDownloader.download_and_extract(
-            url=url, target_dir=target_dir, expected_files=[expected_filename],
-            log_callback=log_callback, extract=False
-        )
+        if not os.path.exists(model_path):
+            url = ModelDownloader.get_source_url_from_registry("ocr", "32px")
+            if url:
+                success = ModelDownloader.download_and_extract(
+                    url=url, target_dir=target_dir, expected_files=[expected_filename],
+                    log_callback=log_callback, extract=True
+                )
+                if not success:
+                    raise RuntimeError(f"Không thể khởi tạo mô hình 32px tại {target_dir}")
+            else:
+                raise RuntimeError(f"Chưa có nguồn tải cho mô hình 32px. Vui lòng tự nạp mô hình vào {target_dir}")
         
         if log_callback: log_callback("INFO", f"Mô hình 32px OCR đã nạp: {model_path}")
         self.model = "32px_Loaded_Model"

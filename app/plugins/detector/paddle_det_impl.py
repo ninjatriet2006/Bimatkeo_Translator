@@ -10,26 +10,39 @@ class PaddleDetectorImpl(BaseTextDetector):
         self.model = None
         
     def load_model(self, model_path: str | None = None, log_callback=None) -> None:
-        if not model_path:
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            model_path = os.path.join(project_root, "models", "Detector", "Paddle", "det.onnx")
+        try:
+            from paddleocr import PaddleOCR  # type: ignore
+        except ImportError:
+            raise RuntimeError("Thư viện 'paddleocr' hoặc 'paddlepaddle' chưa được cài đặt. Vui lòng cài đặt qua pip.")
             
-        target_dir = os.path.dirname(model_path)
-        expected_filename = os.path.basename(model_path)
-        url = "https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/paddle_det.onnx" 
-        
-        success = ModelDownloader.download_and_extract(
-            url=url, target_dir=target_dir, expected_files=[expected_filename],
-            log_callback=log_callback, extract=False
-        )
-        
-        if not success:
-            raise RuntimeError(f"Không thể khởi tạo Paddle tại {target_dir}")
-            
-        if log_callback: log_callback("INFO", f"Mô hình Paddle đã nạp: {model_path}")
-        self.model = "Paddle_Loaded_Model"
+        try:
+            if log_callback: log_callback("INFO", "Đang khởi tạo mô hình PaddleOCR chính thức (tự động tải pre-trained models nếu thiếu)...")
+            # Tự động tải weights theo mặc định của paddleocr (vào ~/.paddleocr/)
+            self.model = PaddleOCR(use_angle_cls=False, lang='en', det=True, rec=False, show_log=False)
+            if log_callback: log_callback("INFO", "Mô hình PaddleOCR đã nạp thành công.")
+        except Exception as e:
+            raise RuntimeError(f"Lỗi khi khởi tạo PaddleOCR: {e}")
         
     def detect(self, image: np.ndarray) -> list[list[int]]:
         if self.model is None: raise RuntimeError("Chưa nạp model Paddle.")
-        h, w = image.shape[:2]
-        return [[10, 10, w-10, h-10]]
+        
+        # result: list of polygons for the image.
+        # Format: result[0] is a list of polygons: [ [[x1, y1], [x2, y2], [x3, y3], [x4, y4]], ... ]
+        result = self.model.ocr(image, rec=False)
+        
+        bboxes = []
+        if result and len(result) > 0 and result[0] is not None:
+            # Tùy phiên bản PaddleOCR, đôi khi trả về mảng trực tiếp nếu rec=False
+            polygons = result[0] if isinstance(result[0], list) and (len(result[0]) > 0 and isinstance(result[0][0], list)) else result
+            
+            for polygon in polygons:
+                if not polygon or len(polygon) < 4: continue
+                # Nếu polygon là mảng numpy hoặc list chứa 4 tọa độ
+                try:
+                    xs = [pt[0] for pt in polygon]
+                    ys = [pt[1] for pt in polygon]
+                    bboxes.append([int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))])
+                except (IndexError, TypeError):
+                    continue
+                    
+        return bboxes
