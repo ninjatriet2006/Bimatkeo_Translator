@@ -183,8 +183,19 @@ class Pipeline:
                 except Exception as e:
                     log_callback("ERROR", f"Failed to load translator: {e}")
                     translator = None
-            inpainter = InpainterFactory.create("dummy_inpainter") if enable_inpainter else None
-            renderer = RendererFactory.create("dummy_renderer") if enable_renderer else None
+            inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "lama_mpe")
+            try:
+                inpainter = InpainterFactory.create(inpainter_name, log_callback=log_callback) if enable_inpainter and inpainter_name != "none" else None
+            except ValueError:
+                log_callback("WARNING", f"Inpainter '{inpainter_name}' not found, falling back to None.")
+                inpainter = None
+
+            renderer_name = config_dict.get("render", {}).get("renderer", "pillow_renderer")
+            try:
+                renderer = RendererFactory.create(renderer_name, log_callback=log_callback) if enable_renderer and renderer_name != "none" else None
+            except ValueError:
+                log_callback("WARNING", f"Renderer '{renderer_name}' not found, falling back to None.")
+                renderer = None
 
             # Initialize Workers for Fork-Join Pipeline
             ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback)
@@ -281,8 +292,12 @@ class Pipeline:
             return False
 
     def run_single_image_test(self, test_image_path, output_path, config_dict, log_callback, is_verbose=False):
-        # Implementation omitted
-        pass
+        job_dict = {
+            'source_path': test_image_path,
+            'job_type': config_dict.get('job_type', 'T')
+        }
+        config_dict['is_single_file'] = True
+        return self.run(job_dict, output_path, config_dict, log_callback, is_verbose, output_format='png')
 
     def stop(self, log_callback):
         """Stops the pipeline simulation."""

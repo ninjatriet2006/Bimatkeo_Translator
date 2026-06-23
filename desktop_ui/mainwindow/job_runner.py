@@ -428,6 +428,40 @@ class JobRunnerMixin:
             QMessageBox.warning(self, "No Image", "Please load a test image first.")
             return
 
+        settings = self.current_settings
+        translator_type = settings.get("translator_category", "Offline")
+        
+        if translator_type == "Offline":
+            offline_model = settings.get("offline_translator", "none")
+            if not offline_model or offline_model == "none" or offline_model.startswith("---"):
+                QMessageBox.warning(self, "Lỗi Thiết Lập", "Vui lòng chọn Offline Model trước khi bắt đầu (Không thể để là --- Select ---).")
+                return
+        else:
+            ai_mode = settings.get("ai_mode", "")
+            if ai_mode == "Pool APIs":
+                pool_name = settings.get("pool_name", "")
+                if not pool_name or pool_name.startswith("---"):
+                    QMessageBox.warning(self, "Lỗi Thiết Lập", "Vui lòng chọn Pool trước khi bắt đầu.")
+                    return
+            else:
+                ai_model = settings.get("ai_model") or settings.get("api_name")
+                if not ai_model or ai_model == "none" or ai_model.startswith("---"):
+                    QMessageBox.warning(self, "Lỗi Thiết Lập", "Vui lòng chọn AI Model trước khi bắt đầu.")
+                    return
+
+        field_labels = {"detector": "Detector", "ocr": "OCR", "inpainter": "Inpainter"}
+        missing = self.config_loader.missing_required_fields(settings)
+        if missing:
+            names = ", ".join(field_labels.get(f, f) for f in missing)
+            QMessageBox.critical(
+                self,
+                "Thiếu mô hình bắt buộc",
+                "Không thể chạy Test. Các mô hình bắt buộc chưa được cài đặt:\n\n"
+                f"  - {names}\n\n"
+                "Hãy cài đặt mô hình cho các mục này (hoặc chọn mô hình khả dụng) rồi thử lại."
+            )
+            return
+
         test_job = {
             "id": "visual_test_job",
             "job_type": "T",
@@ -479,7 +513,8 @@ class JobRunnerMixin:
             result_files = os.listdir(final_output_dir)
             if result_files:
                 original_filename = os.path.basename(self.test_image_path)
-                result_path = os.path.join(final_output_dir, original_filename)
+                output_filename = os.path.splitext(original_filename)[0] + ".png"
+                result_path = os.path.join(final_output_dir, output_filename)
                 if os.path.exists(result_path):
                     QTimer.singleShot(0, lambda: self._display_test_result(result_path))
                 else:
@@ -717,10 +752,12 @@ class JobRunnerMixin:
     def _run_pipeline_in_process(self, job_or_path, output_path, config_dict, is_verbose, output_format, is_single_test=False):
         log_queue = multiprocessing.Queue()
         result_queue = multiprocessing.Queue()
+        hitl_tx_queue = multiprocessing.Queue()
+        self.hitl_rx_queue = multiprocessing.Queue()
         
         self.current_process = multiprocessing.Process(
             target=_pipeline_process_worker,
-            args=(job_or_path, output_path, config_dict, is_verbose, output_format, log_queue, result_queue, self.pipeline.temp_dir, self.pipeline.python_executable, is_single_test)
+            args=(job_or_path, output_path, config_dict, is_verbose, output_format, log_queue, result_queue, hitl_tx_queue, self.hitl_rx_queue, self.pipeline.temp_dir, self.pipeline.python_executable, is_single_test)
         )
         self.current_process.start()
         
@@ -730,6 +767,14 @@ class JobRunnerMixin:
                 try:
                     level, msg = log_queue.get_nowait()
                     self.log(level, msg)
+                except queue.Empty:
+                    break
+                    
+            while True:
+                try:
+                    hitl_data = hitl_tx_queue.get_nowait()
+                    if hasattr(self, 'hitl_requested_signal'):
+                        self.hitl_requested_signal.emit(hitl_data)
                 except queue.Empty:
                     break
             
