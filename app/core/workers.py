@@ -80,13 +80,14 @@ class OCRWorker(threading.Thread):
 
 
 class TranslatorWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, translator: BaseTranslator | None, src_lang: str, tgt_lang: str, log_callback=None):
+    def __init__(self, in_q: queue.Queue, translator: BaseTranslator | None, src_lang: str, tgt_lang: str, log_callback=None, hitl_callback=None):
         super().__init__()
         self.in_q = in_q
         self.translator = translator
         self.src_lang = src_lang
         self.tgt_lang = tgt_lang
         self.log_callback = log_callback
+        self.hitl_callback = hitl_callback
         self.daemon = True
 
     def run(self):
@@ -109,15 +110,23 @@ class TranslatorWorker(threading.Thread):
                     ctx.translated_texts = [""] * len(ctx.original_texts)
 
             ctx.trans_done.set()  # Signal completion of this fork
+            
+            if self.hitl_callback:
+                self.hitl_callback(ctx)
+            else:
+                # If no HITL, auto-release the lock
+                ctx.hitl_lock.set()
+
             self.in_q.task_done()
 
 
 class InpaintWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, inpainter: BaseInpainter | None, log_callback=None):
+    def __init__(self, in_q: queue.Queue, inpainter: BaseInpainter | None, log_callback=None, enable_hitl=False):
         super().__init__()
         self.in_q = in_q
         self.inpainter = inpainter
         self.log_callback = log_callback
+        self.enable_hitl = enable_hitl
         self.daemon = True
 
     def run(self):
@@ -126,6 +135,11 @@ class InpaintWorker(threading.Thread):
             if ctx is None:
                 self.in_q.task_done()
                 break
+            
+            if self.enable_hitl:
+                ctx.hitl_lock.wait()
+            else:
+                ctx.hitl_lock.set()
             
             if self.log_callback:
                 self.log_callback("INPAINT", f"Inpainting {ctx.page_id}...")

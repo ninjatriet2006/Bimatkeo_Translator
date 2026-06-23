@@ -17,3 +17,6 @@ class PageContext:
     # Fork-Join Synchronization Flags
     trans_done: threading.Event = field(default_factory=threading.Event)
     inpaint_done: threading.Event = field(default_factory=threading.Event)
+    
+    # Human-in-the-loop Synchronization Flag
+    hitl_lock: threading.Event = field(default_factory=threading.Event)

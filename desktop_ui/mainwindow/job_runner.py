@@ -18,23 +18,56 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap, QColor
 from PIL import Image
 
-def _pipeline_process_worker(job_or_path, output_path, config_dict, is_verbose, output_format, log_queue, result_queue, temp_dir, python_exec, is_single_test=False):
+def _pipeline_process_worker(job_or_path, output_path, config_dict, is_verbose, output_format, log_queue, result_queue, hitl_tx_queue, hitl_rx_queue, temp_dir, python_exec, is_single_test=False):
     from app.core.pipeline import Pipeline
+    import threading
+    
+    waiting_ctxs = {}
     
     def log_callback(level, message):
         log_queue.put((level, message))
+        
+    def mtpe_callback(ctx):
+        waiting_ctxs[ctx.page_id] = ctx
+        hitl_tx_queue.put({
+            "page_id": ctx.page_id,
+            "bboxes": ctx.bboxes,
+            "original_texts": ctx.original_texts,
+            "translated_texts": ctx.translated_texts,
+            "image": ctx.original_image
+        })
+        
+    def hitl_rx_listener():
+        while True:
+            try:
+                data = hitl_rx_queue.get()
+                if data is None: break
+                page_id = data.get("page_id")
+                if page_id in waiting_ctxs:
+                    ctx = waiting_ctxs[page_id]
+                    if "bboxes" in data: ctx.bboxes = data["bboxes"]
+                    if "translated_texts" in data: ctx.translated_texts = data["translated_texts"]
+                    ctx.hitl_lock.set()
+                    del waiting_ctxs[page_id]
+            except Exception as e:
+                log_callback("ERROR", f"HITL RX Listener Error: {e}")
+                
+    rx_thread = threading.Thread(target=hitl_rx_listener, daemon=True)
+    rx_thread.start()
         
     try:
         pipeline = Pipeline(None, python_exec, temp_dir)
         if is_single_test:
             success = pipeline.run_single_image_test(job_or_path, output_path, config_dict, log_callback, is_verbose)
         else:
-            success = pipeline.run(job_or_path, output_path, config_dict, log_callback, is_verbose, output_format)
+            success = pipeline.run(job_or_path, output_path, config_dict, log_callback, is_verbose, output_format, mtpe_callback=mtpe_callback)
             
         result_queue.put({"success": success})
     except Exception as e:
         log_queue.put(("ERROR", f"Critical Process Error: {e}"))
         result_queue.put({"success": False})
+    finally:
+        hitl_rx_queue.put(None)
 
 class JobRunnerMixin:
     def _add_job(self):

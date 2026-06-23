@@ -1299,3 +1299,58 @@ class WidgetBuildersMixin:
             print(f"Error generating arrow icon: {e}")
             
         return img_path.replace("\\", "/")
+
+    def _create_mtpe_tab(self) -> QWidget:
+        from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsRectItem
+        from PySide6.QtCore import Qt, QRectF
+        from PySide6.QtGui import QPen, QBrush, QColor, QImage, QPixmap
+
+        mtpe_widget = QWidget()
+        layout = QVBoxLayout(mtpe_widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+        
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        
+        # Left side: Image and BBoxes
+        self.mtpe_view = QGraphicsView()
+        self.mtpe_scene = QGraphicsScene()
+        self.mtpe_view.setScene(self.mtpe_scene)
+        self.mtpe_view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        
+        # Right side: Text Table
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.mtpe_table = QTableWidget()
+        self.mtpe_table.setColumnCount(2)
+        self.mtpe_table.setHorizontalHeaderLabels(["Original Text", "Translated Text"])
+        self.mtpe_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        
+        self.mtpe_approve_btn = QPushButton("✅ Approve & Render")
+        self.mtpe_approve_btn.setMinimumHeight(50)
+        self.mtpe_approve_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #10b981;
+                color: white;
+                font-weight: bold;
+                font-size: 16px;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #059669;
+            }
+        """)
+        
+        right_layout.addWidget(self.mtpe_table)
+        right_layout.addWidget(self.mtpe_approve_btn)
+        
+        self.mtpe_approve_btn.clicked.connect(self._on_mtpe_approved)
+        
+        splitter.addWidget(self.mtpe_view)
+        splitter.addWidget(right_panel)
+        splitter.setSizes([600, 400])
+        
+        layout.addWidget(splitter)
+        
+        return mtpe_widget

@@ -24,6 +24,11 @@ try:
     import app.plugins.recognizer.pixel_48px_ctc_impl
     import app.plugins.translator.api_translator_impl
     import app.plugins.translator.offline_translator_impl
+    
+    import app.plugins.inpainter.lama_impl
+    import app.plugins.upscaler.esrgan_impl
+    import app.plugins.colorizer.mc2_impl
+    import app.plugins.renderer.pillow_impl
 except ImportError as e:
     print(f"Warning: Failed to import some plugins - {e}")
 
@@ -51,37 +56,7 @@ class DummyTranslator(BaseTranslator):
     def translate(self, texts: list, src_lang: str, tgt_lang: str) -> list:
         return [f"[Translated to {tgt_lang}] {t}" for t in texts]
 
-@InpainterFactory.register("dummy_inpainter")
-class DummyInpainter(BaseInpainter):
-    def load_model(self, model_path: str, **kwargs) -> None:
-        pass
-    def inpaint(self, image: np.ndarray, bboxes: list) -> np.ndarray:
-        return image.copy()
 
-@RendererFactory.register("dummy_renderer")
-class DummyRenderer(BaseRenderer):
-    def load_fonts(self, font_path: str, **kwargs) -> None:
-        pass
-    def render(self, image: np.ndarray, bboxes: list, texts: list) -> np.ndarray:
-        # Convert numpy to PIL for drawing
-        if len(image.shape) == 3 and image.shape[2] == 3:
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        else:
-            image_rgb = image
-        
-        pil_img = Image.fromarray(image_rgb).convert("RGBA")
-        draw = ImageDraw.Draw(pil_img, "RGBA")
-        
-        for box, text in zip(bboxes, texts):
-            x1, y1, x2, y2 = box
-            # Draw semi-transparent background
-            draw.rectangle([x1, y1, x2, y2], fill=(15, 23, 42, 220), outline=(99, 102, 241, 255), width=2)
-            # Draw mock text
-            draw.text((x1 + 10, y1 + 10), text, fill=(255, 255, 255, 255))
-            
-        final_rgb = np.array(pil_img.convert("RGB"))
-        return cv2.cvtColor(final_rgb, cv2.COLOR_RGB2BGR)
-# -----------------------------------------------------------------
 
 
 class Pipeline:
@@ -99,7 +74,7 @@ class Pipeline:
         # Implementation omitted for brevity but functionally the same as before
         pass
 
-    def run(self, job, output_path, config_dict, log_callback, is_verbose=False, output_format='png'):
+    def run(self, job, output_path, config_dict, log_callback, is_verbose=False, output_format='png', mtpe_callback=None):
         """Runs the real multi-threaded pipeline."""
         self._preprocess_config(config_dict)
         source_path = job['source_path']
@@ -128,6 +103,7 @@ class Pipeline:
         enable_translator = pipeline_config.get("enable_translator", True)
         enable_inpainter = pipeline_config.get("enable_inpainter", True)
         enable_renderer = pipeline_config.get("enable_renderer", True)
+        enable_hitl = config_dict.get("enable_hitl", False)
 
         # Hidden Debug Config (Dành cho Dev Test - Bỏ qua UI)
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -212,8 +188,8 @@ class Pipeline:
 
             # Initialize Workers for Fork-Join Pipeline
             ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback)
-            trans_worker = TranslatorWorker(q_trans, translator, "auto", target_lang, log_callback)
-            inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback)
+            trans_worker = TranslatorWorker(q_trans, translator, "auto", target_lang, log_callback, hitl_callback=mtpe_callback)
+            inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback, enable_hitl=enable_hitl)
             render_worker = RenderWorker(q_render, q_out, renderer, log_callback)
 
             # Start Workers
