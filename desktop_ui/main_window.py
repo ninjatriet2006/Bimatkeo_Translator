@@ -308,39 +308,15 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         return left_panel_container
 
     def _create_right_panel(self) -> QWidget:
-        """Creates the right panel widget containing the main tabs and progress bar."""
-        container = QWidget()
-        layout = QVBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 0)
-
+        """Creates the right panel widget containing the main tabs."""
         self.main_tabs = QTabWidget()
         tab_config = self._create_settings_tab_container()
         tab_compare = self._create_visual_compare_tab()
 
         self.main_tabs.addTab(tab_config, "Configuration ⚙️")
         self.main_tabs.addTab(tab_compare, "Visual Compare 🔍")
-        
-        layout.addWidget(self.main_tabs, stretch=1)
-        
-        # --- Progress Bar Section ---
-        progress_container = QWidget()
-        progress_layout = QHBoxLayout(progress_container)
-        progress_layout.setContentsMargins(5, 5, 5, 5)
-        
-        self.status_label = QLabel("Ready")
-        self.status_label.setMinimumWidth(200)
-        
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setValue(0)
-        self.progress_bar.setTextVisible(True)
-        self.progress_bar.setFormat("%p% - %v/%m pages")
-        
-        progress_layout.addWidget(self.status_label)
-        progress_layout.addWidget(self.progress_bar, stretch=1)
-        
-        layout.addWidget(progress_container)
 
-        return container
+        return self.main_tabs
 
     def _create_settings_tab_container(self) -> QWidget:
         """
@@ -439,7 +415,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
 
     def _update_progress_bar(self, current: int, total: int, text: str):
         """Updates the progress bar and status label from background threads."""
-        if hasattr(self, 'progress_bar') and hasattr(self, 'status_label'):
+        if hasattr(self, 'progress_bar') and hasattr(self, 'progress_label'):
+            self.progress_bar.setTextVisible(True)
             self.progress_bar.setMaximum(total)
             self.progress_bar.setValue(current)
-            self.status_label.setText(text)
+            self.progress_label.setText(text)

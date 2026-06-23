@@ -1098,23 +1098,25 @@ class WidgetBuildersMixin:
         layout.setContentsMargins(0, 0, 0, 0)
 
         progress_widget = QWidget()
-        progress_layout = QVBoxLayout(progress_widget)
-        progress_layout.setSpacing(2)
-        progress_layout.setContentsMargins(0, 0, 0, 0)
+        progress_layout = QHBoxLayout(progress_widget)
+        progress_layout.setSpacing(10)
+        progress_layout.setContentsMargins(5, 5, 5, 5)
 
         self.progress_label = QLabel("Ready")
-        self.progress_bar = QProgressBar = self.findChild(QWidget) # Fallback / reference if not injected
+        self.progress_label.setMinimumWidth(200)
+
         # To avoid errors, since self.progress_bar will be created in central widget setup,
         # we just create it normally here.
         from PySide6.QtWidgets import QProgressBar
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(False)
+        self.progress_bar.setFormat("%p% - %v/%m pages")
 
         progress_layout.addWidget(self.progress_label)
-        progress_layout.addWidget(self.progress_bar)
+        progress_layout.addWidget(self.progress_bar, stretch=1)
 
-        self.start_button = QPushButton("▶️ START PIPELINE")
+        self.start_button = QPushButton("▶️ START")
         self.start_button.clicked.connect(self._start_pipeline_thread)
         self.start_button.setFixedHeight(40)
         font = self.start_button.font()
@@ -1125,6 +1127,9 @@ class WidgetBuildersMixin:
         self.stop_button.clicked.connect(self._stop_pipeline)
         self.stop_button.setEnabled(False)
         self.stop_button.setFixedHeight(40)
+        stop_font = self.stop_button.font()
+        stop_font.setBold(True)
+        self.stop_button.setFont(stop_font)
 
         layout.addWidget(progress_widget, stretch=1)
         layout.addWidget(self.start_button)

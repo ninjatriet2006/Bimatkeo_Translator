@@ -395,16 +395,6 @@ class JobRunnerMixin:
             QMessageBox.warning(self, "No Image", "Please load a test image first.")
             return
 
-        self.run_test_button.setEnabled(False)
-        self.run_test_button.setText("Testing...")
-
-        thread = threading.Thread(target=self._run_visual_test, daemon=True)
-        thread.start()
-
-    def _run_visual_test(self):
-        """Prepares and runs the pipeline on the single loaded test image."""
-        self.log("PIPELINE", "Starting visual test pipeline...")
-
         test_job = {
             "id": "visual_test_job",
             "job_type": "T",
@@ -417,7 +407,21 @@ class JobRunnerMixin:
             if test_job['settings'].get('processing_device') == 'NVIDIA GPU':
                 test_job['settings']['inpainting_precision'] = 'bf16'
 
-        final_config = self._build_final_config_for_job(test_job)
+        try:
+            final_config = self._build_final_config_for_job(test_job)
+        except ValueError as e:
+            QMessageBox.warning(self, "Configuration Error", str(e))
+            return
+
+        self.run_test_button.setEnabled(False)
+        self.run_test_button.setText("Testing...")
+
+        thread = threading.Thread(target=self._run_visual_test, args=(test_job, final_config,), daemon=True)
+        thread.start()
+
+    def _run_visual_test(self, test_job, final_config):
+        """Prepares and runs the pipeline on the single loaded test image."""
+        self.log("PIPELINE", "Starting visual test pipeline...")
 
         source_dir = os.path.dirname(self.test_image_path)
         source_name = os.path.splitext(os.path.basename(self.test_image_path))[0]
