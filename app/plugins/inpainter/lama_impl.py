@@ -8,8 +8,8 @@ from app.core.interfaces import BaseInpainter
 from app.core.factories import InpainterFactory
 from app.core.downloader import ModelDownloader
 
-@InpainterFactory.register("lama_large")
-@InpainterFactory.register("lama_mpe")
+@InpainterFactory.register("lama")
+@InpainterFactory.register("manga_inpaint_v3")
 class LamaInpainter_Impl(BaseInpainter):
     def __init__(self):
         self.model_path = None
@@ -35,9 +35,9 @@ class LamaInpainter_Impl(BaseInpainter):
         
         # Identify which key it is based on the path or kwargs.
         # But we also registered two keys. Let's extract key from model_path string or hardcode default
-        key = "lama_large"
-        if "lama_mpe" in model_path.lower():
-            key = "lama_mpe"
+        key = "lama"
+        if "manga_inpaint_v3" in model_path.lower():
+            key = "manga_inpaint_v3"
             
         if not os.path.exists(self.model_path):
             source_url = self._get_source_url_from_registry(key)

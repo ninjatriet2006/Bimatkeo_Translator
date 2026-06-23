@@ -2062,6 +2062,7 @@ class HandlersMixin:
                     self.progress.emit(30, "Đang kiểm tra kết nối nguồn tải...")
                     
                     is_direct_archive = False
+                    is_direct_file = False
                     is_huggingface = False
                     
                     if url.startswith('hf://'):
@@ -2069,10 +2070,15 @@ class HandlersMixin:
                         repo_id = url[5:]
                         latest_version = "hf_latest"
                         zipball_url = ""
-                    elif url.lower().endswith('.zip') or url.lower().endswith('.tar.gz'):
+                    elif url.lower().endswith(('.zip', '.tar.gz')):
                         is_direct_archive = True
                         latest_version = "latest_direct"
                         zipball_url = url
+                    elif url.lower().endswith(('.onnx', '.pth', '.ckpt', '.bin', '.pt')):
+                        is_direct_file = True
+                        latest_version = "latest_direct"
+                        file_url = url
+                        zipball_url = ""
                     else:
                         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
                         try:
@@ -2169,6 +2175,43 @@ class HandlersMixin:
                                                 
                         except Exception as e:
                             self.finished.emit(False, f"Lỗi khi tải từ HuggingFace: {e}")
+                            return
+                            
+                    elif is_direct_file:
+                        try:
+                            self.progress.emit(70, f"Đang tiến hành tải file từ {file_url}...")
+                            req_file = urllib.request.Request(file_url, headers={'User-Agent': 'Mozilla/5.0'})
+                            with urllib.request.urlopen(req_file, timeout=600) as response:
+                                total_size = int(response.info().get('Content-Length', -1))
+                                
+                                if check_file_path:
+                                    model_dir = os.path.join(base_dir, os.path.dirname(check_file_path))
+                                    local_path = os.path.join(base_dir, check_file_path)
+                                else:
+                                    model_dir = os.path.join(base_dir, "models", "Unknown", translator_name)
+                                    import urllib.parse
+                                    filename = os.path.basename(urllib.parse.urlparse(file_url).path)
+                                    if not filename: filename = "model.bin"
+                                    local_path = os.path.join(model_dir, filename)
+                                    
+                                os.makedirs(model_dir, exist_ok=True)
+                                
+                                chunk_size = 1024 * 1024
+                                downloaded = 0
+                                
+                                with open(local_path, "wb") as f:
+                                    while True:
+                                        chunk = response.read(chunk_size)
+                                        if not chunk:
+                                            break
+                                        f.write(chunk)
+                                        downloaded += len(chunk)
+                                        if total_size > 0:
+                                            progress_percent = 70 + int((downloaded / total_size) * 20)
+                                            if downloaded % (2 * 1024 * 1024) < chunk_size:
+                                                self.progress.emit(progress_percent, f"Đang tải: {downloaded//(1024*1024)}MB / {total_size//(1024*1024)}MB...")
+                        except Exception as e:
+                            self.finished.emit(False, f"Lỗi khi tải trực tiếp: {e}")
                             return
                             
                     elif zipball_url:

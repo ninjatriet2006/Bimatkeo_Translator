@@ -183,7 +183,7 @@ class Pipeline:
                 except Exception as e:
                     log_callback("ERROR", f"Failed to load translator: {e}")
                     translator = None
-            inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "lama_mpe")
+            inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "manga_inpaint_v3")
             try:
                 inpainter = InpainterFactory.create(inpainter_name, log_callback=log_callback) if enable_inpainter and inpainter_name != "none" else None
             except ValueError:
