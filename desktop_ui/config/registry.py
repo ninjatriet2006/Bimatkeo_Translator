@@ -12,7 +12,17 @@ _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platfo
 _exe_ext = ".exe" if _os_suffix == "win" else ""
 
 
-class RegistryMixin:
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    class _RegistryMixinBase:
+        project_base_dir: str
+        def check_model_existence(self, model_name: str, field: str | None = None) -> bool: ...
+        def save_studio_config(self) -> None: ...
+else:
+    _RegistryMixinBase = object
+
+class RegistryMixin(_RegistryMixinBase):
     """Single source of truth loader for all model metadata.
 
     Reads .config/models/model_registry.yaml and derives every structure the
@@ -20,11 +30,13 @@ class RegistryMixin:
     TRANSLATOR_CAPABILITIES, model sources, display labels). If the file is
     missing or corrupt, a minimal seed is written so the app self-heals.
     """
+    
+    project_base_dir: str
 
     REGISTRY_RELATIVE_PATH = os.path.join(".config", "models", "model_registry.yaml")
 
     # Fields that MUST resolve to a real, set-up model before a job can run.
-    REQUIRED_MODEL_FIELDS = ("detector", "ocr", "inpainter")
+    REQUIRED_MODEL_FIELDS = ("offline_detector", "offline_ocr", "inpainter")
 
     # Minimal seed used ONLY when the registry file is missing/unreadable.
     _SEED_REGISTRY = {
@@ -42,10 +54,10 @@ class RegistryMixin:
                 {"key": "gemini", "check_file": "app/translators/gemini.py",
                  "check_module": "google.genai", "capabilities": {"__any__": "__all__"}},
             ],
-            "ocr": [
+            "offline_ocr": [
                 {"key": "mocr", "check_file": "app/ocr/mocr.py", "check_module": "manga_ocr"},
             ],
-            "detector": [
+            "offline_detector": [
                 {"key": "default", "check_file": "models/Detector/CTD/detect-20241225.ckpt"},
                 {"key": "none"},
             ],
@@ -259,8 +271,9 @@ class RegistryMixin:
     SETTINGS_FIELD_MAP = {
         "offline_translator": "offline_translator",
         "ai_translator": "ai_translator",
-        "detector": "detector",
-        "ocr": "ocr",
+        "offline_detector": "offline_detector",
+        "offline_ocr": "offline_ocr",
+        "api_ocr": "api_ocr",
         "inpainter": "inpainter",
         "upscaler": "upscaler",
         "colorizer": "colorizer",

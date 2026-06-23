@@ -357,7 +357,7 @@ class WidgetBuildersMixin:
             
             right_layout.addWidget(widget, stretch=1)
 
-            if not context_key and info.get('key') in ['offline_translator', 'ai_translator', 'detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer', 'font_family']:
+            if not context_key and info.get('key') in ['offline_translator', 'ai_translator', 'offline_detector', 'offline_ocr', 'api_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer', 'font_family']:
                 self._setup_dynamic_action_buttons(info.get('key'), widget, right_layout)
             elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
                 spacer = QWidget()
@@ -571,7 +571,7 @@ class WidgetBuildersMixin:
                             combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))
         else:
-            if key in ['detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
+            if key in ['offline_detector', 'offline_ocr', 'api_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
                 combo_box.addItem("--- Select ---", "none")
             for val in values:
                 exists = self.config_loader.check_model_existence(val, field=key)
@@ -584,7 +584,7 @@ class WidgetBuildersMixin:
                     combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             
             # Thêm lựa chọn cập nhật tất cả cho các mô hình AI khác
-            if key in ['detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
+            if key in ['offline_detector', 'offline_ocr', 'api_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
                 is_en = self.current_settings.get('app_language', 'English') == 'English'
                 update_all_key_text = f"📥 Update ALL {key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {key}..."
                 combo_box.addItem(update_all_key_text, "update_all_software_trigger")

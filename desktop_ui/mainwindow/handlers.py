@@ -158,6 +158,33 @@ class HandlersMixin:
                 else:
                     self.setting_rows[ai_key].setVisible(show_standalone and has_profile)
 
+    def _get_active_ocr_category(self) -> str:
+        """Returns 'Offline' or 'AI / Online' for OCR."""
+        widget = self.setting_widgets.get('ocr_category')
+        if not widget:
+            return 'Offline'
+        val = self._get_value_from_widget('ocr_category', widget)
+        return val or 'Offline'
+
+    def _update_ocr_visibility(self):
+        """Toggles the visibility of OCR/Detector settings based on Offline vs API category."""
+        category = self._get_active_ocr_category()
+        
+        show_offline = (category == 'Offline')
+        show_api = (category == 'AI / Online')
+
+        for key in ['offline_detector', 'detection_size', 'offline_ocr']:
+            if key in self.setting_rows:
+                self.setting_rows[key].setVisible(show_offline)
+                
+        for key in ['api_ocr', 'api_ocr_key']:
+            if key in self.setting_rows:
+                self.setting_rows[key].setVisible(show_api)
+
+    def _on_ocr_category_changed(self):
+        """Handles changes in OCR category (Offline vs AI/Online)."""
+        self._update_ocr_visibility()
+        
     def _update_task_translator_visibility(self, context_key: str):
         """Toggles the visibility of translator settings for a specific task based on its settings."""
         if not hasattr(self, 'task_rows') or context_key not in self.task_rows:
@@ -421,6 +448,8 @@ class HandlersMixin:
                 self.current_settings[key] = ""
                 self._set_widget_value(key, "", widget)
 
+
+
     def _on_api_profile_changed(self, profile_name: str):
         profile_name = (profile_name or "").strip()
         
@@ -449,6 +478,7 @@ class HandlersMixin:
             self._clear_api_widgets()
             
         self._update_translator_visibility()
+        self._update_ocr_visibility()
 
 
     def _get_preset_profiles_file_path(self) -> str:
@@ -660,6 +690,8 @@ class HandlersMixin:
                 button_group.buttonClicked.connect(handler)
                 if key in ['translator_category', 'ai_mode']:
                     button_group.buttonClicked.connect(lambda *args: self._on_translator_category_changed())
+                if key == 'ocr_category':
+                    button_group.buttonClicked.connect(lambda *args: self._on_ocr_category_changed())
         elif widget_type == "api_profile_selector":
             combo = widget.findChild(QComboBox)
             if combo:
@@ -875,6 +907,7 @@ class HandlersMixin:
             self._on_setting_changed('ai_translator', context_key)
 
         self._update_translator_visibility()
+        self._update_ocr_visibility()
         active_translator = self._get_active_translator_name()
         self._update_translator_tooltip(active_translator)
 
@@ -2070,7 +2103,7 @@ class HandlersMixin:
                         repo_id = url[5:]
                         latest_version = "hf_latest"
                         zipball_url = ""
-                    elif url.lower().endswith(('.zip', '.tar.gz')):
+                    elif url.lower().endswith(('.zip', '.tar.gz', '.tar')):
                         is_direct_archive = True
                         latest_version = "latest_direct"
                         zipball_url = url
@@ -2502,7 +2535,7 @@ class HandlersMixin:
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
             combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
-        elif key in ["detector", "ocr", "inpainter", "upscaler", "colorizer", "renderer"]:
+        elif key in ["offline_detector", "offline_ocr", "api_ocr", "inpainter", "upscaler", "colorizer", "renderer"]:
             values = self.config_loader.full_config_data.get(key, {}).get("values", [])
             combo.addItem("--- Select ---", "none")
             for item in values:

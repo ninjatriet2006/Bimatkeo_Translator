@@ -8,9 +8,9 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from app.core.dto import PageContext
-from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer
+from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer, BaseCloudOCR
 from app.core.workers import OCRWorker, TranslatorWorker, InpaintWorker, RenderWorker
-from app.core.factories import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, RendererFactory
+from app.core.factories import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, RendererFactory, CloudOCRFactory
 
 # Nạp các Plugin (để trigger @Factory.register)
 try:
@@ -22,6 +22,8 @@ try:
     import app.plugins.recognizer.pixel_32px_impl
     import app.plugins.recognizer.pixel_48px_impl
     import app.plugins.recognizer.pixel_48px_ctc_impl
+    import app.plugins.cloud_ocr.gemini_vision_impl
+    import app.plugins.cloud_ocr.google_vision_impl
     import app.plugins.translator.api_translator_impl
     import app.plugins.translator.offline_translator_impl
     
@@ -137,20 +139,37 @@ class Pipeline:
             q_render = queue.Queue(maxsize=10)
             q_out = queue.Queue()
 
-            # Lấy cấu hình model (mặc định là 'ctd' và 'mocr' nếu không có)
-            detector_name = config_dict.get("detector", {}).get("detector", "ctd")
-            ocr_name = config_dict.get("ocr", {}).get("ocr", "mocr")
+            # Lấy cấu hình OCR/Detector mới
+            ocr_category = config_dict.get("ocr_category", "Offline")
+            
+            detector = None
+            recognizer = None
+            cloud_ocr = None
+            
+            if enable_ocr:
+                if ocr_category == "AI / Online":
+                    api_ocr_name = config_dict.get("api_ocr", "gemini_ocr")
+                    api_key = config_dict.get("api_ocr_key", "")
+                    try:
+                        cloud_ocr = CloudOCRFactory.create(api_ocr_name)
+                        cloud_ocr.load_model(api_key, log_callback=log_callback)
+                    except Exception as e:
+                        log_callback("ERROR", f"Lỗi khởi tạo Cloud OCR: {e}")
+                        cloud_ocr = None
+                else:
+                    detector_name = config_dict.get("offline_detector", "ctd")
+                    ocr_name = config_dict.get("offline_ocr", "mocr")
 
-            # Initialize Dummy Models from Factories (or None if disabled)
-            try:
-                detector = DetectorFactory.create(detector_name, log_callback=log_callback) if enable_ocr else None
-            except ValueError:
-                detector = DetectorFactory.create("dummy_detector", log_callback=log_callback) if enable_ocr else None
-                
-            try:
-                recognizer = RecognizerFactory.create(ocr_name, log_callback=log_callback) if enable_ocr else None
-            except ValueError:
-                recognizer = RecognizerFactory.create("dummy_recognizer", log_callback=log_callback) if enable_ocr else None
+                    # Initialize Local Models
+                    try:
+                        detector = DetectorFactory.create(detector_name, log_callback=log_callback)
+                    except ValueError:
+                        detector = DetectorFactory.create("dummy_detector", log_callback=log_callback)
+                        
+                    try:
+                        recognizer = RecognizerFactory.create(ocr_name, log_callback=log_callback)
+                    except ValueError:
+                        recognizer = RecognizerFactory.create("dummy_recognizer", log_callback=log_callback)
                 
             translator_dict = config_dict.get("translator", {})
             translator = None
@@ -198,7 +217,7 @@ class Pipeline:
                 renderer = None
 
             # Initialize Workers for Fork-Join Pipeline
-            ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback)
+            ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback, cloud_ocr=cloud_ocr)
             trans_worker = TranslatorWorker(q_trans, translator, "auto", target_lang, log_callback, hitl_callback=mtpe_callback)
             inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback, enable_hitl=enable_hitl)
             render_worker = RenderWorker(q_render, q_out, renderer, log_callback)

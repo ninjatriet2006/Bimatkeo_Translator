@@ -17,7 +17,7 @@ class Pixel48pxRecognizerImpl(BaseTextRecognizer):
         target_dir = os.path.dirname(model_path)
         expected_filename = os.path.basename(model_path)
         if not os.path.exists(model_path):
-            url = ModelDownloader.get_source_url_from_registry("ocr", "48px")
+            url = ModelDownloader.get_source_url_from_registry("offline_ocr", "48px")
             if url:
                 success = ModelDownloader.download_and_extract(
                     url=url, target_dir=target_dir, expected_files=[expected_filename],

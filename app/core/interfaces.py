@@ -26,6 +26,27 @@ class BaseTextRecognizer(ABC):
         pass
 
 
+class BaseCloudOCR(ABC):
+    @abstractmethod
+    def load_model(self, api_key: str, **kwargs) -> None:
+        """
+        Thiết lập kết nối với Cloud API.
+        """
+        pass
+
+    @abstractmethod
+    def recognize_full_page(self, image: np.ndarray, lang: str = "en") -> list[dict]:
+        """
+        Nhận diện văn bản và tọa độ từ ảnh toàn trang sử dụng Cloud API.
+        Trả về danh sách các dict, ví dụ:
+        [
+            {"box": [x1, y1, x2, y2], "text": "Hello World", "score": 0.99},
+            ...
+        ]
+        """
+        pass
+
+
 class BaseUpscaler(ABC):
     @abstractmethod
     def load_model(self, model_path: str) -> None:

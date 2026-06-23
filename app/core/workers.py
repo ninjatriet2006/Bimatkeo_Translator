@@ -2,7 +2,7 @@ import threading
 import queue
 import gc
 from app.core.dto import PageContext
-from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer
+from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer, BaseCloudOCR
 from app.core.vision_utils import sort_comic_text_boxes
 from app.core.ocr_corrector import VisionOCRCorrector
 
@@ -17,7 +17,7 @@ def release_gpu_memory():
     gc.collect()
 
 class OCRWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None):
+    def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None, cloud_ocr: BaseCloudOCR | None = None):
         super().__init__()
         self.in_q = in_q
         self.out_q_trans = out_q_trans
@@ -25,6 +25,7 @@ class OCRWorker(threading.Thread):
         self.out_q_render = out_q_render
         self.detector = detector
         self.recognizer = recognizer
+        self.cloud_ocr = cloud_ocr
         self.log_callback = log_callback
         self.corrector = VisionOCRCorrector(use_llm=True, log_callback=log_callback)
         self.daemon = True
@@ -42,7 +43,24 @@ class OCRWorker(threading.Thread):
             if self.log_callback:
                 self.log_callback("OCR", f"Processing {ctx.page_id}...")
 
-            if self.detector and ctx.original_image is not None:
+            if self.cloud_ocr and ctx.original_image is not None:
+                h, w = ctx.original_image.shape[:2]
+                results = self.cloud_ocr.recognize_full_page(ctx.original_image)
+                
+                raw_bboxes = [r["box"] for r in results]
+                sorted_bboxes = sort_comic_text_boxes(raw_bboxes, direction="rtl_ttb", image_width=w, image_height=h)
+                
+                # Map sorted boxes to text
+                box_to_text = {tuple(r["box"]): r["text"] for r in results}
+                
+                ctx.bboxes = sorted_bboxes
+                ctx.original_texts = [box_to_text[tuple(b)] for b in sorted_bboxes]
+                ctx.translated_texts = [""] * len(ctx.original_texts)
+                
+                if self.log_callback:
+                    self.log_callback("OCR", f"Cloud OCR đã xử lý {len(ctx.bboxes)} bong bóng chữ.")
+
+            elif self.detector and ctx.original_image is not None:
                 h, w = ctx.original_image.shape[:2]
                 raw_bboxes = self.detector.detect(ctx.original_image)
                 # Sắp xếp lại box theo chuẩn đọc truyện. 
@@ -58,17 +76,21 @@ class OCRWorker(threading.Thread):
                             crop = ctx.original_image[box[1]:box[3], box[0]:box[2]]
                             if crop.size > 0:
                                 text = self.recognizer.recognize(crop)
-                                texts.append(text)
                             else:
-                                texts.append("")
+                                text = ""
                         except Exception as e:
                             if self.log_callback:
                                 self.log_callback("ERROR", f"OCR Error on {ctx.page_id}: {e}")
-                            texts.append("")
+                            text = ""
+                        texts.append(text)
                             
                 # Stage 2: Vision OCR Correction
                 texts = self.corrector.correct(texts, ctx.original_image)
                 ctx.original_texts = texts
+                ctx.translated_texts = [""] * len(texts)
+                
+                if self.log_callback:
+                    self.log_callback("OCR", f"Detector tìm thấy {len(bboxes)} bong bóng chữ.")
             
             # Fork (Push to 3 queues simultaneously)
             self.out_q_trans.put(ctx)

@@ -43,8 +43,8 @@ class SchemaMixin:
                         custom_choices = self._load_custom_models(key)
                         merged_info['values'] = custom_choices if custom_choices is not None else enum_def["enum"]
             
-            # Manually handle UI-only enum settings offline_translator and ai_translator
-            if key in ['offline_translator', 'ai_translator']:
+            # Manually handle UI-only enum settings
+            if key in ['offline_translator', 'ai_translator', 'offline_detector', 'offline_ocr', 'api_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
                 custom_choices = self._load_custom_models(key)
                 if custom_choices is not None:
                     merged_info['values'] = custom_choices

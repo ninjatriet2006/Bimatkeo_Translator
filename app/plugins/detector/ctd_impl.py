@@ -19,7 +19,7 @@ class CTDetectorImpl(BaseTextDetector):
         
         # Mẫu URL giả định tải mô hình CTD từ Github (Bản chất Wrapper)
         if not os.path.exists(model_path):
-            url = ModelDownloader.get_source_url_from_registry("detector", "ctd")
+            url = ModelDownloader.get_source_url_from_registry("offline_detector", "ctd")
             if url:
                 success = ModelDownloader.download_and_extract(
                     url=url, target_dir=target_dir, expected_files=[expected_filename],

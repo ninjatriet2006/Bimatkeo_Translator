@@ -16,9 +16,25 @@ class PaddleDetectorImpl(BaseTextDetector):
             raise RuntimeError("Thư viện 'paddleocr' hoặc 'paddlepaddle' chưa được cài đặt. Vui lòng cài đặt qua pip.")
             
         try:
-            if log_callback: log_callback("INFO", "Đang khởi tạo mô hình PaddleOCR chính thức (tự động tải pre-trained models nếu thiếu)...")
-            # Tự động tải weights theo mặc định của paddleocr (vào ~/.paddleocr/)
-            self.model = PaddleOCR(use_angle_cls=False, lang='en', det=True, rec=False, show_log=False)
+            # Kiểm tra xem người dùng có tải model offline qua giao diện UI hay không
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+            offline_model_path = os.path.join(project_root, "models", "Detector", "Paddle")
+            
+            det_model_dir = None
+            if os.path.exists(offline_model_path):
+                for root, _, files in os.walk(offline_model_path):
+                    if any(f.endswith('.pdmodel') for f in files):
+                        det_model_dir = root
+                        break
+            
+            if det_model_dir:
+                if log_callback: log_callback("INFO", f"Đang khởi tạo PaddleOCR với trọng số Offline tại: {det_model_dir}")
+                self.model = PaddleOCR(use_angle_cls=False, lang='en', det=True, rec=False, det_model_dir=det_model_dir, show_log=False)
+            else:
+                if log_callback: log_callback("INFO", "Đang khởi tạo mô hình PaddleOCR chính thức (tự động tải Online nếu thiếu)...")
+                # Tự động tải weights theo mặc định của paddleocr (vào ~/.paddleocr/)
+                self.model = PaddleOCR(use_angle_cls=False, lang='en', det=True, rec=False, show_log=False)
+                
             if log_callback: log_callback("INFO", "Mô hình PaddleOCR đã nạp thành công.")
         except Exception as e:
             raise RuntimeError(f"Lỗi khi khởi tạo PaddleOCR: {e}")

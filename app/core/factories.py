@@ -69,3 +69,6 @@ class UpscalerFactory(BaseFactory):
 
 class ColorizerFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}
+
+class CloudOCRFactory(BaseFactory):
+    _registry: Dict[str, Type[Any]] = {}

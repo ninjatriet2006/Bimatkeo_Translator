@@ -182,7 +182,7 @@ class CapabilitiesMixin:
                 return False
 
             checkable_fields = {
-                "offline_translator", "ai_translator", "detector", "ocr", "inpainter", "upscaler", "colorizer", "renderer"
+                "offline_translator", "ai_translator", "offline_detector", "offline_ocr", "api_ocr", "inpainter", "upscaler", "colorizer", "renderer"
             }
             if field_key not in checkable_fields:
                 return True

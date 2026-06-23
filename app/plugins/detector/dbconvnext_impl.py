@@ -17,7 +17,7 @@ class DBConvNeXtDetectorImpl(BaseTextDetector):
         target_dir = os.path.dirname(model_path)
         expected_filename = os.path.basename(model_path)
         if not os.path.exists(model_path):
-            url = ModelDownloader.get_source_url_from_registry("detector", "dbconvnext")
+            url = ModelDownloader.get_source_url_from_registry("offline_detector", "dbconvnext")
             if url:
                 success = ModelDownloader.download_and_extract(
                     url=url, target_dir=target_dir, expected_files=[expected_filename],

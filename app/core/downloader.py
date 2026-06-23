@@ -1,6 +1,7 @@
 import os
 import urllib.request
 import zipfile
+import tarfile
 import hashlib
 import shutil
 
@@ -86,13 +87,19 @@ class ModelDownloader:
                 _log("INFO", "Xác thực mã băm thành công.")
             
             # Giải nén nếu được yêu cầu
-            if extract and download_path.endswith('.zip'):
-                _log("INFO", "Đang giải nén tệp tin...")
-                with zipfile.ZipFile(download_path, 'r') as zip_ref:
-                    zip_ref.extractall(target_dir)
-                _log("INFO", "Giải nén hoàn tất.")
-                # Dọn file zip gốc
-                os.remove(download_path)
+            if extract:
+                if download_path.endswith('.zip'):
+                    _log("INFO", "Đang giải nén tệp tin zip...")
+                    with zipfile.ZipFile(download_path, 'r') as zip_ref:
+                        zip_ref.extractall(target_dir)
+                    _log("INFO", "Giải nén hoàn tất.")
+                    os.remove(download_path)
+                elif download_path.endswith('.tar') or download_path.endswith('.tar.gz'):
+                    _log("INFO", "Đang giải nén tệp tin tar...")
+                    with tarfile.open(download_path, 'r:*') as tar_ref:
+                        tar_ref.extractall(target_dir)
+                    _log("INFO", "Giải nén hoàn tất.")
+                    os.remove(download_path)
                 
             return True
             

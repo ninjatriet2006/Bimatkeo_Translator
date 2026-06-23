@@ -449,7 +449,7 @@ class JobRunnerMixin:
                     QMessageBox.warning(self, "Lỗi Thiết Lập", "Vui lòng chọn AI Model trước khi bắt đầu.")
                     return
 
-        field_labels = {"detector": "Detector", "ocr": "OCR", "inpainter": "Inpainter"}
+        field_labels = {"offline_detector": "Detector", "offline_ocr": "OCR", "inpainter": "Inpainter"}
         missing = self.config_loader.missing_required_fields(settings)
         if missing:
             names = ", ".join(field_labels.get(f, f) for f in missing)
@@ -582,7 +582,7 @@ class JobRunnerMixin:
         # Block the run if any READY job has a required model field (detector,
         # ocr, inpainter) that is blank or not set up. Report clearly instead
         # of letting the backend crash mid-pipeline.
-        field_labels = {"detector": "Detector", "ocr": "OCR", "inpainter": "Inpainter"}
+        field_labels = {"offline_detector": "Detector", "offline_ocr": "OCR", "inpainter": "Inpainter"}
         blocked = []
         for job in self.job_queue:
             if job.get('status') != 'Ready':
