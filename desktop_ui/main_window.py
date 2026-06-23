@@ -113,16 +113,21 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         self.setting_widgets = {}
         self.setting_rows = {}
         self.task_widgets = {}
-        self.task_settings = {}
+        
+        oldsession = getattr(self.config_loader, 'oldsession_config', {})
+        self.task_settings = oldsession.get("task_settings", {})
+        self.job_queue = oldsession.get("job_queue", [])
+        self.history_queue = oldsession.get("history_queue", [])
+        
         self.widget_references = {}
         self.current_settings = self.config_loader.get_factory_defaults()
         if hasattr(self.config_loader, 'oldsession_config'):
             saved_settings = self.config_loader.oldsession_config.get("current_settings", {})
-            self.current_settings.update(saved_settings)
+            for k, v in saved_settings.items():
+                if k in self.current_settings:
+                    self.current_settings[k] = v
         if hasattr(self.config_loader, 'app_language'):
             self.current_settings['app_language'] = self.config_loader.app_language
-        self.job_queue = []
-        self.history_queue = []
         self.selected_job_id = None
         self.is_running_pipeline = False
         self._stopped_by_user = False
@@ -175,6 +180,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         self.resize(1280, 720)
         self.setMinimumSize(QSize(960, 540))
         self._create_main_layout()
+        
+        self._update_job_list_ui()
+        self._update_history_list_ui()
         print("[UI] Main layout and dynamic widgets created successfully.")
 
     def _create_main_layout(self):

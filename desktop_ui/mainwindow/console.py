@@ -67,11 +67,13 @@ class ConsoleMixin:
         This is the slot that receives the log signal. It safely updates the
         QTextEdit widget from the main UI thread.
         """
+        import html
+        safe_message = html.escape(message)
         # Use simple HTML to color the text
         if not color or color.lower() in ["white", "default", "none"]:
-            self.log_textbox.append(f'<span>{message}</span>')
+            self.log_textbox.append(f'<span>{safe_message}</span>')
         else:
-            self.log_textbox.append(f'<span style="color:{color};">{message}</span>')
+            self.log_textbox.append(f'<span style="color:{color};">{safe_message}</span>')
 
     def _clear_log(self):
         """Clears all text from the log box."""

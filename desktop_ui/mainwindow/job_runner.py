@@ -49,7 +49,7 @@ class JobRunnerMixin:
     def _add_file_job(self):
         """Opens a dialog to select files and adds them as jobs."""
         initial_dir = getattr(self, 'last_selected_directory', self.project_base_dir)
-        file_paths, _ = QFileDialog.getOpenFileNames(self, "Select Image or Text Files", initial_dir, "Supported Files (*.png *.jpg *.jpeg *.webp *.bmp *.txt);;Text Files (*.txt);;Image Files (*.png *.jpg *.jpeg *.webp *.bmp)")
+        file_paths, _ = QFileDialog.getOpenFileNames(self, "Select Image or Text Files", initial_dir, "Supported Files (*.png *.jpg *.jpeg *.webp *.bmp *.txt);;Text Files (*.txt);;Image Files (*.png *.jpg *.jpeg *.webp *.bmp);;All Files (*)")
 
         if file_paths:
             self.last_selected_directory = os.path.dirname(file_paths[0])
@@ -469,7 +469,7 @@ class JobRunnerMixin:
             return
 
         for job in self.job_queue:
-            if job.get('status') != 'Ready' or job.get('job_type') != 'T':
+            if job.get('status') != 'Ready' or job.get('job_type') not in ['T', 'TX']:
                 continue
             settings = job.get('settings', {})
             translator_type = settings.get("translator_category", "Offline")
@@ -480,10 +480,17 @@ class JobRunnerMixin:
                     QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn Offline Model trước khi bắt đầu (Không thể để là --- Select ---).")
                     return
             else:
-                ai_model = settings.get("ai_model", "")
-                if not ai_model or ai_model == "none" or ai_model.startswith("---"):
-                    QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn AI Model trước khi bắt đầu.")
-                    return
+                ai_mode = settings.get("ai_mode", "")
+                if ai_mode == "Pool APIs":
+                    pool_name = settings.get("pool_name", "")
+                    if not pool_name or pool_name.startswith("---"):
+                        QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn Pool trước khi bắt đầu.")
+                        return
+                else:
+                    ai_model = settings.get("ai_model") or settings.get("api_name")
+                    if not ai_model or ai_model == "none" or ai_model.startswith("---"):
+                        QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn AI Model trước khi bắt đầu.")
+                        return
 
         # Block the run if any READY job has a required model field (detector,
         # ocr, inpainter) that is blank or not set up. Report clearly instead
@@ -492,6 +499,8 @@ class JobRunnerMixin:
         blocked = []
         for job in self.job_queue:
             if job.get('status') != 'Ready':
+                continue
+            if job.get('job_type') == 'TX':
                 continue
             settings = job.get('settings', {})
             missing = self.config_loader.missing_required_fields(settings)
@@ -610,10 +619,23 @@ class JobRunnerMixin:
                                 })
             else:
                 provider = settings.get('ai_translator')
+                api_name = settings.get('api_name')
+                
+                if api_name and api_name != 'none':
+                    if hasattr(self, '_load_api_profiles'):
+                        api_profiles = self._load_api_profiles()
+                        prof = api_profiles.get(api_name, {})
+                        if prof:
+                            provider = prof.get('provider')
+                            translator_dict['ai_endpoint'] = prof.get('endpoint', '')
+                            translator_dict['ai_model'] = prof.get('model', '')
+                            translator_dict['ai_api_key'] = prof.get('key', '')
+                
                 if not provider or provider == 'none':
                     from app.core.api_utils import infer_ai_provider
-                    ep = settings.get('ai_endpoint', '')
+                    ep = translator_dict.get('ai_endpoint', '')
                     provider = infer_ai_provider(ep)
+                    
                 translator_dict['translator'] = provider
 
         if settings.get('translator_chain'):
@@ -621,12 +643,22 @@ class JobRunnerMixin:
         
         final_config['processing_device'] = settings.get('processing_device', 'CPU')
 
-        if job_type in ['R', 'U', 'C']:
-            task_key_map = {'R': 'raw_output', 'U': 'upscale', 'C': 'colorize'}
+        if job_type in ['R', 'U', 'C', 'TX']:
+            task_key_map = {'R': 'raw_output', 'U': 'upscale', 'C': 'colorize', 'TX': 'text_only_translation'}
             task_info = self.config_loader.tasks_config.get(task_key_map.get(job_type), {})
             backend_overrides = task_info.get("backend_config", {})
             for cat, overrides in backend_overrides.items():
                 final_config.setdefault(cat, {}).update(overrides)
+
+        if job_type == 'TX':
+            final_config['pipeline'] = {
+                "enable_ocr": False,
+                "enable_translator": True,
+                "enable_inpainter": False,
+                "enable_renderer": False
+            }
+            
+        final_config['job_type'] = job_type
 
         return final_config
 
@@ -764,12 +796,14 @@ class JobRunnerMixin:
                         if os.path.exists(temp_batch_dir): shutil.rmtree(temp_batch_dir)
                         os.makedirs(temp_batch_dir)
                         for f in batch_files:
-                            shutil.copy(os.path.join(source_path, f), temp_batch_dir)
+                            src_file = source_path if os.path.isfile(source_path) else os.path.join(source_path, f)
+                            shutil.copy(src_file, temp_batch_dir)
 
                         job_for_batch = copy.deepcopy(job)
                         job_for_batch['source_path'] = temp_batch_dir
 
                         final_config = self._build_final_config_for_job(job_for_batch)
+                        final_config['is_single_file'] = os.path.isfile(source_path)
                         is_verbose = settings.get("enable_verbose_output", False)
                         
                         batch_success = self._run_pipeline_in_process(job_for_batch, final_output_path, final_config, is_verbose, output_format, is_single_test=False)
@@ -785,12 +819,14 @@ class JobRunnerMixin:
                     if os.path.exists(temp_source_dir): shutil.rmtree(temp_source_dir)
                     os.makedirs(temp_source_dir)
                     for f in files_to_process:
-                        shutil.copy(os.path.join(source_path, f), temp_source_dir)
+                        src_file = source_path if os.path.isfile(source_path) else os.path.join(source_path, f)
+                        shutil.copy(src_file, temp_source_dir)
 
                     job_for_run = copy.deepcopy(job)
                     job_for_run['source_path'] = temp_source_dir
 
                     final_config = self._build_final_config_for_job(job_for_run)
+                    final_config['is_single_file'] = os.path.isfile(source_path)
                     is_verbose = settings.get("enable_verbose_output", False)
                     success = self._run_pipeline_in_process(job_for_run, final_output_path, final_config, is_verbose, output_format, is_single_test=False)
                     shutil.rmtree(temp_source_dir)
@@ -856,67 +892,79 @@ class JobRunnerMixin:
         """Applies a special task'''s configuration and type to all selected jobs."""
         selected_items = self.queue_list_widget.selectedItems()
         if not selected_items:
-            QMessageBox.information(self, "No Job Selected", "Please select one or more jobs from the queue to assign this task.")
-            return
+            if self.queue_list_widget.count() > 0:
+                # UX Improvement: Auto-select all if nothing is explicitly selected
+                for i in range(self.queue_list_widget.count()):
+                    item = self.queue_list_widget.item(i)
+                    item.setSelected(True)
+                    selected_items.append(item)
+            else:
+                QMessageBox.information(self, "Queue is Empty", "Please add some files to the queue first.")
+                return
 
         task_info = self.config_loader.tasks_config.get(task_key, {})
         task_settings_from_ui = self.task_settings.get(task_key, {})
 
-        job_type_map = {'raw_output': '''R''', '''upscale''': '''U''', '''colorize''': '''C'''}
+        job_type_map = {'raw_output': 'R', 'upscale': 'U', 'colorize': 'C', 'text_only_translation': 'TX'}
         job_type = job_type_map.get(task_key, '''?''')
 
-        for item in selected_items:
-            job_id = item.data(Qt.ItemDataRole.UserRole)
-            job_data = next((job for job in self.job_queue if job['id'] == job_id), None)
-            if job_data:
-                current_job_settings = task_settings_from_ui.copy()
+        try:
+            for item in selected_items:
+                job_id = item.data(Qt.ItemDataRole.UserRole)
+                job_data = next((job for job in self.job_queue if job['id'] == job_id), None)
+                if job_data:
+                    current_job_settings = task_settings_from_ui.copy()
 
-                if task_key == '''upscale''':
-                    upscale_value_str = current_job_settings.pop('''task_upscale_grid''', '''2x''')
-                    current_job_settings['upscale_ratio'] = int(upscale_value_str.replace('x', ''))
+                    if task_key == 'upscale':
+                        upscale_value_str = current_job_settings.pop('task_upscale_grid', '2x')
+                        current_job_settings['upscale_ratio'] = int(upscale_value_str.replace('x', ''))
 
-                if task_key == '''colorize''' and current_job_settings.get('''restore_size_after_colorize'''):
-                    try:
-                        source_dir = job_data['source_path']
-                        first_image_name = next((f for f in os.listdir(source_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))), None)
+                    if task_key == 'colorize' and current_job_settings.get('restore_size_after_colorize'):
+                        try:
+                            source_dir = job_data['source_path']
+                            first_image_name = next((f for f in os.listdir(source_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))), None)
 
-                        if first_image_name:
-                            image_path = os.path.join(source_dir, first_image_name)
-                            with Image.open(image_path) as img:
-                                width, height = img.size
+                            if first_image_name:
+                                image_path = os.path.join(source_dir, first_image_name)
+                                with Image.open(image_path) as img:
+                                    width, height = img.size
 
-                            original_long_side = max(width, height)
-                            target_colorize_size = int(current_job_settings.get('''colorization_size''', 576))
+                                original_long_side = max(width, height)
+                                target_colorize_size = int(current_job_settings.get('colorization_size', 576))
 
-                            if target_colorize_size > 0 and original_long_side > target_colorize_size:
-                                division_ratio = original_long_side / target_colorize_size
-                                calculated_upscale_ratio = max(2, round(division_ratio))
+                                if target_colorize_size > 0 and original_long_side > target_colorize_size:
+                                    division_ratio = original_long_side / target_colorize_size
+                                    calculated_upscale_ratio = max(2, round(division_ratio))
 
-                                current_job_settings['upscale_ratio'] = calculated_upscale_ratio
-                                current_job_settings['revert_upscaling'] = False
-                                self.log("INFO", f"Job '''{job_data['name']}''': Auto-calculated upscale ratio: {calculated_upscale_ratio}x")
-                        else:
-                            self.log("WARNING", f"Job '''{job_data['name']}''': Could not find an image to calculate upscale ratio. Skipping auto-upscale.")
+                                    current_job_settings['upscale_ratio'] = calculated_upscale_ratio
+                                    current_job_settings['revert_upscaling'] = False
+                                    self.log("INFO", f"Job '{job_data['name']}': Auto-calculated upscale ratio: {calculated_upscale_ratio}x")
+                            else:
+                                self.log("WARNING", f"Job '{job_data['name']}': Could not find an image to calculate upscale ratio. Skipping auto-upscale.")
 
-                    except Exception as e:
-                        self.log("ERROR", f"Failed to auto-calculate upscale ratio for '''{job_data['name']}''': {e}")
+                        except Exception as e:
+                            self.log("ERROR", f"Failed to auto-calculate upscale ratio for '{job_data['name']}': {e}")
 
-                device_widget = self.tasks_processing_device_widget
-                button_group = device_widget.findChild(QButtonGroup)
-                selected_device = "CPU"
-                if button_group and button_group.checkedButton():
-                    selected_device = button_group.checkedButton().text()
-                
-                current_job_settings['processing_device'] = selected_device
-                current_job_settings['processing_mode'] = self._get_value_from_widget('''processing_mode''', self.setting_widgets.get('''processing_mode'''))
-                current_job_settings['batch_size'] = self._get_value_from_widget('''batch_size''', self.setting_widgets.get('''batch_size'''))
+                    device_widget = self.tasks_processing_device_widget
+                    button_group = device_widget.findChild(QButtonGroup)
+                    selected_device = "CPU"
+                    if button_group and button_group.checkedButton():
+                        selected_device = button_group.checkedButton().text()
+                    
+                    current_job_settings['processing_device'] = selected_device
+                    current_job_settings['processing_mode'] = self._get_value_from_widget('processing_mode', self.setting_widgets.get('processing_mode'))
+                    current_job_settings['batch_size'] = self._get_value_from_widget('batch_size', self.setting_widgets.get('batch_size'))
 
-                job_data['settings'] = current_job_settings
-                job_data['job_type'] = job_type
-                job_data['status'] = '''Ready'''
+                    job_data['settings'] = current_job_settings
+                    job_data['job_type'] = job_type
+                    job_data['status'] = 'Ready'
 
-        self.log("INFO", f"Assigned task '''{task_info.get('label')}''' to {len(selected_items)} job(s).")
-        self._update_job_list_ui()
+            self.log("INFO", f"Assigned task '{task_info.get('label')}' to {len(selected_items)} job(s).")
+            self._update_job_list_ui()
+        except Exception as e:
+            self.log("ERROR", f"Crash in _assign_task_to_selection: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _on_pipeline_finished(self):
         """

@@ -65,12 +65,42 @@ class PromptBuilder:
             "Your task is to translate the following text from {src} to {tgt}. "
             "Maintain the tone, emotions, and formatting of the original text. "
             "If the text contains sound effects or onomatopoeia, translate them naturally. "
-            "Output ONLY the translated text, without any explanations or conversational fillers."
+            "CRITICAL RULES: \n"
+            "- Output ONLY the translated text.\n"
+            "- DO NOT output any <think> tags or reasoning processes.\n"
+            "- DO NOT add numbers, bullet points, or prefixes (like '1.', '2.', '-') to the lines.\n"
+            "- DO NOT add conversational fillers or explanations.\n"
+            "Keep the exact same number of lines as the input."
         )
+
+    def _get_lang_name(self, code: str) -> str:
+        """Helper to convert internal codes to full language names."""
+        if code.lower() == 'auto':
+            return 'Auto-Detect'
+            
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        lang_file = os.path.join(project_root, ".config", "configs", "supporttargetlang.yaml")
+        if os.path.exists(lang_file):
+            try:
+                import yaml
+                with open(lang_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Supporttargetlang might not be a valid dict YAML, it's often KEY: Value format.
+                for line in content.splitlines():
+                    if ':' in line:
+                        k, v = line.split(':', 1)
+                        if k.strip().upper() == code.upper():
+                            return v.strip()
+            except Exception:
+                pass
+        return code
 
     def build_prompt(self, src_lang: str, tgt_lang: str, glossary: Dict[str, str] = None) -> str:
         """Tạo Prompt hoàn chỉnh, có tiêm Glossary nếu có."""
-        prompt = self.base_prompt.format(src=src_lang, tgt=tgt_lang)
+        full_src = self._get_lang_name(src_lang)
+        full_tgt = self._get_lang_name(tgt_lang)
+        prompt = self.base_prompt.format(src=full_src, tgt=full_tgt)
 
         if glossary:
             prompt += "\n\n# GLOSSARY (Strictly use these translations for names/terms):\n"

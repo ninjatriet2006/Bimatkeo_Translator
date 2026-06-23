@@ -717,8 +717,8 @@ class HandlersMixin:
                         self._save_api_profiles(profiles)
 
             if key == 'app_language':
-                self.config_loader.studio_config["app_language"] = new_value
-                self.config_loader.save_studio_config()
+                self.config_loader.oldsession_config["app_language"] = new_value
+                self.config_loader.save_oldsession_config()
                 self._rebuild_settings_tab()
 
     def _on_translator_changed(self, translator_name: str):
@@ -743,7 +743,7 @@ class HandlersMixin:
                 return True
         return False
 
-    def _filter_translator_dropdowns(self, target_lang_name: str):
+    def _filter_translator_dropdowns(self, target_lang_name: str, context_key: str = None):
         """Filters the offline_translator and ai_translator dropdowns based on the selected target language."""
         from .. import main_window as mw
         if not target_lang_name:
@@ -757,7 +757,11 @@ class HandlersMixin:
         def natural_sort_key(s):
             return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
 
-        offline_combo = self.setting_widgets.get('offline_translator')
+        if context_key:
+            offline_combo = self.task_widgets.get(context_key, {}).get('offline_translator')
+        else:
+            offline_combo = self.setting_widgets.get('offline_translator')
+            
         if offline_combo:
             current_val = offline_combo.currentData()
             offline_combo.blockSignals(True)
@@ -810,9 +814,13 @@ class HandlersMixin:
             if not restored and offline_combo.count() > 0:
                 offline_combo.setCurrentIndex(0)
             offline_combo.blockSignals(False)
-            self._on_setting_changed('offline_translator')
+            self._on_setting_changed('offline_translator', context_key)
 
-        ai_combo = self.setting_widgets.get('ai_translator')
+        if context_key:
+            ai_combo = self.task_widgets.get(context_key, {}).get('ai_translator')
+        else:
+            ai_combo = self.setting_widgets.get('ai_translator')
+            
         if ai_combo:
             current_val = ai_combo.currentData()
             ai_combo.blockSignals(True)
@@ -864,7 +872,7 @@ class HandlersMixin:
             if not restored and ai_combo.count() > 0:
                 ai_combo.setCurrentIndex(0)
             ai_combo.blockSignals(False)
-            self._on_setting_changed('ai_translator')
+            self._on_setting_changed('ai_translator', context_key)
 
         self._update_translator_visibility()
         active_translator = self._get_active_translator_name()
@@ -1174,7 +1182,7 @@ class HandlersMixin:
     def _load_app_state(self):
         """Loads application state (window geometry, last directory) from the unified config."""
         try:
-            settings = self.config_loader.studio_config
+            settings = getattr(self.config_loader, 'oldsession_config', {})
             geometry_hex = settings.get("window_geometry")
             if geometry_hex:
                 self.restoreGeometry(QByteArray.fromHex(geometry_hex.encode('utf-8')))
@@ -1186,15 +1194,24 @@ class HandlersMixin:
 
     def _save_app_state(self):
         """Saves the current application state to the unified config."""
-        self.config_loader.studio_config["window_geometry"] = self.saveGeometry().toHex().data().decode('utf-8')
-        self.config_loader.studio_config["last_directory"] = getattr(self, 'last_selected_directory', None)
-        self.config_loader.save_studio_config()
+        if not hasattr(self.config_loader, 'oldsession_config'):
+            self.config_loader.oldsession_config = {}
+        self.config_loader.oldsession_config["window_geometry"] = self.saveGeometry().toHex().data().decode('utf-8')
+        self.config_loader.oldsession_config["last_directory"] = getattr(self, 'last_selected_directory', None)
         
         # Save UI Session State (current settings and theme) to oldsession.yaml
         if hasattr(self.config_loader, 'oldsession_config'):
             self.config_loader.oldsession_config["current_settings"] = getattr(self, 'current_settings', {})
             if hasattr(self, 'theme_combobox'):
                 self.config_loader.oldsession_config["theme"] = self.theme_combobox.currentText()
+                
+            if hasattr(self, 'task_settings'):
+                self.config_loader.oldsession_config["task_settings"] = self.task_settings
+            if hasattr(self, 'job_queue'):
+                self.config_loader.oldsession_config["job_queue"] = self.job_queue
+            if hasattr(self, 'history_queue'):
+                self.config_loader.oldsession_config["history_queue"] = self.history_queue
+                
             self.config_loader.save_oldsession_config()
             
         print("[INFO] Application state saved.")
@@ -1411,9 +1428,9 @@ class HandlersMixin:
         
         def on_done(version):
             if version:
-                versions = self.config_loader.studio_config.setdefault("font_versions", {})
+                versions = self.config_loader.oldsession_config.setdefault("font_versions", {})
                 versions[font_family] = version
-                self.config_loader.save_studio_config()
+                self.config_loader.save_oldsession_config()
                 print(f"[Config] Updated font version for '''{font_family}''' to '''{version}'''")
             self._active_ver_workers.discard(worker)
 
@@ -1747,10 +1764,10 @@ class HandlersMixin:
             main_font_combo.setEnabled(True)
             
             if success_updates:
-                versions = self.config_loader.studio_config.setdefault("font_versions", {})
+                versions = self.config_loader.oldsession_config.setdefault("font_versions", {})
                 for fam, ver in success_updates.items():
                     versions[fam] = ver
-                self.config_loader.save_studio_config()
+                self.config_loader.save_oldsession_config()
                 
                 for fam in success_updates.keys():
                     self._save_font_version_from_online_metadata(fam)
@@ -1913,10 +1930,10 @@ class HandlersMixin:
             self._build_font_map()
             
             # Remove version from config
-            local_versions = self.config_loader.studio_config.get("font_versions", {})
+            local_versions = self.config_loader.oldsession_config.get("font_versions", {})
             if font_name in local_versions:
                 del local_versions[font_name]
-                self.config_loader.save_studio_config()
+                self.config_loader.save_oldsession_config()
                 
             combo = self._dynamic_btns_map['font_family']['combo']
             font_names = list(self.font_map.keys())

@@ -111,9 +111,10 @@ class Pipeline:
             all_files = [os.path.basename(source_path)]
         else:
             source_dir = source_path
+            is_single_file = config_dict.get('is_single_file', False)
             all_files = sorted([
                 f for f in os.listdir(source_path) 
-                if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.txt'))
+                if is_single_file or f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.txt'))
             ])
 
         if not all_files:
@@ -143,6 +144,12 @@ class Pipeline:
                 log_callback("PIPELINE", "Loaded hidden overrides from debug_pipeline.yaml")
             except Exception as e:
                 log_callback("WARNING", f"Error reading debug_pipeline.yaml: {e}")
+
+        is_text_only = config_dict.get('job_type') == 'TX'
+        if is_text_only:
+            enable_ocr = False
+            enable_inpainter = False
+            enable_renderer = False
 
         try:
             os.makedirs(output_path, exist_ok=True)
@@ -217,8 +224,8 @@ class Pipeline:
                 if self._stopped_by_user:
                     break
                 img_path = os.path.join(source_dir, filename)
-                
-                if filename.lower().endswith('.txt'):
+                is_text_only = config_dict.get('job_type') == 'TX'
+                if is_text_only or filename.lower().endswith('.txt'):
                     log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp file text: {filename}")
                     with open(img_path, 'r', encoding='utf-8') as f:
                         lines = [line.strip() for line in f if line.strip()]
@@ -243,9 +250,13 @@ class Pipeline:
                 if ctx is None:
                     break
                 
-                if ctx.page_id.lower().endswith('.txt'):
+                is_text_only = config_dict.get('job_type') == 'TX'
+                if is_text_only or ctx.page_id.lower().endswith('.txt'):
                     # Save translated text
-                    output_filename = os.path.splitext(ctx.page_id)[0] + f"_translated.txt"
+                    if config_dict.get('is_single_file', False):
+                        output_filename = os.path.splitext(ctx.page_id)[0] + f"_translated.txt"
+                    else:
+                        output_filename = ctx.page_id
                     output_file = os.path.join(output_path, output_filename)
                     with open(output_file, 'w', encoding='utf-8') as f:
                         if ctx.translated_texts:

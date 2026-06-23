@@ -60,10 +60,14 @@ class BaseAPITranslator(BaseTranslator):
         system_prompt = self.prompt_builder.build_prompt(src_lang, tgt_lang, self.glossary_manager.glossary)
         combined_text = "\n".join(texts)
         
+        import re
         translated_text = self._call_api(system_prompt, combined_text)
         
         if not translated_text:
             return texts
+            
+        # Strip <think> blocks that reasoning models generate
+        translated_text = re.sub(r'<think>.*?</think>', '', translated_text, flags=re.DOTALL).strip()
             
         translated_text = self.glossary_manager.replace_post_translation(translated_text)
         

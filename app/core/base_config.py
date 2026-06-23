@@ -24,8 +24,7 @@ class BaseConfigLoader:
         except Exception as e:
             print(f"[ConfigLoader] Error saving {os.path.basename(path)}: {e}")
 
-    def save_studio_config(self):
-        self._save_yaml_file(self.studio_config_path, self.studio_config)
+
 
     def _load_yaml_file(self, path: str) -> Dict[str, Any]:
         """Loads a YAML file and returns its content as a dictionary."""
@@ -42,9 +41,6 @@ class BaseConfigLoader:
         return {}
 
     def _load_backend_schema(self):
-        if hasattr(self, 'studio_config') and self.studio_config and "schema_cache" in self.studio_config:
-            return self.studio_config["schema_cache"]
-
         if os.path.exists(self.cache_path):
             try:
                 with open(self.cache_path, 'r', encoding='utf-8') as f:
@@ -58,10 +54,7 @@ class BaseConfigLoader:
         if os.path.exists(fallback_path):
             try:
                 schema_data = self._load_yaml_file(fallback_path)
-                if not hasattr(self, "studio_config"):
-                    self.studio_config = {}
-                self.studio_config["schema_cache"] = schema_data
-                self.save_studio_config()
+
                 return schema_data
             except Exception as e:
                 print(f"[ERROR] Could not load schema fallback: {e}")
