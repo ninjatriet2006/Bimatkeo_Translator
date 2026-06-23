@@ -31,10 +31,12 @@ class BaseFactory:
         return instance
 
     @classmethod
-    def get_registered_providers(cls) -> list:
+    def get_registered_providers(cls, base_class_filter=None) -> list:
         """Trả về danh sách các provider (schema) đã đăng ký."""
         if not hasattr(cls, '_registry'):
             return []
+        if base_class_filter:
+            return [name for name, impl in cls._registry.items() if issubclass(impl, base_class_filter)]
         return list(cls._registry.keys())
 
 class TranslatorFactory(BaseFactory):

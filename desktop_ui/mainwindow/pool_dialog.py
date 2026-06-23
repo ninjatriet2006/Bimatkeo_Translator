@@ -93,14 +93,7 @@ class ManagePoolsDialog(QDialog):
         # New API
         form_layout = QFormLayout()
         self.new_api_name = QLineEdit()
-        self.new_api_provider = QComboBox()
-        from app.core.factories import TranslatorFactory
-        # Lấy danh sách tất cả các Schema đã được đăng ký trong hệ thống
-        providers = TranslatorFactory.get_registered_providers()
-        self.new_api_provider.addItems(providers)
-        if "openai" in providers:
-            self.new_api_provider.setCurrentText("openai")
-        
+        # self.new_api_provider is completely removed as requested by the user.
         self.new_api_endpoint = QLineEdit()
         
         self.new_api_model = SearchableComboBox()
@@ -124,7 +117,6 @@ class ManagePoolsDialog(QDialog):
         self.new_api_key.setEchoMode(QLineEdit.EchoMode.Password)
         
         form_layout.addRow("API Name:", self.new_api_name)
-        form_layout.addRow("Provider/Schema:", self.new_api_provider)
         form_layout.addRow("Endpoint URL:", self.new_api_endpoint)
         form_layout.addRow("Model:", model_container)
         form_layout.addRow("API Key:", self.new_api_key)
@@ -158,7 +150,7 @@ class ManagePoolsDialog(QDialog):
         self.pool_combo.addItems(list(self.pools.keys()))
         self.pool_combo.blockSignals(False)
         if self.pool_combo.count() > 1:
-            self._on_pool_changed(self.pool_combo.itemText(1))
+            self.pool_combo.setCurrentIndex(1)
 
     def _on_pool_changed(self, pool_name):
         self.api_list.clear()
@@ -195,10 +187,14 @@ class ManagePoolsDialog(QDialog):
             QMessageBox.warning(self, "Error", f"API Profile '{name}' already exists.")
             return
             
+        from app.core.api_utils import infer_ai_provider
+        endpoint = self.new_api_endpoint.text().strip()
+        provider = infer_ai_provider(endpoint)
+        
         profile = {
-            "group": "Pools",
-            "provider": self.new_api_provider.currentText(),
-            "endpoint": self.new_api_endpoint.text().strip(),
+            "group": "Standalone",
+            "provider": provider,
+            "endpoint": endpoint,
             "model": self.new_api_model.currentText().strip(),
             "key": self.new_api_key.text().strip()
         }
@@ -267,7 +263,8 @@ class ManagePoolsDialog(QDialog):
     def _fetch_models(self):
         endpoint = self.new_api_endpoint.text().strip()
         key = self.new_api_key.text().strip()
-        ai_provider = self.new_api_provider.currentText()
+        from app.core.api_utils import infer_ai_provider
+        ai_provider = infer_ai_provider(endpoint)
         
         if not endpoint:
             QMessageBox.warning(self, "Warning", "Please enter a valid URL in Endpoint URL.")

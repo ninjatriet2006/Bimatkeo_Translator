@@ -151,7 +151,9 @@ class HandlersMixin:
         
         for ai_key in ['api_group', 'api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
             if ai_key in self.setting_rows:
-                if ai_key in ['api_group', 'api_name', 'ai_translator']:
+                if ai_key == 'ai_translator':
+                    self.setting_rows[ai_key].setVisible(False)
+                elif ai_key in ['api_group', 'api_name']:
                     self.setting_rows[ai_key].setVisible(show_standalone)
                 else:
                     self.setting_rows[ai_key].setVisible(show_standalone and has_profile)
@@ -169,10 +171,14 @@ class HandlersMixin:
         
         # Auto-detect format based on endpoint string
         ep_lower = endpoint.lower() if endpoint else ""
-        if not endpoint or "generativelanguage" in ep_lower or "gemini" in ep_lower:
+        if "generativelanguage" in ep_lower:
             ai_provider = 'gemini'
         else:
             ai_provider = 'openai'
+            
+        provider_widget = self.setting_widgets.get('ai_translator')
+        if provider_widget and self._get_value_from_widget('ai_translator', provider_widget) != ai_provider:
+            self._set_widget_value('ai_translator', ai_provider, provider_widget)
 
         if not endpoint and ai_provider != 'gemini':
             self.log("WARNING", "No API Endpoint URL provided. Please enter a valid URL.")
@@ -302,9 +308,10 @@ class HandlersMixin:
             self.log("WARNING", "Please enter a valid API Profile Name before saving.")
             return
 
-        group = self._get_value_from_widget('api_group', self.setting_widgets.get('api_group')) or 'Default'
-        provider = self._get_value_from_widget('ai_translator', self.setting_widgets.get('ai_translator')) or 'gemini'
+        group = self._get_value_from_widget('api_group', self.setting_widgets.get('api_group')) or 'Standalone'
         endpoint = self._get_value_from_widget('ai_endpoint', self.setting_widgets.get('ai_endpoint')) or ''
+        from app.core.api_utils import infer_ai_provider
+        provider = infer_ai_provider(endpoint)
         model = self._get_value_from_widget('ai_model', self.setting_widgets.get('ai_model')) or ''
         key = self._get_value_from_widget('ai_key', self.setting_widgets.get('ai_key')) or ''
 
@@ -530,14 +537,13 @@ class HandlersMixin:
         if os.path.exists(path):
             try:
                 with open(path, 'r', encoding='utf-8') as f:
-                    data = yaml.load(f) or {}
-                    return data.get('pools', {})
+                    return yaml.load(f) or {}
             except Exception as e:
                 print(f"[ERROR] Failed to load pool profiles: {e}")
         return {}
 
     def _save_pool_profiles(self, pools: dict):
-        self._save_yaml_config('pool_profiles.yaml', pools, wrap_key='pools')
+        self._save_yaml_config('pool_profiles.yaml', pools)
 
     def _open_manage_pools_dialog(self):
         from desktop_ui.mainwindow.pool_dialog import ManagePoolsDialog
