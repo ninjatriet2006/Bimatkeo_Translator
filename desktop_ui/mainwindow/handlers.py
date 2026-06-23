@@ -149,14 +149,51 @@ class HandlersMixin:
         profile_selected = self.current_settings.get('api_name', '').strip()
         has_profile = bool(profile_selected and profile_selected.lower() not in ["none", "--- select ---"])
         
-        for ai_key in ['api_group', 'api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
+        for ai_key in ['api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
             if ai_key in self.setting_rows:
                 if ai_key == 'ai_translator':
                     self.setting_rows[ai_key].setVisible(False)
-                elif ai_key in ['api_group', 'api_name']:
+                elif ai_key == 'api_name':
                     self.setting_rows[ai_key].setVisible(show_standalone)
                 else:
                     self.setting_rows[ai_key].setVisible(show_standalone and has_profile)
+
+    def _update_task_translator_visibility(self, context_key: str):
+        """Toggles the visibility of translator settings for a specific task based on its settings."""
+        if not hasattr(self, 'task_rows') or context_key not in self.task_rows:
+            return
+        
+        settings = self.task_settings.get(context_key, {})
+        rows = self.task_rows.get(context_key, {})
+        
+        category = settings.get('translator_category', 'Offline')
+        show_offline = (category == 'Offline')
+        show_ai = (category == 'AI / Online')
+
+        if 'offline_translator' in rows:
+            rows['offline_translator'].setVisible(show_offline)
+
+        ai_mode = settings.get('ai_mode', 'Standalone API')
+        show_standalone = show_ai and (ai_mode == 'Standalone API')
+        show_pool = show_ai and (ai_mode == 'Pool APIs')
+
+        if 'ai_mode' in rows:
+            rows['ai_mode'].setVisible(show_ai)
+            
+        if 'pool_name' in rows:
+            rows['pool_name'].setVisible(show_pool)
+
+        profile_selected = settings.get('api_name', '').strip()
+        has_profile = bool(profile_selected and profile_selected.lower() not in ["none", "--- select ---"])
+        
+        for ai_key in ['api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
+            if ai_key in rows:
+                if ai_key == 'ai_translator':
+                    rows[ai_key].setVisible(False)
+                elif ai_key == 'api_name':
+                    rows[ai_key].setVisible(show_standalone)
+                else:
+                    rows[ai_key].setVisible(show_standalone and has_profile)
 
     def _on_translator_category_changed(self):
         """Handles changes in translator category (Offline vs AI)."""
@@ -308,7 +345,6 @@ class HandlersMixin:
             self.log("WARNING", "Please enter a valid API Profile Name before saving.")
             return
 
-        group = self._get_value_from_widget('api_group', self.setting_widgets.get('api_group')) or 'Standalone'
         endpoint = self._get_value_from_widget('ai_endpoint', self.setting_widgets.get('ai_endpoint')) or ''
         from app.core.api_utils import infer_ai_provider
         provider = infer_ai_provider(endpoint)
@@ -317,7 +353,7 @@ class HandlersMixin:
 
         profiles = self._load_api_profiles()
         profiles[profile_name] = {
-            "group": group,
+            "type": "Standalone",
             "provider": provider,
             "endpoint": endpoint,
             "model": model,
@@ -325,18 +361,6 @@ class HandlersMixin:
         }
         self._save_api_profiles(profiles)
 
-        group_widget = self.setting_widgets.get('api_group')
-        if group_widget:
-            group_combo = group_widget.findChild(QComboBox)
-            if group_combo:
-                all_groups = sorted(list(set(p.get("group", "Standalone") for p in profiles.values())))
-                if not all_groups:
-                    all_groups = ["Standalone"]
-                group_combo.blockSignals(True)
-                group_combo.clear()
-                group_combo.addItems(all_groups)
-                group_combo.setCurrentText(group)
-                group_combo.blockSignals(False)
 
         filtered_profiles = list(profiles.keys())
         combo.blockSignals(True)
@@ -348,47 +372,6 @@ class HandlersMixin:
 
         self.log("SUCCESS", f"API Profile '{profile_name}' saved to local config.")
 
-    def _delete_current_api_group(self):
-        group_widget = self.setting_widgets.get('api_group')
-        if not group_widget:
-            return
-        group_combo = group_widget.findChild(QComboBox)
-        if not group_combo:
-            return
-        group_name = group_combo.currentText().strip()
-        if not group_name:
-            return
-
-        reply = QMessageBox.question(
-            self,
-            "Xác nhận xóa nhóm API",
-            f"Bạn có chắc chắn muốn xóa nhóm API '{group_name}'?\nHành động này cũng sẽ xóa toàn bộ các hồ sơ API nằm trong nhóm này!",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        )
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        profiles = self._load_api_profiles()
-        to_delete = [name for name, profile in profiles.items() if profile.get("group") == group_name]
-        for name in to_delete:
-            del profiles[name]
-        
-        self._save_api_profiles(profiles)
-        self.log("SUCCESS", f"Đã xóa nhóm API '{group_name}' và {len(to_delete)} hồ sơ liên quan.")
-
-        all_groups = sorted(list(set(p.get("group", "Standalone") for p in profiles.values())))
-        if not all_groups:
-            all_groups = ["Standalone"]
-        fallback_group = all_groups[0]
-
-        group_combo.blockSignals(True)
-        group_combo.clear()
-        group_combo.addItems(all_groups)
-        group_combo.setCurrentText(fallback_group)
-        group_combo.blockSignals(False)
-
-        self._on_api_group_changed(fallback_group)
 
     def _delete_current_api_profile(self):
         name_widget = self.setting_widgets.get('api_name')
@@ -429,42 +412,7 @@ class HandlersMixin:
         else:
             self.log("WARNING", f"Không tìm thấy hồ sơ '{profile_name}' trong cấu hình.")
 
-    def _on_api_group_changed(self, group_name: str):
-        group_name = (group_name or "").strip()
-        
-        name_widget = self.setting_widgets.get('api_name')
-        if not name_widget:
-            return
-        combo = name_widget.findChild(QComboBox)
-        if not combo:
-            return
-            
-        if not group_name or group_name.lower() == "none":
-            combo.blockSignals(True)
-            combo.clear()
-            combo.setCurrentText("")
-            combo.blockSignals(False)
-            
-            self.current_settings['api_name'] = ""
-            self._clear_api_widgets()
-            self._update_translator_visibility()
-            return
-        
-        profiles = self._load_api_profiles()
-        filtered_profiles = [name for name, profile in profiles.items() if profile.get("group") == group_name]
-        
-        combo.blockSignals(True)
-        combo.clear()
-        combo.addItem("")
-        if filtered_profiles:
-            combo.addItems(filtered_profiles)
-        combo.setCurrentText("")
-        combo.blockSignals(False)
-        
-        self.current_settings['api_name'] = ""
-        self._clear_api_widgets()
-                
-        self._update_translator_visibility()
+
 
     def _clear_api_widgets(self):
         for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
@@ -488,7 +436,7 @@ class HandlersMixin:
             
             self._loading_api_profile = True
             try:
-                for field, key in [('group', 'api_group'), ('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
+                for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
                     widget = self.setting_widgets.get(key)
                     if widget:
                         val = profile.get(field, '')
@@ -724,13 +672,6 @@ class HandlersMixin:
             if combo:
                 combo.currentTextChanged.connect(handler)
                 combo.activated.connect(lambda index: self._on_setting_changed('ai_model'))
-        elif widget_type == "api_group_selector":
-            combo = widget.findChild(QComboBox)
-            if combo:
-                combo.currentTextChanged.connect(handler)
-                combo.currentTextChanged.connect(self._on_api_group_changed)
-                if combo.lineEdit():
-                    combo.lineEdit().returnPressed.connect(combo.showPopup)
         elif widget_type == "slider":
             slider = widget.findChild(QSlider)
             if slider:
@@ -741,12 +682,14 @@ class HandlersMixin:
                 entry.editingFinished.connect(handler)
 
     def _on_setting_changed(self, key: str, context_key: str = None):
-        """A generic handler called whenever a setting widget'''s value changes."""
+        """A generic handler called whenever a setting widget's value changes."""
         if context_key:
             widget = self.task_widgets[context_key].get(key)
             new_value = self._get_value_from_widget(key, widget)
             self.task_settings[context_key][key] = new_value
-            print(f"[Task Settings] Updated '''{context_key}.{key}''' to: {new_value}")
+            print(f"[Task Settings] Updated '{context_key}.{key}' to: {new_value}")
+            if key in ['translator_category', 'ai_mode', 'api_name']:
+                self._update_task_translator_visibility(context_key)
         else:
             widget = self.setting_widgets.get(key)
             if key == 'translator_chain':
@@ -1082,7 +1025,7 @@ class HandlersMixin:
                         return int(value.replace("x", ""))
                 return value
             return None
-        elif widget_type in ["api_profile_selector", "api_group_selector", "ai_model_selector", "combobox_fonts"]:
+        elif widget_type in ["api_profile_selector", "ai_model_selector", "combobox_fonts"]:
             combo = widget.findChild(QComboBox) if not isinstance(widget, QComboBox) else widget
             if not combo:
                 return None
@@ -1186,7 +1129,7 @@ class HandlersMixin:
             entry = widget.findChild(QLineEdit)
             if entry:
                 entry.setText(str(value))
-        elif widget_type in ["api_profile_selector", "api_group_selector", "combobox_fonts"]:
+        elif widget_type in ["api_profile_selector", "combobox_fonts"]:
             combo = widget.findChild(QComboBox) if not isinstance(widget, QComboBox) else widget
             if combo:
                 combo.blockSignals(True)

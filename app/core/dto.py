@@ -5,7 +5,7 @@ from typing import List, Optional, Any
 @dataclass
 class PageContext:
     page_id: str                 # Định danh trang (Ví dụ: Chap_1.1_001)
-    original_image: np.ndarray   # Mảng ảnh gốc dạng NumPy lưu trên RAM
+    original_image: Optional[np.ndarray] = None   # Mảng ảnh gốc dạng NumPy lưu trên RAM
     bboxes: Optional[List[List[int]]] = None          # Tọa độ khung chữ (từ Worker OCR)
     original_texts: Optional[List[str]] = None  # Văn bản gốc nhận diện được (từ Worker OCR)
     translated_texts: Optional[List[str]] = None# Văn bản đã dịch (từ Worker Translator)

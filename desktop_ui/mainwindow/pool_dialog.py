@@ -192,7 +192,7 @@ class ManagePoolsDialog(QDialog):
         provider = infer_ai_provider(endpoint)
         
         profile = {
-            "group": "Standalone",
+            "type": "Standalone",
             "provider": provider,
             "endpoint": endpoint,
             "model": self.new_api_model.currentText().strip(),

@@ -235,8 +235,11 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         job_controls_layout = QHBoxLayout(job_controls_container)
         job_controls_layout.setContentsMargins(0, 0, 0, 0)
 
-        add_btn = QPushButton("➕ Add Job")
-        add_btn.clicked.connect(self._add_job)
+        add_folder_btn = QPushButton("➕ Add Folder")
+        add_folder_btn.clicked.connect(self._add_job)
+
+        add_file_btn = QPushButton("📄 Add File(s)")
+        add_file_btn.clicked.connect(self._add_file_job)
 
         remove_btn = QPushButton("🗑️ Remove Selected")
         remove_btn.clicked.connect(self._remove_selected_jobs_from_queue)
@@ -244,7 +247,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         clear_btn = QPushButton("🧹 Clear Queue")
         clear_btn.clicked.connect(self._clear_queue)
 
-        job_controls_layout.addWidget(add_btn)
+        job_controls_layout.addWidget(add_folder_btn)
+        job_controls_layout.addWidget(add_file_btn)
         job_controls_layout.addWidget(remove_btn)
         job_controls_layout.addWidget(clear_btn)
 

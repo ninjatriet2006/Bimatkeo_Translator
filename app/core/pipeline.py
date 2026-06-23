@@ -106,13 +106,18 @@ class Pipeline:
         log_callback("PIPELINE", f"Starting Modular Pipeline for job '{os.path.basename(source_path)}'.")
         self._stopped_by_user = False
 
-        all_files = sorted([
-            f for f in os.listdir(source_path) 
-            if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp'))
-        ])
+        if os.path.isfile(source_path):
+            source_dir = os.path.dirname(source_path)
+            all_files = [os.path.basename(source_path)]
+        else:
+            source_dir = source_path
+            all_files = sorted([
+                f for f in os.listdir(source_path) 
+                if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.txt'))
+            ])
 
         if not all_files:
-            log_callback("WARNING", "No images found in the source directory.")
+            log_callback("WARNING", "No files found in the source directory.")
             return True
 
         target_lang = config_dict.get("translator", {}).get("target_lang", "VIN")
@@ -207,18 +212,26 @@ class Pipeline:
             for w in [ocr_worker, trans_worker, inpaint_worker, render_worker]:
                 w.start()
 
-            # Producer: Load images into memory
+            # Producer: Load files into memory
             for index, filename in enumerate(all_files):
                 if self._stopped_by_user:
                     break
-                log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp ảnh lên RAM: {filename}")
-                img_path = os.path.join(source_path, filename)
-                img_array = cv2.imread(img_path)
-                if img_array is None:
-                    log_callback("WARNING", f"Không thể đọc ảnh: {filename}")
-                    continue
-                ctx = PageContext(page_id=filename, original_image=img_array)
-                q_in.put(ctx)
+                img_path = os.path.join(source_dir, filename)
+                
+                if filename.lower().endswith('.txt'):
+                    log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp file text: {filename}")
+                    with open(img_path, 'r', encoding='utf-8') as f:
+                        lines = [line.strip() for line in f if line.strip()]
+                    ctx = PageContext(page_id=filename, original_image=None, original_texts=lines)
+                    q_in.put(ctx)
+                else:
+                    log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp ảnh lên RAM: {filename}")
+                    img_array = cv2.imread(img_path)
+                    if img_array is None:
+                        log_callback("WARNING", f"Không thể đọc ảnh: {filename}")
+                        continue
+                    ctx = PageContext(page_id=filename, original_image=img_array)
+                    q_in.put(ctx)
 
             # Send stop signals
             q_in.put(None)
@@ -230,12 +243,22 @@ class Pipeline:
                 if ctx is None:
                     break
                 
-                output_filename = os.path.splitext(ctx.page_id)[0] + f".{output_format}"
-                output_file = os.path.join(output_path, output_filename)
-                
-                if ctx.rendered_image is not None:
-                    cv2.imwrite(output_file, ctx.rendered_image)
-                    log_callback("SUCCESS", f"Đã lưu kết quả: {output_filename}")
+                if ctx.page_id.lower().endswith('.txt'):
+                    # Save translated text
+                    output_filename = os.path.splitext(ctx.page_id)[0] + f"_translated.txt"
+                    output_file = os.path.join(output_path, output_filename)
+                    with open(output_file, 'w', encoding='utf-8') as f:
+                        if ctx.translated_texts:
+                            f.write("\n".join(ctx.translated_texts))
+                        else:
+                            f.write("\n".join(ctx.original_texts or []))
+                    log_callback("SUCCESS", f"Đã lưu kết quả text: {output_filename}")
+                else:
+                    output_filename = os.path.splitext(ctx.page_id)[0] + f".{output_format}"
+                    output_file = os.path.join(output_path, output_filename)
+                    if ctx.rendered_image is not None:
+                        cv2.imwrite(output_file, ctx.rendered_image)
+                        log_callback("SUCCESS", f"Đã lưu kết quả: {output_filename}")
                 
                 completed += 1
                 q_render.task_done()

@@ -46,6 +46,16 @@ class JobRunnerMixin:
             self.last_selected_directory = folder_path
             self._add_job_from_path(folder_path)
 
+    def _add_file_job(self):
+        """Opens a dialog to select files and adds them as jobs."""
+        initial_dir = getattr(self, 'last_selected_directory', self.project_base_dir)
+        file_paths, _ = QFileDialog.getOpenFileNames(self, "Select Image or Text Files", initial_dir, "Supported Files (*.png *.jpg *.jpeg *.webp *.bmp *.txt);;Text Files (*.txt);;Image Files (*.png *.jpg *.jpeg *.webp *.bmp)")
+
+        if file_paths:
+            self.last_selected_directory = os.path.dirname(file_paths[0])
+            for path in file_paths:
+                self._add_job_from_path(path)
+
     def _add_job_from_path(self, path):
         """
         Adds a job with a default '''Awaiting Config''' status to the queue
@@ -538,7 +548,7 @@ class JobRunnerMixin:
                 continue
 
             group = prop_info.get("group", "")
-            if key in ["processing_device", "target_lang", "translator_category", "api_group", 
+            if key in ["processing_device", "target_lang", "translator_category", 
                        "api_name", "offline_translator", "ai_translator", "ai_endpoint", 
                        "ai_model", "ai_key", "enable_translator_chain", "translator_chain", 
                        "no_text_lang_skip", "skip_lang", "dict_profile"]:
@@ -698,24 +708,29 @@ class JobRunnerMixin:
                 
                 final_output_folder_name = base_output_folder_name
 
-                if settings.get('avoid_conflicts', True):
-                    counter = 1
-                    while os.path.exists(os.path.join(output_dir, final_output_folder_name)):
-                        final_output_folder_name = f"{base_output_folder_name} ({counter})"
-                        counter += 1
-                
-                final_output_path = os.path.join(output_dir, final_output_folder_name)
-                os.makedirs(final_output_path, exist_ok=True)
-                all_source_files = sorted([f for f in os.listdir(source_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp'))])
-
-                try:
-                    processed_files = {os.path.splitext(f)[0] for f in os.listdir(final_output_path) if f.lower().endswith(f".{output_format}")}
-                    files_to_process = [f for f in all_source_files if os.path.splitext(f)[0] not in processed_files]
-                except FileNotFoundError:
+                if os.path.isfile(source_path):
+                    final_output_path = output_dir
+                    all_source_files = [os.path.basename(source_path)]
                     files_to_process = all_source_files
+                else:
+                    if settings.get('avoid_conflicts', True):
+                        counter = 1
+                        while os.path.exists(os.path.join(output_dir, final_output_folder_name)):
+                            final_output_folder_name = f"{base_output_folder_name} ({counter})"
+                            counter += 1
+                    
+                    final_output_path = os.path.join(output_dir, final_output_folder_name)
+                    os.makedirs(final_output_path, exist_ok=True)
+                    all_source_files = sorted([f for f in os.listdir(source_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.txt'))])
+
+                    try:
+                        processed_files = {os.path.splitext(f)[0] for f in os.listdir(final_output_path) if f.lower().endswith(f".{output_format}") or f.lower().endswith('.txt')}
+                        files_to_process = [f for f in all_source_files if os.path.splitext(f)[0] not in processed_files]
+                    except FileNotFoundError:
+                        files_to_process = all_source_files
 
                 if not files_to_process:
-                    self.log("INFO", f"All files for job '''{job['name']}''' seem to be processed already. Skipping to avoid errors.")
+                    self.log("INFO", f"All files for job '{job['name']}' seem to be processed already. Skipping to avoid errors.")
                     job['status'] = "Completed"
                     self.job_queue.remove(job)
                     self.history_queue.append(job)

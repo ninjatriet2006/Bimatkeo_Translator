@@ -54,7 +54,7 @@ class WidgetBuildersMixin:
         standard_settings = []
         advanced_settings = []
         for info in settings_list:
-            if info.get("key") in ["api_group", "ai_translator"]:
+            if info.get("key") in ["ai_translator"]:
                 continue
             if info.get("section") == "advanced":
                 advanced_settings.append(info)
@@ -219,6 +219,9 @@ class WidgetBuildersMixin:
                 else:
                     task_layout.addWidget(QLabel(f"Warning: Definition for '''{setting_key}''' not found."))
 
+            if hasattr(self, '_update_task_translator_visibility'):
+                self._update_task_translator_visibility(task_key)
+
             task_layout.addStretch(1)  # Add stretch to push buttons to the bottom
 
             # --- Bottom Section: Action Buttons ---
@@ -277,6 +280,11 @@ class WidgetBuildersMixin:
 
             if context_key:
                 self.task_widgets[context_key][info['key']] = widget
+                if not hasattr(self, 'task_rows'):
+                    self.task_rows = {}
+                if context_key not in self.task_rows:
+                    self.task_rows[context_key] = {}
+                self.task_rows[context_key][info['key']] = row_widget
             else:
                 self.setting_widgets[info['key']] = widget
                 self.setting_rows[info['key']] = row_widget
@@ -325,8 +333,7 @@ class WidgetBuildersMixin:
                 widget = self._create_font_combobox(info)
             elif widget_type == "entry_with_button":
                 widget = self._create_entry_with_button(info)
-            elif widget_type == "api_group_selector":
-                widget = self._create_api_group_selector(info)
+
             elif widget_type == "api_profile_selector":
                 widget = self._create_api_profile_selector(info)
             elif widget_type == "pool_profile_selector":
@@ -352,7 +359,7 @@ class WidgetBuildersMixin:
 
             if not context_key and info.get('key') in ['offline_translator', 'ai_translator', 'detector', 'ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer', 'font_family']:
                 self._setup_dynamic_action_buttons(info.get('key'), widget, right_layout)
-            elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_group_selector", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
+            elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
                 spacer = QWidget()
                 spacer.setFixedWidth(30)
                 right_layout.addWidget(spacer)
@@ -361,6 +368,11 @@ class WidgetBuildersMixin:
 
             if context_key:
                 self.task_widgets[context_key][info['key']] = widget
+                if not hasattr(self, 'task_rows'):
+                    self.task_rows = {}
+                if context_key not in self.task_rows:
+                    self.task_rows[context_key] = {}
+                self.task_rows[context_key][info['key']] = row_widget
                 initial_value = self.task_settings[context_key].get(info['key'])
             else:
                 self.setting_widgets[info['key']] = widget
@@ -990,34 +1002,6 @@ class WidgetBuildersMixin:
             if button:
                 self._fetch_ai_models(button)
 
-    def _create_api_group_selector(self, info: dict) -> QWidget:
-        container = QWidget()
-        layout = QHBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(5)
-        
-        combo = SearchableComboBox()
-        combo.setEditable(True)
-        
-        profiles = self._load_api_profiles()
-        groups = sorted(list(set(p.get("group", "") for p in profiles.values())))
-        groups = [g for g in groups if g]
-        
-        combo.addItem("")
-        combo.addItems(groups)
-        default_val = self.current_settings.get('api_group', info.get("default", ""))
-        combo.setCurrentText(str(default_val))
-        layout.addWidget(combo, stretch=1)
-        
-        del_btn = QPushButton("Del")
-        del_btn.setFixedWidth(40)
-        del_btn.setToolTip("Delete this group and all its profiles")
-        del_btn.clicked.connect(self._delete_current_api_group)
-        layout.addWidget(del_btn)
-        
-        self.widget_references[info['key']] = combo
-        return container
-
     def _create_api_profile_selector(self, info: dict) -> QWidget:
         container = QWidget()
         layout = QHBoxLayout(container)
@@ -1026,12 +1010,8 @@ class WidgetBuildersMixin:
         
         combo = SearchableComboBox()
         profiles = self._load_api_profiles()
-        current_group = self.current_settings.get('api_group', '')
         
-        if current_group and current_group.strip():
-            filtered_profiles = [name for name, p in profiles.items() if p.get("group", "") == current_group]
-        else:
-            filtered_profiles = list(profiles.keys())
+        filtered_profiles = [name for name, p in profiles.items() if p.get("type", p.get("group", "Standalone")) == "Standalone"]
             
         combo.addItem("--- Select ---")
         combo.addItems(filtered_profiles)
