@@ -1,42 +1,44 @@
 import os
 import json
 import re
-from typing import Dict, Any, Optional
+from typing import Any
 
 class BaseConfigLoader:
     project_base_dir: str
     cache_path: str
     studio_config_path: str
-    studio_config: Dict[str, Any]
-    backend_schema: Optional[Dict[str, Any]]
-    ui_map: Dict[str, Any]
-    factory_defaults: Dict[str, Any]
-    tasks_config: Dict[str, Any]
+    studio_config: dict[str, Any]
+    backend_schema: dict[str, Any] | None
+    ui_map: dict[str, Any]
+    factory_defaults: dict[str, Any]
+    tasks_config: dict[str, Any]
 
     def _save_yaml_file(self, path: str, data: Any) -> None:
         from ruamel.yaml import YAML
+        from ruamel.yaml.error import YAMLError
         yaml = YAML()
         yaml.preserve_quotes = True
         yaml.default_flow_style = False  # type: ignore
         try:
             with open(path, "w", encoding="utf-8") as f:
                 yaml.dump(data, f)
-        except Exception as e:
+        except (YAMLError, OSError) as e:
             print(f"[ConfigLoader] Error saving {os.path.basename(path)}: {e}")
 
 
 
-    def _load_yaml_file(self, path: str) -> Dict[str, Any]:
+    def _load_yaml_file(self, path: str) -> dict[str, Any]:
         """Loads a YAML file and returns its content as a dictionary."""
         if os.path.exists(path):
             from ruamel.yaml import YAML
+            from ruamel.yaml.error import YAMLError
             yaml = YAML()
             yaml.preserve_quotes = True
             yaml.default_flow_style = False  # type: ignore
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     return yaml.load(f) or {}
-            except Exception as e:
+            except (YAMLError, OSError) as e:
                 print(f"[ConfigLoader] Error loading YAML file {os.path.basename(path)}: {e}")
         return {}
 
@@ -46,7 +48,7 @@ class BaseConfigLoader:
                 with open(self.cache_path, 'r', encoding='utf-8') as f:
                     print("[ConfigLoader] Loading schema from cache...")
                     return json.load(f)
-            except Exception:
+            except (json.JSONDecodeError, OSError):
                 pass
 
         fallback_path = os.path.join(self.project_base_dir, ".config", "configs", "schema_fallback.yaml")
@@ -54,7 +56,6 @@ class BaseConfigLoader:
         if os.path.exists(fallback_path):
             try:
                 schema_data = self._load_yaml_file(fallback_path)
-
                 return schema_data
             except Exception as e:
                 print(f"[ERROR] Could not load schema fallback: {e}")
@@ -131,7 +132,7 @@ class BaseConfigLoader:
         except Exception:
             return None
 
-    def _get_flat_properties(self) -> Dict[str, Any]:
+    def _get_flat_properties(self) -> dict[str, Any]:
         """Gathers all root and nested properties from the schema."""
         all_properties = {}
         root_props = self.backend_schema.get("properties", {}) if self.backend_schema else {}

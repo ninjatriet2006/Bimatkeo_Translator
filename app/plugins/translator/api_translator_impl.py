@@ -14,8 +14,8 @@ class BaseAPITranslator(BaseTranslator):
         self.endpoint = ""
         self.model = ""
         self.key = ""
-        self.prompt_builder = PromptBuilder()
-        self.glossary_manager = GlossaryManager()
+        self.prompt_builder = PromptBuilder("")
+        self.glossary_manager = GlossaryManager("")
         self.log_callback = None
 
     def load_weights(self, model_path: str) -> None:
@@ -29,15 +29,20 @@ class BaseAPITranslator(BaseTranslator):
             self.model = config.get("model", "")
             self.key = config.get("key", "")
             
+            project_base_dir = config.get("project_base_dir")
+            if not project_base_dir:
+                project_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            
             system_prompt_profile = config.get("system_prompt_profile", "None")
             if system_prompt_profile and system_prompt_profile != "None":
-                self.prompt_builder = PromptBuilder(system_prompt_profile)
-                self.glossary_manager = GlossaryManager(system_prompt_profile)
+                self.prompt_builder = PromptBuilder(project_base_dir, system_prompt_profile)
+                self.glossary_manager = GlossaryManager(project_base_dir, system_prompt_profile)
             else:
                 # Fallback to older glossary_path if present
                 glossary_path = config.get("glossary_path", "")
                 if glossary_path:
-                    self.glossary_manager = GlossaryManager(glossary_path)
+                    # In this old fallback, glossary_path was sometimes a full path or a profile name
+                    self.glossary_manager = GlossaryManager(project_base_dir, glossary_path)
                 
         except Exception as e:
             if self.log_callback:

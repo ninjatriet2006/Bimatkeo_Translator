@@ -1,14 +1,14 @@
 import os
 import re
-from typing import Dict, List, Optional
 import yaml
 
 class GlossaryManager:
     """Quản lý các thuật ngữ (Glossary) để tránh bị dịch sai."""
 
-    def __init__(self, profile_name: str = "None"):
-        self.glossary: Dict[str, str] = {}
+    def __init__(self, project_base_dir: str, profile_name: str = "None"):
+        self.glossary: dict[str, str] = {}
         self.profile_name = profile_name
+        self.project_base_dir = project_base_dir
         self._load_glossary()
 
     def _load_glossary(self):
@@ -16,14 +16,12 @@ class GlossaryManager:
         if not self.profile_name or self.profile_name == "None":
             return
 
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        prompt_file = os.path.join(project_root, ".config", "configs", "system_prompt.yaml")
+        prompt_file = os.path.join(self.project_base_dir, ".config", "configs", "system_prompt.yaml")
         
         if not os.path.exists(prompt_file):
             return
 
         try:
-            import yaml
             with open(prompt_file, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f)
                 if data and "profiles" in data and self.profile_name in data["profiles"]:
@@ -35,12 +33,11 @@ class GlossaryManager:
                         if line and '|' in line and not line.startswith('#'):
                             val, key = line.split('|', 1) # Format: CorrectedText | OCR_Error
                             self.glossary[key.strip()] = val.strip()
-        except Exception as e:
+        except (FileNotFoundError, yaml.YAMLError, OSError) as e:
             print(f"[GlossaryManager] Lỗi tải từ điển: {e}")
 
     def replace_pre_translation(self, text: str) -> str:
         """Thực hiện đánh dấu hoặc thay thế nhẹ trước khi ném vào máy dịch (dành cho Offline)."""
-        # (Chức năng này mở rộng trong tương lai cho các Model nhạy cảm)
         return text
 
     def replace_post_translation(self, text: str) -> str:
@@ -63,9 +60,10 @@ class GlossaryManager:
 class PromptBuilder:
     """Trình xây dựng ngữ cảnh dịch (System Prompt) cho AI Translator."""
 
-    def __init__(self, profile_name: str = "None"):
+    def __init__(self, project_base_dir: str, profile_name: str = "None"):
         self.base_prompt = ""
         self.profile_name = profile_name
+        self.project_base_dir = project_base_dir
         self._load_system_prompt()
 
     def _load_system_prompt(self):
@@ -101,12 +99,10 @@ class PromptBuilder:
             "Ensure the `content` array has the EXACT SAME number of items as the input lines."
         )
 
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        prompt_file = os.path.join(project_root, ".config", "configs", "system_prompt.yaml")
+        prompt_file = os.path.join(self.project_base_dir, ".config", "configs", "system_prompt.yaml")
         
         if os.path.exists(prompt_file):
             try:
-                import yaml
                 with open(prompt_file, 'r', encoding='utf-8') as f:
                     data = yaml.safe_load(f)
                     if data and "profiles" in data:
@@ -118,13 +114,9 @@ class PromptBuilder:
                         if "role_description" in profile_data:
                             role_desc = profile_data["role_description"].strip()
                         if "json_schema_rules" in profile_data:
-                            # Note: f-string formatting requires escaping curly braces.
-                            # The yaml string has `{` and `}` for JSON, we need to escape them for `.format()` later.
-                            # So we replace `{` with `{{` and `}` with `}}` EXCEPT for `{src}` and `{tgt}` which might be in role_desc.
-                            # Since JSON rules shouldn't have {src} or {tgt}, we can just double all braces.
                             raw_rules = profile_data["json_schema_rules"].strip()
                             json_rules = raw_rules.replace("{", "{{").replace("}", "}}")
-            except Exception:
+            except (FileNotFoundError, yaml.YAMLError, OSError):
                 pass
                 
         self.base_prompt = f"{role_desc}\n{json_rules}"
@@ -134,25 +126,22 @@ class PromptBuilder:
         if code.lower() == 'auto':
             return 'Auto-Detect'
             
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        lang_file = os.path.join(project_root, ".config", "configs", "supporttargetlang.yaml")
+        lang_file = os.path.join(self.project_base_dir, ".config", "configs", "supporttargetlang.yaml")
         if os.path.exists(lang_file):
             try:
-                import yaml
                 with open(lang_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                 
-                # Supporttargetlang might not be a valid dict YAML, it's often KEY: Value format.
                 for line in content.splitlines():
                     if ':' in line:
                         k, v = line.split(':', 1)
                         if k.strip().upper() == code.upper():
                             return v.strip()
-            except Exception:
+            except OSError:
                 pass
         return code
 
-    def build_prompt(self, src_lang: str, tgt_lang: str, glossary: Optional[Dict[str, str]] = None) -> str:
+    def build_prompt(self, src_lang: str, tgt_lang: str, glossary: dict[str, str] | None = None) -> str:
         """Tạo Prompt hoàn chỉnh, có tiêm Glossary nếu có."""
         full_src = self._get_lang_name(src_lang)
         full_tgt = self._get_lang_name(tgt_lang)

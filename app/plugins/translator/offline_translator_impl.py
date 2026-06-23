@@ -6,8 +6,8 @@ from app.core.factories import TranslatorFactory
 from app.core.translator_utils import GlossaryManager
 
 try:
-    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-    import torch
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM  # type: ignore
+    import torch  # type: ignore
     HAS_TRANSFORMERS = True
 except ImportError:
     HAS_TRANSFORMERS = False
@@ -17,7 +17,8 @@ class BaseOfflineTranslator(BaseTranslator):
         self.tokenizer = None
         self.model = None
         self.device = "cuda" if HAS_TRANSFORMERS and torch.cuda.is_available() else "cpu"
-        self.glossary_manager = GlossaryManager()
+        project_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.glossary_manager = GlossaryManager(project_base_dir)
         self.log_callback = None
         self.is_loaded = False
 
@@ -61,6 +62,9 @@ class BaseOfflineTranslator(BaseTranslator):
 @TranslatorFactory.register("m2m100")
 class M2M100Translator(BaseOfflineTranslator):
     def _perform_translation(self, texts: List[str], src_lang: str, tgt_lang: str) -> List[str]:
+        if self.tokenizer is None or self.model is None:
+            return []
+        
         # Language code mapping logic should be handled here
         # Example mapping: ENG -> en, VIE -> vi, JPN -> ja
         lang_map = {
@@ -88,6 +92,9 @@ class M2M100Translator(BaseOfflineTranslator):
 @TranslatorFactory.register("nllb")
 class NLLBTranslator(BaseOfflineTranslator):
     def _perform_translation(self, texts: List[str], src_lang: str, tgt_lang: str) -> List[str]:
+        if self.tokenizer is None or self.model is None:
+            return []
+            
         # NLLB uses different BCP-47 codes like eng_Latn, vie_Latn, jpn_Jpan
         lang_map = {
             "ENG": "eng_Latn", "VIE": "vie_Latn", "JPN": "jpn_Jpan", 
