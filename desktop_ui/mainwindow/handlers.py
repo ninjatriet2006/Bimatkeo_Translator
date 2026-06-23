@@ -1304,13 +1304,12 @@ class HandlersMixin:
             return
 
         menu = QMenu()
-        save_action = menu.addAction("✅ Save Settings to Job (Checkpoint)")
-        save_action.triggered.connect(self._save_settings_to_job)
-
-        load_action = menu.addAction("✏️ Load Job Settings to Panel")
-        if len(selected_items) != 1:
-            load_action.setDisabled(True)
-        load_action.triggered.connect(self._load_settings_from_job)
+        
+        resume_action = menu.addAction("▶️ Resume (Bỏ qua file đã hoàn thành)")
+        resume_action.triggered.connect(self._resume_selected_jobs)
+        
+        restart_action = menu.addAction("🔄 Restart (Dịch lại từ đầu)")
+        restart_action.triggered.connect(self._restart_selected_jobs)
 
         menu.addSeparator()
         duplicate_action = menu.addAction("➕ Duplicate Job (as new task)")
@@ -1321,37 +1320,25 @@ class HandlersMixin:
 
         menu.exec(self.queue_list_widget.mapToGlobal(position))
 
-    def _save_settings_to_job(self):
-        """Saves the current panel settings to the selected job(s) (Checkpoint)."""
-        selected_items = self.queue_list_widget.selectedItems()
-        if not selected_items:
-            return
+    def _resume_selected_jobs(self):
+        """Starts the pipeline for selected jobs, skipping existing output files."""
+        self._start_pipeline_thread()
         
+    def _restart_selected_jobs(self):
+        """Clears previous output for selected jobs and restarts."""
+        import shutil
+        selected_items = self.queue_list_widget.selectedItems()
         for item in selected_items:
             job_id = item.data(Qt.ItemDataRole.UserRole)
             job = next((j for j in self.job_queue if j['id'] == job_id), None)
             if job:
-                job['settings'] = copy.deepcopy(self.current_settings)
-                job['status'] = 'Ready'
-                if not job.get('job_type'):
-                    job['job_type'] = 'T'
-
-        self._update_job_list_ui()
-        self.log("SUCCESS", f"Checkpoint created. Saved settings to {len(selected_items)} job(s).")
-
-    def _load_settings_from_job(self):
-        """Loads a selected job'''s settings back into the main panel for editing."""
-        selected_items = self.queue_list_widget.selectedItems()
-        if len(selected_items) != 1:
-            return
-
-        job_id = selected_items[0].data(Qt.ItemDataRole.UserRole)
-        job = next((j for j in self.job_queue if j['id'] == job_id), None)
-
-        if job:
-            self.current_settings = copy.deepcopy(job['settings'])
-            self._populate_settings_panel()
-            self.log("INFO", f"Loaded settings from '''{job['name']}''' into the panel for editing.")
+                out_path = job.get('output_path', '')
+                if os.path.exists(out_path):
+                    try:
+                        shutil.rmtree(out_path)
+                    except Exception as e:
+                        print(f"Lỗi xóa output_path {out_path}: {e}")
+        self._start_pipeline_thread()
 
     def _show_history_context_menu(self, position):
         """Creates and shows the context menu for the history list."""

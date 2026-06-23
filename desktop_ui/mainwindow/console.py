@@ -60,7 +60,18 @@ class ConsoleMixin:
         else:
             # For our own UI-generated logs (PIPELINE, SUCCESS, etc.), we add a prefix.
             color = log_colors.get(level.upper(), "default")
-            self.log_signal.emit(color, f"[{level.upper()}] {message.strip()}")
+            msg_str = message.strip()
+            self.log_signal.emit(color, f"[{level.upper()}] {msg_str}")
+            
+            # If the log contains progress like [1/10], parse and emit progress signal
+            import re
+            match = re.search(r"\[(\d+)/(\d+)\](.*)", msg_str)
+            if match:
+                current = int(match.group(1))
+                total = int(match.group(2))
+                text = f"Processing {current}/{total} : {match.group(3).strip()}"
+                self.pipeline_progress_signal.emit(current, total, text)
+
 
     def _insert_log_text(self, color: str, message: str):
         """

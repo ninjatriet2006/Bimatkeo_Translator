@@ -67,8 +67,8 @@ class JobRunnerMixin:
             "source_path": path,
             "name": os.path.basename(path),
             "settings": self.config_loader.get_factory_defaults().copy(),
-            "status": "Awaiting Config",
-            "job_type": None
+            "status": "Ready",
+            "job_type": "T"
         }
         self.job_queue.append(job_data)
 
@@ -195,10 +195,25 @@ class JobRunnerMixin:
 
             display_text = f"{i}. {job_type_tag} {status_icon} {job['name']}"
             item = QListWidgetItem(display_text)
+            
+            # Enable checkbox
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            check_state = Qt.Checked if job.get('status') == 'Ready' else Qt.Unchecked
+            item.setCheckState(check_state)
+            
             item.setData(Qt.ItemDataRole.UserRole, job['id'])
             self.queue_list_widget.addItem(item)
 
         self.queue_list_widget.blockSignals(False)
+
+    def _on_queue_item_changed(self, item: QListWidgetItem):
+        """Called when a user checks/unchecks an item in the queue."""
+        job_id = item.data(Qt.ItemDataRole.UserRole)
+        job = next((j for j in self.job_queue if j['id'] == job_id), None)
+        if job:
+            is_checked = item.checkState() == Qt.Checked
+            job['status'] = 'Ready' if is_checked else 'Awaiting Config'
+
 
     def _update_history_list_ui(self):
         """Refreshes the history list widget based on the self.history_queue."""
@@ -471,7 +486,7 @@ class JobRunnerMixin:
         for job in self.job_queue:
             if job.get('status') != 'Ready' or job.get('job_type') not in ['T', 'TX']:
                 continue
-            settings = job.get('settings', {})
+            settings = self.current_settings
             translator_type = settings.get("translator_category", "Offline")
             
             if translator_type == "Offline":
@@ -502,7 +517,7 @@ class JobRunnerMixin:
                 continue
             if job.get('job_type') == 'TX':
                 continue
-            settings = job.get('settings', {})
+            settings = self.current_settings
             missing = self.config_loader.missing_required_fields(settings)
             if missing:
                 names = ", ".join(field_labels.get(f, f) for f in missing)
@@ -539,10 +554,10 @@ class JobRunnerMixin:
     def _build_final_config_for_job(self, job: dict) -> dict:
         """
         Builds the correct, nested config dictionary for a specific job
-        by ONLY using the settings stored within that job object.
+        by ONLY using the global current_settings object.
         """
         job_type = job.get('job_type')
-        settings = job.get('settings', {})
+        settings = self.current_settings
         
         final_config = {}
         all_props = self.config_loader.full_config_data
@@ -725,7 +740,7 @@ class JobRunnerMixin:
                 self._update_job_list_ui()
                 self._toggle_ui_state(True, job['id'])
 
-                settings = job.get('settings', {})
+                settings = self.current_settings
                 selected_mode = settings.get('processing_mode', 'Automatic')
                 output_format = settings.get('output_format', 'png')
 
