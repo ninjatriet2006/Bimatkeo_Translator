@@ -66,11 +66,28 @@ class PromptBuilder:
             "Maintain the tone, emotions, and formatting of the original text. "
             "If the text contains sound effects or onomatopoeia, translate them naturally. "
             "CRITICAL RULES: \n"
-            "- Output ONLY the translated text.\n"
-            "- DO NOT output any <think> tags or reasoning processes.\n"
-            "- DO NOT add numbers, bullet points, or prefixes (like '1.', '2.', '-') to the lines.\n"
-            "- DO NOT add conversational fillers or explanations.\n"
-            "Keep the exact same number of lines as the input."
+            "- You MUST output ONLY a valid JSON object. Do NOT wrap it in markdown code blocks (e.g. ```json). Do NOT add conversational fillers.\n"
+            "- The JSON object MUST strictly follow this schema:\n"
+            "{{\n"
+            "  \"metadata\": {{\n"
+            "    \"status\": \"success\" or \"error\" or \"need_context\",\n"
+            "    \"error_reason\": \"Detail reason if status is not success\",\n"
+            "    \"detected_source_language\": \"Language name\",\n"
+            "    \"target_language\": \"Language name\",\n"
+            "    \"line_count_match\": true/false (must match exact input line count)\n"
+            "  }},\n"
+            "  \"content\": [\n"
+            "    {{\n"
+            "      \"line_index\": 1,\n"
+            "      \"original_text\": \"Original line 1\",\n"
+            "      \"translated_text\": \"Translated line 1\",\n"
+            "      \"context_notes\": \"Notes on puns, slang, or context (if any)\",\n"
+            "      \"confidence_score\": 0.95\n"
+            "    }}\n"
+            "  ],\n"
+            "  \"global_notes\": \"Any general notes\"\n"
+            "}}\n"
+            "Ensure the `content` array has the EXACT SAME number of items as the input lines."
         )
 
     def _get_lang_name(self, code: str) -> str:
@@ -96,7 +113,7 @@ class PromptBuilder:
                 pass
         return code
 
-    def build_prompt(self, src_lang: str, tgt_lang: str, glossary: Dict[str, str] = None) -> str:
+    def build_prompt(self, src_lang: str, tgt_lang: str, glossary: Optional[Dict[str, str]] = None) -> str:
         """Tạo Prompt hoàn chỉnh, có tiêm Glossary nếu có."""
         full_src = self._get_lang_name(src_lang)
         full_tgt = self._get_lang_name(tgt_lang)

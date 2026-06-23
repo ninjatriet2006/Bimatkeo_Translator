@@ -58,28 +58,73 @@ class BaseAPITranslator(BaseTranslator):
             return texts
             
         system_prompt = self.prompt_builder.build_prompt(src_lang, tgt_lang, self.glossary_manager.glossary)
-        combined_text = "\n".join(texts)
+        
+        # Prepare the input nicely for the LLM so it can map line_index correctly
+        numbered_texts = [f"Line {i+1}: {t}" for i, t in enumerate(texts)]
+        combined_text = "\n".join(numbered_texts)
         
         import re
-        translated_text = self._call_api(system_prompt, combined_text)
+        import json
+        raw_response = self._call_api(system_prompt, combined_text)
         
-        if not translated_text:
+        if not raw_response:
             return texts
             
         # Strip <think> blocks that reasoning models generate
-        translated_text = re.sub(r'<think>.*?</think>', '', translated_text, flags=re.DOTALL).strip()
-            
-        translated_text = self.glossary_manager.replace_post_translation(translated_text)
+        raw_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
         
-        # Split back to list
-        translated_list = translated_text.split('\n')
-        # Handle cases where API merges lines
-        if len(translated_list) < len(texts):
-            translated_list += [""] * (len(texts) - len(translated_list))
-        elif len(translated_list) > len(texts):
-            translated_list = translated_list[:len(texts)]
+        # Clean up Markdown code blocks if any
+        if raw_response.startswith('```json'):
+            raw_response = raw_response[7:]
+        elif raw_response.startswith('```'):
+            raw_response = raw_response[3:]
+        if raw_response.endswith('```'):
+            raw_response = raw_response[:-3]
+        raw_response = raw_response.strip()
+
+        try:
+            parsed = json.loads(raw_response)
             
-        return translated_list
+            # Check metadata
+            meta = parsed.get("metadata", {})
+            if meta.get("status") not in ["success", ""]:
+                err = meta.get("error_reason", "Unknown error from AI")
+                if self.log_callback:
+                    self.log_callback("ERROR", f"AI Refused to translate: {err}")
+                return texts
+                
+            content = parsed.get("content", [])
+            translated_list = []
+            
+            # Extract translations maintaining the exact order
+            for i, original_line in enumerate(texts):
+                # Try to find the matching item in the content array
+                matching_item = None
+                for item in content:
+                    if item.get("line_index") == i + 1:
+                        matching_item = item
+                        break
+                
+                if matching_item:
+                    translated_list.append(matching_item.get("translated_text", ""))
+                else:
+                    # If AI missed a line, use the original
+                    if self.log_callback:
+                        self.log_callback("WARNING", f"AI missed line {i+1}, using original text.")
+                    translated_list.append(original_line)
+                    
+            # Apply glossary replacement post-translation just in case
+            translated_list = [self.glossary_manager.replace_post_translation(t) for t in translated_list]
+            return translated_list
+            
+        except json.JSONDecodeError as e:
+            if self.log_callback:
+                self.log_callback("ERROR", f"Failed to parse JSON response: {e}\nRaw Response: {raw_response[:200]}...")
+            return texts
+        except Exception as e:
+            if self.log_callback:
+                self.log_callback("ERROR", f"Translation processing error: {e}")
+            return texts
 
     def _call_api(self, system_prompt: str, user_text: str) -> str:
         raise NotImplementedError
@@ -98,7 +143,8 @@ class OpenAITranslator(BaseAPITranslator):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_text}
             ],
-            "temperature": 0.3
+            "temperature": 0.3,
+            "response_format": {"type": "json_object"}
         }
         url = self.endpoint
         if not url.endswith("/chat/completions"):
