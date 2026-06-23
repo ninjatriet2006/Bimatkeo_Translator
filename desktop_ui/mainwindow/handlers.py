@@ -176,10 +176,26 @@ class HandlersMixin:
         for key in ['offline_detector', 'detection_size', 'offline_ocr']:
             if key in self.setting_rows:
                 self.setting_rows[key].setVisible(show_offline)
-                
-        for key in ['api_ocr', 'api_ocr_key']:
+
+        ocr_ai_mode = self.current_settings.get('ocr_ai_mode', 'Standalone API')
+        show_standalone = show_api and (ocr_ai_mode == 'Standalone API')
+        show_pool = show_api and (ocr_ai_mode == 'Pool APIs')
+
+        if 'ocr_ai_mode' in self.setting_rows:
+            self.setting_rows['ocr_ai_mode'].setVisible(show_api)
+
+        if 'ocr_pool_name' in self.setting_rows:
+            self.setting_rows['ocr_pool_name'].setVisible(show_pool)
+
+        profile_selected = self.current_settings.get('ocr_api_name', '').strip()
+        has_profile = bool(profile_selected and profile_selected.lower() not in ["none", "--- select ---"])
+
+        for key in ['ocr_api_name', 'api_ocr', 'ocr_api_endpoint', 'ocr_api_model', 'ocr_api_key']:
             if key in self.setting_rows:
-                self.setting_rows[key].setVisible(show_api)
+                if key == 'ocr_api_name':
+                    self.setting_rows[key].setVisible(show_standalone)
+                else:
+                    self.setting_rows[key].setVisible(show_standalone and has_profile)
 
     def _on_ocr_category_changed(self):
         """Handles changes in OCR category (Offline vs AI/Online)."""
@@ -315,7 +331,25 @@ class HandlersMixin:
             yaml.default_flow_style = False
             try:
                 with open(path, 'r', encoding='utf-8') as f:
-                    return yaml.load(f) or {}
+                    data = yaml.load(f) or {}
+                
+                # Automigrate pool_profiles.yaml
+                pool_path = self._get_yaml_config_path('pool_profiles.yaml')
+                if os.path.exists(pool_path):
+                    try:
+                        with open(pool_path, 'r', encoding='utf-8') as f:
+                            pool_data = yaml.load(f) or {}
+                        changed = False
+                        for k, v in pool_data.items():
+                            if k not in data:
+                                data[k] = {"type": "Pool", "service": "Translator", "fallback_list": v}
+                                changed = True
+                        if changed:
+                            self._save_yaml_config('api_profiles.yaml', data)
+                        os.rename(pool_path, pool_path + ".migrated")
+                    except Exception as e:
+                        print(f"[ERROR] Pool Migration failed: {e}")
+                return data
             except Exception as e:
                 print(f"[ERROR] Failed to load API profiles: {e}")
         
@@ -355,15 +389,22 @@ class HandlersMixin:
     def _save_api_profiles(self, profiles: dict):
         self._save_yaml_config('api_profiles.yaml', profiles)
 
-    def _save_current_api_profile(self):
-        name_widget = self.setting_widgets.get('api_name')
+    def _get_profile_mapping(self, service: str) -> dict:
+        if service == "OCR":
+            return {'name': 'ocr_api_name', 'provider': 'api_ocr', 'endpoint': 'ocr_api_endpoint', 'model': 'ocr_api_model', 'key': 'ocr_api_key'}
+        else:
+            return {'name': 'api_name', 'provider': 'ai_translator', 'endpoint': 'ai_endpoint', 'model': 'ai_model', 'key': 'ai_key'}
+
+    def _save_api_profile_generic(self, service: str):
+        mapping = self._get_profile_mapping(service)
+        name_widget = self.setting_widgets.get(mapping['name'])
         if not name_widget:
             return
         combo = name_widget.findChild(QComboBox)
         if not combo:
             return
         from PySide6.QtWidgets import QInputDialog
-        profile_name, ok = QInputDialog.getText(self, "New API Profile", "Enter a name for the new API Profile:")
+        profile_name, ok = QInputDialog.getText(self, f"New {service} Profile", "Enter a name for the new API Profile:")
         if not ok:
             return
             
@@ -372,15 +413,21 @@ class HandlersMixin:
             self.log("WARNING", "Please enter a valid API Profile Name before saving.")
             return
 
-        endpoint = self._get_value_from_widget('ai_endpoint', self.setting_widgets.get('ai_endpoint')) or ''
-        from app.core.api_utils import infer_ai_provider
-        provider = infer_ai_provider(endpoint)
-        model = self._get_value_from_widget('ai_model', self.setting_widgets.get('ai_model')) or ''
-        key = self._get_value_from_widget('ai_key', self.setting_widgets.get('ai_key')) or ''
+        endpoint = self._get_value_from_widget(mapping['endpoint'], self.setting_widgets.get(mapping['endpoint'])) or ''
+        
+        if service == "Translator":
+            from app.core.api_utils import infer_ai_provider
+            provider = infer_ai_provider(endpoint)
+        else:
+            provider = self._get_value_from_widget(mapping['provider'], self.setting_widgets.get(mapping['provider'])) or ''
+            
+        model = self._get_value_from_widget(mapping['model'], self.setting_widgets.get(mapping['model'])) or ''
+        key = self._get_value_from_widget(mapping['key'], self.setting_widgets.get(mapping['key'])) or ''
 
         profiles = self._load_api_profiles()
         profiles[profile_name] = {
             "type": "Standalone",
+            "service": service,
             "provider": provider,
             "endpoint": endpoint,
             "model": model,
@@ -388,8 +435,7 @@ class HandlersMixin:
         }
         self._save_api_profiles(profiles)
 
-
-        filtered_profiles = list(profiles.keys())
+        filtered_profiles = [name for name, p in profiles.items() if p.get("type", "Standalone") == "Standalone" and p.get("service", "Translator") == service]
         combo.blockSignals(True)
         combo.clear()
         combo.addItem("--- Select ---")
@@ -399,22 +445,22 @@ class HandlersMixin:
 
         self.log("SUCCESS", f"API Profile '{profile_name}' saved to local config.")
 
-
-    def _delete_current_api_profile(self):
-        name_widget = self.setting_widgets.get('api_name')
+    def _delete_api_profile_generic(self, service: str):
+        mapping = self._get_profile_mapping(service)
+        name_widget = self.setting_widgets.get(mapping['name'])
         if not name_widget:
             return
         combo = name_widget.findChild(QComboBox)
         if not combo:
             return
         profile_name = combo.currentText().strip()
-        if not profile_name:
+        if not profile_name or profile_name == "--- Select ---":
             return
 
         reply = QMessageBox.question(
             self,
-            "Xác nhận xóa hồ sơ API",
-            f"Bạn có chắc chắn muốn xóa hồ sơ API '{profile_name}' không?",
+            "Xác nhận xóa hồ sơ",
+            f"Bạn có chắc chắn muốn xóa hồ sơ '{profile_name}' không?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
@@ -425,9 +471,9 @@ class HandlersMixin:
         if profile_name in profiles:
             del profiles[profile_name]
             self._save_api_profiles(profiles)
-            self.log("SUCCESS", f"Đã xóa hồ sơ API '{profile_name}'.")
+            self.log("SUCCESS", f"Đã xóa hồ sơ '{profile_name}'.")
 
-            filtered_profiles = list(profiles.keys())
+            filtered_profiles = [name for name, p in profiles.items() if p.get("type", "Standalone") == "Standalone" and p.get("service", "Translator") == service]
 
             combo.blockSignals(True)
             combo.clear()
@@ -435,28 +481,29 @@ class HandlersMixin:
             combo.addItems(filtered_profiles)
             combo.setCurrentText("--- Select ---")
             combo.blockSignals(False)
-            self._on_api_profile_changed("--- Select ---")
+            self._on_api_profile_changed_generic("--- Select ---", service)
         else:
             self.log("WARNING", f"Không tìm thấy hồ sơ '{profile_name}' trong cấu hình.")
 
-
-
-    def _clear_api_widgets(self):
-        for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
+    def _clear_api_widgets_generic(self, service: str):
+        mapping = self._get_profile_mapping(service)
+        for field, key in [('provider', mapping['provider']), ('endpoint', mapping['endpoint']), ('model', mapping['model']), ('key', mapping['key'])]:
             widget = self.setting_widgets.get(key)
             if widget:
                 self.current_settings[key] = ""
                 self._set_widget_value(key, "", widget)
 
-
-
-    def _on_api_profile_changed(self, profile_name: str):
+    def _on_api_profile_changed_generic(self, profile_name: str, service: str):
         profile_name = (profile_name or "").strip()
+        mapping = self._get_profile_mapping(service)
         
         if not profile_name or profile_name.lower() in ["none", "--- select ---"]:
-            self.current_settings['api_name'] = ""
-            self._clear_api_widgets()
-            self._update_translator_visibility()
+            self.current_settings[mapping['name']] = ""
+            self._clear_api_widgets_generic(service)
+            if service == "Translator":
+                self._update_translator_visibility()
+            else:
+                self._update_ocr_visibility()
             return
             
         profiles = self._load_api_profiles()
@@ -465,7 +512,7 @@ class HandlersMixin:
             
             self._loading_api_profile = True
             try:
-                for field, key in [('provider', 'ai_translator'), ('endpoint', 'ai_endpoint'), ('model', 'ai_model'), ('key', 'ai_key')]:
+                for field, key in [('provider', mapping['provider']), ('endpoint', mapping['endpoint']), ('model', mapping['model']), ('key', mapping['key'])]:
                     widget = self.setting_widgets.get(key)
                     if widget:
                         val = profile.get(field, '')
@@ -474,11 +521,31 @@ class HandlersMixin:
             finally:
                 self._loading_api_profile = False
         else:
-            self.current_settings['api_name'] = profile_name
-            self._clear_api_widgets()
+            self.current_settings[mapping['name']] = profile_name
+            self._clear_api_widgets_generic(service)
             
-        self._update_translator_visibility()
-        self._update_ocr_visibility()
+        if service == "Translator":
+            self._update_translator_visibility()
+        else:
+            self._update_ocr_visibility()
+
+    def _save_current_api_profile(self):
+        self._save_api_profile_generic("Translator")
+
+    def _delete_current_api_profile(self):
+        self._delete_api_profile_generic("Translator")
+
+    def _on_api_profile_changed(self, profile_name: str):
+        self._on_api_profile_changed_generic(profile_name, "Translator")
+
+    def _save_current_ocr_api_profile(self):
+        self._save_api_profile_generic("OCR")
+
+    def _delete_current_ocr_api_profile(self):
+        self._delete_api_profile_generic("OCR")
+
+    def _on_ocr_api_profile_changed(self, profile_name: str):
+        self._on_api_profile_changed_generic(profile_name, "OCR")
 
 
     def _get_preset_profiles_file_path(self) -> str:
@@ -505,34 +572,28 @@ class HandlersMixin:
     def _get_pool_profiles_file_path(self) -> str:
         return self._get_yaml_config_path('pool_profiles.yaml')
 
-    def _load_pool_profiles(self) -> dict:
-        import os
-        from ruamel.yaml import YAML
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        yaml.default_flow_style = False
-        path = self._get_pool_profiles_file_path()
-        if os.path.exists(path):
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    return yaml.load(f) or {}
-            except Exception as e:
-                print(f"[ERROR] Failed to load pool profiles: {e}")
-        return {}
+    def _load_pool_profiles(self, service: str = "Translator") -> dict:
+        profiles = self._load_api_profiles()
+        return {k: v.get("fallback_list", []) for k, v in profiles.items() if v.get("type") == "Pool" and v.get("service", "Translator") == service}
 
-    def _save_pool_profiles(self, pools: dict):
-        self._save_yaml_config('pool_profiles.yaml', pools)
+    def _save_pool_profiles(self, pools: dict, service: str = "Translator"):
+        profiles = self._load_api_profiles()
+        profiles = {k: v for k, v in profiles.items() if not (v.get("type") == "Pool" and v.get("service", "Translator") == service)}
+        for k, v in pools.items():
+            profiles[k] = {"type": "Pool", "service": service, "fallback_list": v}
+        self._save_api_profiles(profiles)
 
-    def _open_manage_pools_dialog(self):
+    def _open_manage_pools_dialog(self, service: str = "Translator"):
         from desktop_ui.mainwindow.pool_dialog import ManagePoolsDialog
-        dialog = ManagePoolsDialog(self)
+        dialog = ManagePoolsDialog(self, service)
         if dialog.exec():
             # Dialog saved something, we need to refresh the pool selector UI
-            pool_widget = self.setting_widgets.get('pool_name')
+            widget_key = 'ocr_pool_name' if service == "OCR" else 'pool_name'
+            pool_widget = self.setting_widgets.get(widget_key)
             if pool_widget:
                 combo = pool_widget.findChild(QComboBox)
                 if combo:
-                    pools = self._load_pool_profiles()
+                    pools = self._load_pool_profiles(service)
                     current_text = combo.currentText()
                     combo.blockSignals(True)
                     combo.clear()
@@ -739,14 +800,26 @@ class HandlersMixin:
             print(f"[Settings] Updated '''{key}''' to: {new_value}")
 
             # Auto-save changes to endpoint, model, key into the currently active profile
-            if key in ['ai_endpoint', 'ai_model', 'ai_key']:
-                profile_name = self.current_settings.get('api_name', '').strip()
+            if key in ['ai_endpoint', 'ai_model', 'ai_key', 'ocr_api_endpoint', 'ocr_api_model', 'ocr_api_key']:
+                is_ocr = key.startswith('ocr_')
+                p_key = 'ocr_api_name' if is_ocr else 'api_name'
+                profile_name = self.current_settings.get(p_key, '').strip()
+                
                 if profile_name and profile_name.lower() not in ["none", "--- select ---"] and not getattr(self, '_loading_api_profile', False):
                     profiles = self._load_api_profiles()
                     if profile_name in profiles:
-                        field_name = key.replace('ai_', '')
+                        if is_ocr:
+                            field_name = key.replace('ocr_api_', '')
+                        else:
+                            field_name = key.replace('ai_', '')
                         profiles[profile_name][field_name] = new_value
                         self._save_api_profiles(profiles)
+            
+            if key in ['translator_category', 'ai_mode', 'api_name']:
+                self._update_translator_visibility()
+                
+            if key in ['ocr_category', 'ocr_ai_mode', 'ocr_api_name']:
+                self._update_ocr_visibility()
 
             if key == 'app_language':
                 self.config_loader.oldsession_config["app_language"] = new_value
@@ -2535,7 +2608,7 @@ class HandlersMixin:
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
             combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
-        elif key in ["offline_detector", "offline_ocr", "api_ocr", "inpainter", "upscaler", "colorizer", "renderer"]:
+        elif key in self.config_loader.all_model_fields and key not in ["offline_translator", "ai_translator"]:
             values = self.config_loader.full_config_data.get(key, {}).get("values", [])
             combo.addItem("--- Select ---", "none")
             for item in values:

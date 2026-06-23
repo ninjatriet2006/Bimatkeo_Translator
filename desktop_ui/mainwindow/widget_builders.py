@@ -1008,15 +1008,17 @@ class WidgetBuildersMixin:
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
         
+        service = info.get("service", "Translator")
+        
         combo = SearchableComboBox()
         profiles = self._load_api_profiles()
         
-        filtered_profiles = [name for name, p in profiles.items() if p.get("type", p.get("group", "Standalone")) == "Standalone"]
+        filtered_profiles = [name for name, p in profiles.items() if p.get("type", p.get("group", "Standalone")) == "Standalone" and p.get("service", "Translator") == service]
             
         combo.addItem("--- Select ---")
         combo.addItems(filtered_profiles)
         
-        default_val = self.current_settings.get('api_name', info.get("default", ""))
+        default_val = self.current_settings.get(info['key'], info.get("default", ""))
         combo.setCurrentText(str(default_val) if default_val else "--- Select ---")
             
         layout.addWidget(combo, stretch=1)
@@ -1024,13 +1026,19 @@ class WidgetBuildersMixin:
         save_btn = QPushButton("+")
         save_btn.setFixedWidth(30)
         save_btn.setToolTip("Save this profile to local config")
-        save_btn.clicked.connect(self._save_current_api_profile)
+        if service == "OCR":
+            save_btn.clicked.connect(self._save_current_ocr_api_profile)
+        else:
+            save_btn.clicked.connect(self._save_current_api_profile)
         layout.addWidget(save_btn)
         
         del_btn = QPushButton("-")
         del_btn.setFixedWidth(30)
         del_btn.setToolTip("Delete this profile from local config")
-        del_btn.clicked.connect(self._delete_current_api_profile)
+        if service == "OCR":
+            del_btn.clicked.connect(self._delete_current_ocr_api_profile)
+        else:
+            del_btn.clicked.connect(self._delete_current_api_profile)
         layout.addWidget(del_btn)
         
         self.widget_references[info['key']] = combo
@@ -1042,21 +1050,23 @@ class WidgetBuildersMixin:
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
         
+        service = info.get("service", "Translator")
+        
         combo = SearchableComboBox()
-        pools = self._load_pool_profiles()
+        pools = self._load_pool_profiles(service)
         filtered_pools = list(pools.keys())
             
         combo.addItem("--- Select ---")
         combo.addItems(filtered_pools)
         
-        default_val = self.current_settings.get('pool_name', info.get("default", ""))
+        default_val = self.current_settings.get(info['key'], info.get("default", ""))
         combo.setCurrentText(str(default_val) if default_val else "--- Select ---")
             
         layout.addWidget(combo, stretch=1)
         
         manage_btn = QPushButton("Manage Pools")
         manage_btn.setToolTip("Open Manage Pools Dialog")
-        manage_btn.clicked.connect(self._open_manage_pools_dialog)
+        manage_btn.clicked.connect(lambda _, s=service: self._open_manage_pools_dialog(s))
         layout.addWidget(manage_btn)
         
         self.widget_references[info['key']] = combo

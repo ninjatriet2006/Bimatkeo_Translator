@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     class _RegistryMixinBase:
         project_base_dir: str
+        all_model_fields: list[str]
+        required_model_fields: list[str]
         def check_model_existence(self, model_name: str, field: str | None = None) -> bool: ...
         def save_studio_config(self) -> None: ...
 else:
@@ -35,12 +37,10 @@ class RegistryMixin(_RegistryMixinBase):
 
     REGISTRY_RELATIVE_PATH = os.path.join(".config", "models", "model_registry.yaml")
 
-    # Fields that MUST resolve to a real, set-up model before a job can run.
-    REQUIRED_MODEL_FIELDS = ("offline_detector", "offline_ocr", "inpainter")
-
     # Minimal seed used ONLY when the registry file is missing/unreadable.
     _SEED_REGISTRY = {
         "schema_version": 1,
+        "required_fields": ["offline_detector", "offline_ocr", "inpainter"],
         "fields": {
             "offline_translator": [
                 {"key": "m2m100", "label": "facebook/m2m100_418M",
@@ -115,7 +115,13 @@ class RegistryMixin(_RegistryMixinBase):
             raw = self._SEED_REGISTRY
             self._write_registry(raw)
 
-        self.model_registry = self._validate_fields(raw.get("fields", {}))
+        import typing
+        self.full_registry = raw
+        fields = typing.cast(dict, raw.get("fields", {}))
+        self.all_model_fields = list(fields.keys())
+        self.required_model_fields = typing.cast(list, raw.get("required_fields", []))
+
+        self.model_registry = self._validate_fields(fields)
         self._derive_all()
         return self.model_registry
 
@@ -339,7 +345,7 @@ class RegistryMixin(_RegistryMixinBase):
         if not isinstance(settings, dict):
             return []
         missing = []
-        for field in self.REQUIRED_MODEL_FIELDS:
+        for field in self.required_model_fields:
             value = settings.get(field)
             if value in (None, "", "none"):
                 missing.append(field)

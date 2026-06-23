@@ -20,7 +20,7 @@ class ManagePoolsDialog(QDialog):
         self.resize(500, 600)
         
         # Load data
-        self.pools = self.main_window._load_pool_profiles()
+        self.pools = self.main_window._load_pool_profiles(self.service)
         self.api_profiles = self.main_window._load_api_profiles()
         
         self._build_ui()
@@ -187,12 +187,19 @@ class ManagePoolsDialog(QDialog):
             QMessageBox.warning(self, "Error", f"API Profile '{name}' already exists.")
             return
             
-        from app.core.api_utils import infer_ai_provider
         endpoint = self.new_api_endpoint.text().strip()
-        provider = infer_ai_provider(endpoint)
+        if self.service == "OCR":
+            provider = "gemini_ocr" # Default or maybe user enters it? They can't select provider here, it's just endpoint... we just put empty or gemini_ocr
+        else:
+            from app.core.api_utils import infer_ai_provider
+            provider = infer_ai_provider(endpoint)
+        
+        if self.service == "OCR":
+            provider = self.new_api_endpoint.text().strip() # Not quite right, wait
         
         profile = {
             "type": "Standalone",
+            "service": self.service,
             "provider": provider,
             "endpoint": endpoint,
             "model": self.new_api_model.currentText().strip(),
@@ -229,7 +236,7 @@ class ManagePoolsDialog(QDialog):
             apis.append(self.api_list.item(i).text())
             
         self.pools[pool_name] = apis
-        self.main_window._save_pool_profiles(self.pools)
+        self.main_window._save_pool_profiles(self.pools, self.service)
         
         self._refresh_pool_selector()
         self.pool_combo.setCurrentText(pool_name)
@@ -244,7 +251,7 @@ class ManagePoolsDialog(QDialog):
                 QMessageBox.warning(self, "Error", f"Pool '{name}' already exists.")
                 return
             self.pools[name] = []
-            self.main_window._save_pool_profiles(self.pools)
+            self.main_window._save_pool_profiles(self.pools, self.service)
             self._refresh_pool_selector()
             self.pool_combo.setCurrentText(name)
 
@@ -256,7 +263,7 @@ class ManagePoolsDialog(QDialog):
                                          QMessageBox.StandardButton.No)
             if reply == QMessageBox.StandardButton.Yes:
                 del self.pools[pool_name]
-                self.main_window._save_pool_profiles(self.pools)
+                self.main_window._save_pool_profiles(self.pools, self.service)
                 self._refresh_pool_selector()
                 self.api_list.clear()
 

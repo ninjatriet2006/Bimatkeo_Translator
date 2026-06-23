@@ -449,10 +449,9 @@ class JobRunnerMixin:
                     QMessageBox.warning(self, "Lỗi Thiết Lập", "Vui lòng chọn AI Model trước khi bắt đầu.")
                     return
 
-        field_labels = {"offline_detector": "Detector", "offline_ocr": "OCR", "inpainter": "Inpainter"}
         missing = self.config_loader.missing_required_fields(settings)
         if missing:
-            names = ", ".join(field_labels.get(f, f) for f in missing)
+            names = ", ".join(self.config_loader.full_config_data.get(f, {}).get("label", f.replace("_", " ").title()) for f in missing)
             QMessageBox.critical(
                 self,
                 "Thiếu mô hình bắt buộc",
@@ -582,17 +581,16 @@ class JobRunnerMixin:
         # Block the run if any READY job has a required model field (detector,
         # ocr, inpainter) that is blank or not set up. Report clearly instead
         # of letting the backend crash mid-pipeline.
-        field_labels = {"offline_detector": "Detector", "offline_ocr": "OCR", "inpainter": "Inpainter"}
         blocked = []
         for job in self.job_queue:
             if job.get('status') != 'Ready':
                 continue
             if job.get('job_type') == 'TX':
                 continue
-            settings = self.current_settings
+            settings = job.get('settings', {})
             missing = self.config_loader.missing_required_fields(settings)
             if missing:
-                names = ", ".join(field_labels.get(f, f) for f in missing)
+                names = ", ".join(self.config_loader.full_config_data.get(f, {}).get("label", f.replace("_", " ").title()) for f in missing)
                 blocked.append((job.get('id', '?'), names))
 
         if blocked:
@@ -724,6 +722,37 @@ class JobRunnerMixin:
                     provider = infer_ai_provider(ep)
                     
                 translator_dict['translator'] = provider
+
+        # --- Handle OCR API Profiles ---
+        ocr_category = settings.get('ocr_category', 'Offline')
+        if ocr_category == 'AI / Online':
+            ocr_ai_mode = settings.get('ocr_ai_mode', 'Standalone API')
+            if ocr_ai_mode == 'Pool APIs':
+                pool_name = settings.get('ocr_pool_name', '')
+                final_config['api_ocr'] = 'pool'
+                final_config['api_ocr_pool'] = []
+                if hasattr(self, '_load_pool_profiles') and hasattr(self, '_load_api_profiles'):
+                    pools = self._load_pool_profiles("OCR")
+                    api_profiles = self._load_api_profiles()
+                    if pool_name in pools:
+                        for api_name in pools[pool_name]:
+                            prof = api_profiles.get(api_name, {})
+                            if prof:
+                                final_config['api_ocr_pool'].append({
+                                    'translator': prof.get('provider', ''),
+                                    'endpoint': prof.get('endpoint', ''),
+                                    'model': prof.get('model', ''),
+                                    'api_key': prof.get('key', '')
+                                })
+            else:
+                ocr_api_name = settings.get('ocr_api_name')
+                if ocr_api_name and ocr_api_name != 'none':
+                    if hasattr(self, '_load_api_profiles'):
+                        api_profiles = self._load_api_profiles()
+                        prof = api_profiles.get(ocr_api_name, {})
+                        if prof:
+                            final_config['api_ocr'] = prof.get('provider', settings.get('api_ocr'))
+                            final_config['api_ocr_key'] = prof.get('key', '')
 
         if settings.get('translator_chain'):
             final_config.get("translator", {}).pop('translator', None)

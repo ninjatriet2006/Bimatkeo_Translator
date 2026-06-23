@@ -20,7 +20,17 @@ GLOBAL_ISO_MAP = {
     "th": "THA", "id": "IND", "fil": "FIL", "tr": "TRK"
 }
 
-class CapabilitiesMixin:
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    class _CapabilitiesMixinBase:
+        project_base_dir: str
+        all_model_fields: list[str]
+        required_model_fields: list[str]
+else:
+    _CapabilitiesMixinBase = object
+
+class CapabilitiesMixin(_CapabilitiesMixinBase):
     project_base_dir: str
     localization: dict
     system_prompts: dict
@@ -181,9 +191,8 @@ class CapabilitiesMixin:
                         return True
                 return False
 
-            checkable_fields = {
-                "offline_translator", "ai_translator", "offline_detector", "offline_ocr", "api_ocr", "inpainter", "upscaler", "colorizer", "renderer"
-            }
+            # Check against all dynamically loaded fields
+            checkable_fields = self.all_model_fields
             if field_key not in checkable_fields:
                 return True
 

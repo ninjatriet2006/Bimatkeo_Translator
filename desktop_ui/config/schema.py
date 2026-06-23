@@ -13,6 +13,7 @@ class SchemaMixin:
     ui_map: Dict[str, Any]
     factory_defaults: Dict[str, Any]
     system_prompts: Dict[str, Any]
+    all_model_fields: list[str]
 
 
     def _build_full_config_data(self):
@@ -44,7 +45,7 @@ class SchemaMixin:
                         merged_info['values'] = custom_choices if custom_choices is not None else enum_def["enum"]
             
             # Manually handle UI-only enum settings
-            if key in ['offline_translator', 'ai_translator', 'offline_detector', 'offline_ocr', 'api_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
+            if key in self.all_model_fields:
                 custom_choices = self._load_custom_models(key)
                 if custom_choices is not None:
                     merged_info['values'] = custom_choices
