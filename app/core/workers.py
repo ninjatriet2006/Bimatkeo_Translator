@@ -17,10 +17,12 @@ def release_gpu_memory():
     gc.collect()
 
 class OCRWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, out_q: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None):
+    def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None):
         super().__init__()
         self.in_q = in_q
-        self.out_q = out_q
+        self.out_q_trans = out_q_trans
+        self.out_q_inpaint = out_q_inpaint
+        self.out_q_render = out_q_render
         self.detector = detector
         self.recognizer = recognizer
         self.log_callback = log_callback
@@ -31,7 +33,9 @@ class OCRWorker(threading.Thread):
         while True:
             ctx: PageContext = self.in_q.get()
             if ctx is None:
-                self.out_q.put(None)
+                self.out_q_trans.put(None)
+                self.out_q_inpaint.put(None)
+                self.out_q_render.put(None)
                 self.in_q.task_done()
                 break
             
@@ -66,17 +70,19 @@ class OCRWorker(threading.Thread):
                 texts = self.corrector.correct(texts, ctx.original_image)
                 ctx.original_texts = texts
             
-            self.out_q.put(ctx)
+            # Fork (Push to 3 queues simultaneously)
+            self.out_q_trans.put(ctx)
+            self.out_q_inpaint.put(ctx)
+            self.out_q_render.put(ctx)
             self.in_q.task_done()
             
             # Optional: release_gpu_memory()
 
 
 class TranslatorWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, out_q: queue.Queue, translator: BaseTranslator | None, src_lang: str, tgt_lang: str, log_callback=None):
+    def __init__(self, in_q: queue.Queue, translator: BaseTranslator | None, src_lang: str, tgt_lang: str, log_callback=None):
         super().__init__()
         self.in_q = in_q
-        self.out_q = out_q
         self.translator = translator
         self.src_lang = src_lang
         self.tgt_lang = tgt_lang
@@ -87,7 +93,6 @@ class TranslatorWorker(threading.Thread):
         while True:
             ctx: PageContext = self.in_q.get()
             if ctx is None:
-                self.out_q.put(None)
                 self.in_q.task_done()
                 break
             
@@ -103,15 +108,14 @@ class TranslatorWorker(threading.Thread):
                         self.log_callback("ERROR", f"Translation Error on {ctx.page_id}: {e}")
                     ctx.translated_texts = [""] * len(ctx.original_texts)
 
-            self.out_q.put(ctx)
+            ctx.trans_done.set()  # Signal completion of this fork
             self.in_q.task_done()
 
 
 class InpaintWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, out_q: queue.Queue, inpainter: BaseInpainter | None, log_callback=None):
+    def __init__(self, in_q: queue.Queue, inpainter: BaseInpainter | None, log_callback=None):
         super().__init__()
         self.in_q = in_q
-        self.out_q = out_q
         self.inpainter = inpainter
         self.log_callback = log_callback
         self.daemon = True
@@ -120,7 +124,6 @@ class InpaintWorker(threading.Thread):
         while True:
             ctx: PageContext = self.in_q.get()
             if ctx is None:
-                self.out_q.put(None)
                 self.in_q.task_done()
                 break
             
@@ -136,7 +139,7 @@ class InpaintWorker(threading.Thread):
                         self.log_callback("ERROR", f"Inpaint Error on {ctx.page_id}: {e}")
                     ctx.inpainted_image = ctx.original_image.copy()
 
-            self.out_q.put(ctx)
+            ctx.inpaint_done.set()  # Signal completion of this fork
             self.in_q.task_done()
             release_gpu_memory()
 
@@ -157,6 +160,10 @@ class RenderWorker(threading.Thread):
                 self.out_q.put(None)
                 self.in_q.task_done()
                 break
+            
+            # JOIN: Wait for both forks to complete
+            ctx.trans_done.wait()
+            ctx.inpaint_done.wait()
             
             if self.log_callback:
                 self.log_callback("RENDER", f"Rendering {ctx.page_id}...")

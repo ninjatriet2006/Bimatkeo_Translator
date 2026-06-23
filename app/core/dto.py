@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import threading
 import numpy as np
 from typing import List, Optional, Any
 
@@ -12,3 +13,7 @@ class PageContext:
     text_styles: Optional[List[Any]] = None     # Định dạng chữ (Màu sắc, kích cỡ, font từ OCR phân tích)
     inpainted_image: Optional[np.ndarray] = None # Mảng ảnh đã xóa nền bong bóng thoại
     rendered_image: Optional[np.ndarray] = None  # Ảnh phẳng cuối cùng đã vẽ chữ (để xuất PNG/JPG)
+    
+    # Fork-Join Synchronization Flags
+    trans_done: threading.Event = field(default_factory=threading.Event)
+    inpaint_done: threading.Event = field(default_factory=threading.Event)

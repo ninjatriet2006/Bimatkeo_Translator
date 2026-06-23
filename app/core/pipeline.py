@@ -154,9 +154,8 @@ class Pipeline:
         try:
             os.makedirs(output_path, exist_ok=True)
             
-            # Initialize Queues
+            # Initialize Queues for Fork-Join
             q_in = queue.Queue(maxsize=10)
-            q_ocr = queue.Queue(maxsize=10)
             q_trans = queue.Queue(maxsize=10)
             q_inpaint = queue.Queue(maxsize=10)
             q_render = queue.Queue(maxsize=10)
@@ -211,22 +210,37 @@ class Pipeline:
             inpainter = InpainterFactory.create("dummy_inpainter") if enable_inpainter else None
             renderer = RendererFactory.create("dummy_renderer") if enable_renderer else None
 
-            # Initialize Workers
-            ocr_worker = OCRWorker(q_in, q_ocr, detector, recognizer, log_callback)
-            trans_worker = TranslatorWorker(q_ocr, q_trans, translator, "auto", target_lang, log_callback)
-            inpaint_worker = InpaintWorker(q_trans, q_inpaint, inpainter, log_callback)
-            render_worker = RenderWorker(q_inpaint, q_render, renderer, log_callback)
+            # Initialize Workers for Fork-Join Pipeline
+            ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback)
+            trans_worker = TranslatorWorker(q_trans, translator, "auto", target_lang, log_callback)
+            inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback)
+            render_worker = RenderWorker(q_render, q_out, renderer, log_callback)
 
             # Start Workers
             for w in [ocr_worker, trans_worker, inpaint_worker, render_worker]:
                 w.start()
 
-            # Producer: Load files into memory
+            # Producer: Load files into memory (with Resume feature)
             for index, filename in enumerate(all_files):
                 if self._stopped_by_user:
                     break
                 img_path = os.path.join(source_dir, filename)
                 is_text_only = config_dict.get('job_type') == 'TX'
+                
+                # Tính trước tên file đầu ra để kiểm tra resume
+                if is_text_only or filename.lower().endswith('.txt'):
+                    if config_dict.get('is_single_file', False):
+                        output_filename = os.path.splitext(filename)[0] + f"_translated.txt"
+                    else:
+                        output_filename = filename
+                else:
+                    output_filename = os.path.splitext(filename)[0] + f".{output_format}"
+                
+                output_file = os.path.join(output_path, output_filename)
+                if os.path.exists(output_file):
+                    log_callback("INFO", f"[{index + 1}/{len(all_files)}] Bỏ qua file đã hoàn thành (Resume): {filename}")
+                    continue
+
                 if is_text_only or filename.lower().endswith('.txt'):
                     log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp file text: {filename}")
                     with open(img_path, 'r', encoding='utf-8') as f:
@@ -248,7 +262,7 @@ class Pipeline:
             # Consumer: Save outputs
             completed = 0
             while True:
-                ctx = q_render.get()
+                ctx = q_out.get()
                 if ctx is None:
                     break
                 
@@ -274,7 +288,7 @@ class Pipeline:
                         log_callback("SUCCESS", f"Đã lưu kết quả: {output_filename}")
                 
                 completed += 1
-                q_render.task_done()
+                q_out.task_done()
 
             # Wait for all queues to empty
             for w in [ocr_worker, trans_worker, inpaint_worker, render_worker]:
