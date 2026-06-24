@@ -29,6 +29,26 @@ class ModelDownloader:
         return ""
 
     @staticmethod
+    def get_model_path_from_registry(field: str, key: str) -> str:
+        import yaml
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        registry_path = os.path.join(project_root, ".config", "models", "model_registry.yaml")
+        if not os.path.exists(registry_path):
+            return ""
+        try:
+            with open(registry_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+            items = data.get("fields", {}).get(field, [])
+            for item in items:
+                if item.get("key") == key:
+                    path = item.get("check_file", "")
+                    if path:
+                        return os.path.join(project_root, path)
+        except Exception as e:
+            print(f"[Registry] Failed to parse registry: {e}")
+        return ""
+
+    @staticmethod
     def download_and_extract(url: str, target_dir: str, expected_files: list[str], 
                              log_callback=None, extract: bool = False, checksum: str | None = None) -> bool:
         """

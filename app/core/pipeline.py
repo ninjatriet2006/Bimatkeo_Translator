@@ -164,14 +164,18 @@ class Pipeline:
                     detector_name = config_dict.get("offline_detector", "ctd")
                     ocr_name = config_dict.get("offline_ocr", "mocr")
 
+                    from app.core.downloader import ModelDownloader
+
                     # Initialize Local Models
                     try:
-                        detector = DetectorFactory.create(detector_name, log_callback=log_callback)
+                        det_path = ModelDownloader.get_model_path_from_registry("offline_detector", detector_name)
+                        detector = DetectorFactory.create(detector_name, model_path=det_path, log_callback=log_callback)
                     except ValueError:
                         detector = DetectorFactory.create("dummy_detector", log_callback=log_callback)
                         
                     try:
-                        recognizer = RecognizerFactory.create(ocr_name, log_callback=log_callback)
+                        rec_path = ModelDownloader.get_model_path_from_registry("offline_ocr", ocr_name)
+                        recognizer = RecognizerFactory.create(ocr_name, model_path=rec_path, log_callback=log_callback)
                     except ValueError:
                         recognizer = RecognizerFactory.create("dummy_recognizer", log_callback=log_callback)
                 
@@ -208,7 +212,9 @@ class Pipeline:
                     translator = None
             inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "manga_inpaint_v3")
             try:
-                inpainter = InpainterFactory.create(inpainter_name, log_callback=log_callback) if enable_inpainter and inpainter_name != "none" else None
+                from app.core.downloader import ModelDownloader
+                inp_path = ModelDownloader.get_model_path_from_registry("inpainter", inpainter_name)
+                inpainter = InpainterFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback) if enable_inpainter and inpainter_name != "none" else None
             except ValueError:
                 log_callback("WARNING", f"Inpainter '{inpainter_name}' not found, falling back to None.")
                 inpainter = None

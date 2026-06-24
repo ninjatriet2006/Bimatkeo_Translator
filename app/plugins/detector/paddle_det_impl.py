@@ -16,13 +16,10 @@ class PaddleDetectorImpl(BaseTextDetector):
             raise RuntimeError("Thư viện 'paddleocr' hoặc 'paddlepaddle' chưa được cài đặt. Vui lòng cài đặt qua pip.")
             
         try:
-            # Kiểm tra xem người dùng có tải model offline qua giao diện UI hay không
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            offline_model_path = os.path.join(project_root, "models", "Detector", "Paddle")
-            
+            # Ưu tiên sử dụng model_path do Registry truyền xuống
             det_model_dir = None
-            if os.path.exists(offline_model_path):
-                for root, _, files in os.walk(offline_model_path):
+            if model_path and os.path.exists(model_path):
+                for root, _, files in os.walk(model_path):
                     if any(f.endswith('.pdmodel') for f in files):
                         det_model_dir = root
                         break

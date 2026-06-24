@@ -11,9 +11,7 @@ class Pixel32pxRecognizerImpl(BaseTextRecognizer):
         
     def load_model(self, model_path: str | None = None, log_callback=None) -> None:
         if not model_path:
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            model_path = os.path.join(project_root, "models", "OCR", "32px", "alphabet-all-v7.txt")
-            
+            raise ValueError("model_path is required")
         target_dir = os.path.dirname(model_path)
         expected_filename = os.path.basename(model_path)
         if not os.path.exists(model_path):

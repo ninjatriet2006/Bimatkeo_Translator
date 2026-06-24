@@ -10,6 +10,12 @@ import sys
 import copy
 import subprocess
 import threading
+
+# Ensure project root is in sys.path to allow running this script directly
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from desktop_ui.constants import *
 
 
@@ -27,10 +33,10 @@ from PySide6.QtGui import QFont, QCursor, QStandardItemModel, QFontDatabase, QPi
 
 # Core non-UI imports
 from app.core.pipeline import Pipeline
-from .config_loader import ConfigLoader
+from desktop_ui.config_loader import ConfigLoader
 
 # Import modularized components
-from .mainwindow import (
+from desktop_ui.mainwindow import (
     DynamicHeightListWidget,
     SearchableComboPopup,
     SearchableFontInstallDialog,
