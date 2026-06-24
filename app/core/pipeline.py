@@ -149,10 +149,12 @@ class Pipeline:
             if enable_ocr:
                 if ocr_category == "AI / Online":
                     api_ocr_name = config_dict.get("api_ocr", "gemini_ocr")
-                    api_key = config_dict.get("api_ocr_key", "")
+                    api_key = config_dict.get("ocr_api_key", config_dict.get("api_ocr_key", ""))
+                    endpoint = config_dict.get("ocr_api_endpoint", "")
+                    model_name = config_dict.get("ocr_api_model", "")
                     try:
                         cloud_ocr = CloudOCRFactory.create(api_ocr_name)
-                        cloud_ocr.load_model(api_key, log_callback=log_callback)
+                        cloud_ocr.load_model(api_key, endpoint=endpoint, model_name=model_name, log_callback=log_callback)
                     except Exception as e:
                         log_callback("ERROR", f"Lỗi khởi tạo Cloud OCR: {e}")
                         cloud_ocr = None

@@ -196,6 +196,24 @@ class HandlersMixin:
                     self.setting_rows[key].setVisible(show_standalone)
                 else:
                     self.setting_rows[key].setVisible(show_standalone and has_profile)
+                    
+        # Dynamic locking for Endpoint
+        from PySide6.QtWidgets import QLineEdit
+        provider = self._get_value_from_widget('api_ocr', self.setting_widgets.get('api_ocr'))
+        endpoint_widget = self.setting_widgets.get('ocr_api_endpoint')
+        if endpoint_widget and hasattr(endpoint_widget, 'findChild'):
+            entry = endpoint_widget.findChild(QLineEdit)
+            if entry:
+                if provider == 'custom_ocr':
+                    entry.setReadOnly(False)
+                else:
+                    entry.setReadOnly(True)
+                    api_ocr_registry = self.config_loader.model_registry.get('api_ocr', {})
+                    if provider in api_ocr_registry:
+                        default_ep = api_ocr_registry[provider].get('default_endpoint', '')
+                        if default_ep:
+                            entry.setText(default_ep)
+                            self.current_settings['ocr_api_endpoint'] = default_ep
 
     def _on_ocr_category_changed(self):
         """Handles changes in OCR category (Offline vs AI/Online)."""
@@ -390,10 +408,11 @@ class HandlersMixin:
         self._save_yaml_config('api_profiles.yaml', profiles)
 
     def _get_profile_mapping(self, service: str) -> dict:
-        if service == "OCR":
-            return {'name': 'ocr_api_name', 'provider': 'api_ocr', 'endpoint': 'ocr_api_endpoint', 'model': 'ocr_api_model', 'key': 'ocr_api_key'}
-        else:
-            return {'name': 'api_name', 'provider': 'ai_translator', 'endpoint': 'ai_endpoint', 'model': 'ai_model', 'key': 'ai_key'}
+        mappings = {
+            "OCR": {'name': 'ocr_api_name', 'provider': 'api_ocr', 'endpoint': 'ocr_api_endpoint', 'model': 'ocr_api_model', 'key': 'ocr_api_key'},
+            "Translator": {'name': 'api_name', 'provider': 'ai_translator', 'endpoint': 'ai_endpoint', 'model': 'ai_model', 'key': 'ai_key'}
+        }
+        return mappings.get(service, mappings["Translator"])
 
     def _save_api_profile_generic(self, service: str):
         mapping = self._get_profile_mapping(service)
@@ -500,10 +519,8 @@ class HandlersMixin:
         if not profile_name or profile_name.lower() in ["none", "--- select ---"]:
             self.current_settings[mapping['name']] = ""
             self._clear_api_widgets_generic(service)
-            if service == "Translator":
-                self._update_translator_visibility()
-            else:
-                self._update_ocr_visibility()
+            update_method = getattr(self, f"_update_{service.lower()}_visibility", None)
+            if update_method: update_method()
             return
             
         profiles = self._load_api_profiles()
@@ -524,28 +541,8 @@ class HandlersMixin:
             self.current_settings[mapping['name']] = profile_name
             self._clear_api_widgets_generic(service)
             
-        if service == "Translator":
-            self._update_translator_visibility()
-        else:
-            self._update_ocr_visibility()
-
-    def _save_current_api_profile(self):
-        self._save_api_profile_generic("Translator")
-
-    def _delete_current_api_profile(self):
-        self._delete_api_profile_generic("Translator")
-
-    def _on_api_profile_changed(self, profile_name: str):
-        self._on_api_profile_changed_generic(profile_name, "Translator")
-
-    def _save_current_ocr_api_profile(self):
-        self._save_api_profile_generic("OCR")
-
-    def _delete_current_ocr_api_profile(self):
-        self._delete_api_profile_generic("OCR")
-
-    def _on_ocr_api_profile_changed(self, profile_name: str):
-        self._on_api_profile_changed_generic(profile_name, "OCR")
+        update_method = getattr(self, f"_update_{service.lower()}_visibility", None)
+        if update_method: update_method()
 
 
     def _get_preset_profiles_file_path(self) -> str:
@@ -756,10 +753,15 @@ class HandlersMixin:
         elif widget_type == "api_profile_selector":
             combo = widget.findChild(QComboBox)
             if combo:
+                service = info.get("service", "Translator")
                 combo.currentTextChanged.connect(handler)
-                combo.currentTextChanged.connect(self._on_api_profile_changed)
+                combo.currentTextChanged.connect(lambda text, s=service: self._on_api_profile_changed_generic(text, s))
                 if combo.lineEdit():
                     combo.lineEdit().returnPressed.connect(combo.showPopup)
+        elif widget_type == "pool_profile_selector":
+            combo = widget.findChild(QComboBox)
+            if combo:
+                combo.currentTextChanged.connect(handler)
         elif widget_type == "ai_model_selector":
             combo = widget.findChild(QComboBox)
             if combo:
@@ -818,7 +820,7 @@ class HandlersMixin:
             if key in ['translator_category', 'ai_mode', 'api_name']:
                 self._update_translator_visibility()
                 
-            if key in ['ocr_category', 'ocr_ai_mode', 'ocr_api_name']:
+            if key in ['ocr_category', 'ocr_ai_mode', 'ocr_api_name', 'api_ocr']:
                 self._update_ocr_visibility()
 
             if key == 'app_language':

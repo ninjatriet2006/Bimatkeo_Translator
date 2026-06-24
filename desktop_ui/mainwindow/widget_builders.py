@@ -1026,19 +1026,13 @@ class WidgetBuildersMixin:
         save_btn = QPushButton("+")
         save_btn.setFixedWidth(30)
         save_btn.setToolTip("Save this profile to local config")
-        if service == "OCR":
-            save_btn.clicked.connect(self._save_current_ocr_api_profile)
-        else:
-            save_btn.clicked.connect(self._save_current_api_profile)
+        save_btn.clicked.connect(lambda _, s=service: self._save_api_profile_generic(s))
         layout.addWidget(save_btn)
         
         del_btn = QPushButton("-")
         del_btn.setFixedWidth(30)
         del_btn.setToolTip("Delete this profile from local config")
-        if service == "OCR":
-            del_btn.clicked.connect(self._delete_current_ocr_api_profile)
-        else:
-            del_btn.clicked.connect(self._delete_current_api_profile)
+        del_btn.clicked.connect(lambda _, s=service: self._delete_api_profile_generic(s))
         layout.addWidget(del_btn)
         
         self.widget_references[info['key']] = combo

@@ -14,8 +14,9 @@ class GoogleVisionImpl(BaseCloudOCR):
         self.api_key = ""
         self.log_callback = None
 
-    def load_model(self, api_key: str, **kwargs) -> None:
+    def load_model(self, api_key: str, endpoint: str | None = None, model_name: str | None = None, **kwargs) -> None:
         self.api_key = api_key
+        self.endpoint = endpoint
         if "log_callback" in kwargs:
             self.log_callback = kwargs["log_callback"]
         if self.log_callback:
@@ -31,7 +32,10 @@ class GoogleVisionImpl(BaseCloudOCR):
         _, buffer = cv2.imencode('.jpg', image)
         img_b64 = base64.b64encode(buffer).decode('utf-8')
 
-        url = f"https://vision.googleapis.com/v1/images:annotate?key={self.api_key}"
+        if self.endpoint:
+            url = f"{self.endpoint}?key={self.api_key}" if "?" not in self.endpoint else f"{self.endpoint}&key={self.api_key}"
+        else:
+            url = f"https://vision.googleapis.com/v1/images:annotate?key={self.api_key}"
 
         headers = {
             "Content-Type": "application/json"

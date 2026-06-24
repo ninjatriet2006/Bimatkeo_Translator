@@ -15,8 +15,10 @@ class GeminiVisionImpl(BaseCloudOCR):
         self.api_key = ""
         self.log_callback = None
 
-    def load_model(self, api_key: str, **kwargs) -> None:
+    def load_model(self, api_key: str, endpoint: str | None = None, model_name: str | None = None, **kwargs) -> None:
         self.api_key = api_key
+        self.endpoint = endpoint
+        self.model_name = model_name or "gemini-1.5-flash"
         if "log_callback" in kwargs:
             self.log_callback = kwargs["log_callback"]
         if self.log_callback:
@@ -32,7 +34,11 @@ class GeminiVisionImpl(BaseCloudOCR):
         _, buffer = cv2.imencode('.jpg', image)
         img_b64 = base64.b64encode(buffer).decode('utf-8')
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+        if self.endpoint:
+            base_url = self.endpoint.format(model=self.model_name) if "{model}" in self.endpoint else self.endpoint
+            url = f"{base_url}?key={self.api_key}" if "?" not in base_url else f"{base_url}&key={self.api_key}"
+        else:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.api_key}"
 
         system_prompt = (
             "You are an OCR assistant. Detect all text in the provided image. "

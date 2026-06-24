@@ -28,7 +28,7 @@ class BaseTextRecognizer(ABC):
 
 class BaseCloudOCR(ABC):
     @abstractmethod
-    def load_model(self, api_key: str, **kwargs) -> None:
+    def load_model(self, api_key: str, endpoint: str | None = None, model_name: str | None = None, **kwargs) -> None:
         """
         Thiết lập kết nối với Cloud API.
         """
