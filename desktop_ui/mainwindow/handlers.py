@@ -205,8 +205,10 @@ class HandlersMixin:
             entry = endpoint_widget.findChild(QLineEdit)
             if entry:
                 if provider == 'custom_ocr':
+                    entry.setEnabled(True)
                     entry.setReadOnly(False)
                 else:
+                    entry.setEnabled(False)
                     entry.setReadOnly(True)
                     api_ocr_registry = self.config_loader.model_registry.get('api_ocr', {})
                     if provider in api_ocr_registry:
@@ -2610,7 +2612,14 @@ class HandlersMixin:
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
             combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
-        elif key in self.config_loader.all_model_fields and key not in ["offline_translator", "ai_translator"]:
+        elif key == "api_ocr":
+            values = self.config_loader.full_registry.get("fields", {}).get(key, [])
+            for item in values:
+                val = item.get("key")
+                if val == "none": continue
+                display_name = self.config_loader.format_display_label(val, key)
+                combo.addItem(display_name, val)
+        elif key in self.config_loader.all_model_fields and key not in ["offline_translator", "ai_translator", "api_ocr"]:
             values = self.config_loader.full_config_data.get(key, {}).get("values", [])
             combo.addItem("--- Select ---", "none")
             for item in values:
