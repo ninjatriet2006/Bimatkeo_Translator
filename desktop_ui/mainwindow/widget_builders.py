@@ -585,8 +585,14 @@ class WidgetBuildersMixin:
             
             # Thêm lựa chọn cập nhật tất cả cho các mô hình AI khác
             if key in ['offline_detector', 'offline_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
-                is_en = self.current_settings.get('app_language', 'English') == 'English'
-                update_all_key_text = f"📥 Update ALL {key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {key}..."
+                is_en = self.current_settings.get('app_language', 'English') in ['English', 'en', 'ENG']
+                
+                # Fetch localized name for the category
+                ui_map = getattr(self.config_loader, 'ui_map', {})
+                labels = ui_map.get("labels", {})
+                localized_key = labels.get(key, key.replace("_", " ").title())
+                
+                update_all_key_text = f"📥 Update ALL {localized_key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {localized_key}..."
                 combo_box.addItem(update_all_key_text, "update_all_software_trigger")
                 
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))

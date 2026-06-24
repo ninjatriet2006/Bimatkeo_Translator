@@ -120,6 +120,7 @@ class RegistryMixin(_RegistryMixinBase):
         fields = typing.cast(dict, raw.get("fields", {}))
         self.all_model_fields = list(fields.keys())
         self.required_model_fields = typing.cast(list, raw.get("required_fields", []))
+        self.global_settings = typing.cast(dict, raw.get("global_settings", {}))
 
         self.model_registry = self._validate_fields(fields)
         self._derive_all()

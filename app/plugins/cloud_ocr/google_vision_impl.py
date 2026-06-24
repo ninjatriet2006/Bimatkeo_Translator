@@ -32,10 +32,25 @@ class GoogleVisionImpl(BaseCloudOCR):
         _, buffer = cv2.imencode('.jpg', image)
         img_b64 = base64.b64encode(buffer).decode('utf-8')
 
+        if not self.endpoint:
+            import os
+            try:
+                import yaml
+                project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+                reg_path = os.path.join(project_root, ".config", "models", "model_registry.yaml")
+                with open(reg_path, "r", encoding="utf-8") as f:
+                    reg = yaml.safe_load(f)
+                for item in reg.get("fields", {}).get("api_ocr", []):
+                    if item.get("key") == "google_ocr":
+                        self.endpoint = item.get("default_endpoint")
+                        break
+            except Exception:
+                pass
+
         if self.endpoint:
             url = f"{self.endpoint}?key={self.api_key}" if "?" not in self.endpoint else f"{self.endpoint}&key={self.api_key}"
         else:
-            url = f"https://vision.googleapis.com/v1/images:annotate?key={self.api_key}"
+            raise ValueError("Endpoint is missing and could not be loaded from registry.")
 
         headers = {
             "Content-Type": "application/json"

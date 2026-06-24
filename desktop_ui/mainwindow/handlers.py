@@ -2642,8 +2642,13 @@ class HandlersMixin:
                 if not exists:
                     idx = combo.count() - 1
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            is_en = self.current_settings.get('app_language', 'English') == 'English'
-            update_all_key_text = f"📥 Update ALL {key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {key}..."
+            is_en = self.current_settings.get('app_language', 'English') in ['English', 'en', 'ENG']
+            
+            ui_map = getattr(self.config_loader, 'ui_map', {})
+            labels = ui_map.get("labels", {})
+            localized_key = labels.get(key, key.replace("_", " ").title())
+            
+            update_all_key_text = f"📥 Update ALL {localized_key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {localized_key}..."
             combo.addItem(update_all_key_text, "update_all_software_trigger")
                     
         current_val = self.current_settings.get(key)

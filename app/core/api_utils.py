@@ -4,12 +4,27 @@ import ssl
 import json
 import os
 
+def _get_registry_data():
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    registry_path = os.path.join(project_root, ".config", "models", "model_registry.yaml")
+    try:
+        from ruamel.yaml import YAML
+        y = YAML()
+        with open(registry_path, "r", encoding="utf-8") as f:
+            data = y.load(f)
+            return data.get("global_settings", {}), data.get("fields", {}).get("ai_translator", [])
+    except Exception as e:
+        print(f"[api_utils] Warning: Failed to load registry for settings: {e}")
+        return {}, []
+
+_GLOBAL_SETTINGS, _AI_TRANSLATOR_REGISTRY = _get_registry_data()
+
 def is_blacklisted(model_name: str) -> bool:
     name_lower = model_name.lower()
-    blacklist_keywords = [
+    blacklist_keywords = _GLOBAL_SETTINGS.get("model_blacklist", [
         "embedding", "tts", "whisper", "dall-e", "moderation", 
         "classifier", "aqa", "sib", "babbage", "davinci", "ada"
-    ]
+    ])
     for kw in blacklist_keywords:
         if kw in name_lower:
             return True
@@ -17,37 +32,33 @@ def is_blacklisted(model_name: str) -> bool:
 
 def priority_sort_key(m_name: str):
     m_lower = m_name.lower()
-    if any(x in m_lower for x in ["gpt-4o", "o1", "o3", "deepseek-chat", "mixtral", "llama3"]): 
+    priorities = _GLOBAL_SETTINGS.get("model_priority_keywords", {})
+    high = priorities.get("high", ["gpt-4o", "o1", "o3", "deepseek-chat", "mixtral", "llama3"])
+    medium = priorities.get("medium", ["gpt-4", "deepseek", "llama"])
+    low = priorities.get("low", ["gpt-3.5"])
+    fallback_weight = priorities.get("fallback_weight", 5)
+
+    if any(x in m_lower for x in high): 
         return (-10, m_lower)
-    if any(x in m_lower for x in ["gpt-4", "deepseek", "llama"]): 
+    if any(x in m_lower for x in medium): 
         return (-5, m_lower)
-    if "gpt-3.5" in m_lower: 
+    if any(x in m_lower for x in low): 
         return (0, m_lower)
-    return (5, m_lower)
+    return (fallback_weight, m_lower)
 
 def infer_ai_provider(endpoint: str) -> str:
     """Infers the AI provider based on the endpoint string."""
     ep_lower = endpoint.lower() if endpoint else ""
-    if not ep_lower or "generativelanguage" in ep_lower:
+    if not ep_lower:
         return 'gemini'
     
-    match ep_lower:
-        case _ if "api-free.deepl" in ep_lower or "api.deepl" in ep_lower:
-            return 'deepl'
-        case _ if "fanyi-api.baidu" in ep_lower:
-            return 'baidu'
-        case _ if "openapi.youdao" in ep_lower:
-            return 'youdao'
-        case _ if "api.interpreter.caiyunai" in ep_lower:
-            return 'caiyun'
-        case _ if "openapi.naver" in ep_lower:
-            return 'papago'
-        case _ if "sakura" in ep_lower:
-            return 'sakura'
-        case _ if "felo.ai" in ep_lower:
-            return 'felo'
-        case _:
-            return 'openai'
+    for provider in _AI_TRANSLATOR_REGISTRY:
+        inferences = provider.get("endpoint_inference", [])
+        for inf in inferences:
+            if inf in ep_lower:
+                return provider.get("key", 'openai')
+    
+    return 'openai'
 
 def fetch_remote_ai_models(endpoint: str, key: str, ai_provider: str) -> list[str]:
     """Fetches AI models from remote provider (Gemini or OpenAI compatible)."""
