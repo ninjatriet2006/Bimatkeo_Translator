@@ -1,6 +1,7 @@
 import os
 import sys
 from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtGui import QIcon
 
 # Configure path: Add the parent directory of 'desktop_ui' (the project root) to sys.path
 # so we can import app and other packages if needed.
@@ -24,6 +25,7 @@ if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
         app.setStyle("Fusion")
+        app.setWindowIcon(QIcon(os.path.join(BASE_DIR, "assets", "app_icon.png")))
         main_window = TranslatorStudioApp()
         main_window.show()
         sys.exit(app.exec())

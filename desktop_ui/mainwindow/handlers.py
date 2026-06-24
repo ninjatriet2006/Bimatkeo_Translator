@@ -2626,8 +2626,11 @@ class HandlersMixin:
         elif key in self.config_loader.all_model_fields and key not in ["offline_translator", "ai_translator", "api_ocr"]:
             values = self.config_loader.full_config_data.get(key, {}).get("values", [])
             combo.addItem("--- Select ---", "none")
-            for item in values:
-                val = item.get("key")
+            for val in values:
+                if isinstance(val, dict):
+                    val = val.get("key")
+                if not val or val == "none":
+                    continue
                 exists = self.config_loader.check_model_existence(val, field=key)
                 display_name = self.config_loader.format_display_label(val, key)
                 if not exists:
