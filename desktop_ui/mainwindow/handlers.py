@@ -2106,21 +2106,21 @@ class HandlersMixin:
         combo = self.setting_widgets.get(key)
         if not combo:
             return
-        translator_name = combo.itemData(combo.currentIndex())
-        if not translator_name or translator_name in ["none", "original"]:
-            QMessageBox.information(self, "Thông tin", f"Bộ dịch '''{translator_name}''' không hỗ trợ cập nhật phần mềm.")
+        model_name = combo.itemData(combo.currentIndex())
+        if not model_name or model_name in ["none", "original"]:
+            QMessageBox.information(self, "Thông tin", f"Bộ dịch '''{model_name}''' không hỗ trợ cập nhật phần mềm.")
             return
 
         reply = QMessageBox.question(
             self,
             "Cập nhật Bộ dịch",
-            f"Bạn có muốn kiểm tra và tải/cập nhật phiên bản phần mềm hoặc tệp mô hình mới nhất của bộ dịch '''{translator_name}''' không?",
+            f"Bạn có muốn kiểm tra và tải/cập nhật phiên bản phần mềm hoặc tệp mô hình mới nhất của bộ dịch '''{model_name}''' không?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.No:
             return
 
-        self.log("INFO", f"Đang kiểm tra cập nhật phần mềm/mô hình cho bộ dịch: {translator_name}...")
+        self.log("INFO", f"Đang kiểm tra cập nhật phần mềm/mô hình cho bộ dịch: {model_name}...")
         
         for k in getattr(self, '_dynamic_btns_map', {}).keys():
             w = self.setting_widgets.get(k)
@@ -2128,7 +2128,7 @@ class HandlersMixin:
                 w.setEnabled(False)
 
         # Lấy thông tin đường dẫn đích dựa vào cấu hình
-        rule = self.config_loader._DEFAULT_CHECKS.get(key, {}).get(translator_name, {})
+        rule = self.config_loader._DEFAULT_CHECKS.get(key, {}).get(model_name, {})
         check_file_path = rule.get("check_file", "")
 
         class TranslatorSoftwareUpdateWorker(QThread):
@@ -2146,7 +2146,7 @@ class HandlersMixin:
                 yaml.default_flow_style = False
                 
                 try:
-                    self.progress.emit(10, f"Đang tải cấu hình nguồn của {translator_name}...")
+                    self.progress.emit(10, f"Đang tải cấu hình nguồn của {model_name}...")
                     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
                     config_dir = os.path.join(base_dir, ".config", "models")
                     registry_file = os.path.join(config_dir, "model_registry.yaml")
@@ -2163,13 +2163,13 @@ class HandlersMixin:
                     if registry and "fields" in registry:
                         for field_name, items in registry["fields"].items():
                             for item in items:
-                                if item and isinstance(item, dict) and item.get("key") == translator_name:
+                                if item and isinstance(item, dict) and item.get("key") == model_name:
                                     url = item.get("source")
                                     break
                             if url: break
                             
                     if not url:
-                        self.finished.emit(False, f"Không tìm thấy cấu hình nguồn tải (thuộc tính 'source') cho '{translator_name}' trong model_registry.yaml.")
+                        self.finished.emit(False, f"Không tìm thấy cấu hình nguồn tải (thuộc tính 'source') cho '{model_name}' trong model_registry.yaml.")
                         return
                     
                     self.progress.emit(30, "Đang kiểm tra kết nối nguồn tải...")
@@ -2216,7 +2216,7 @@ class HandlersMixin:
                         with open(local_versions_file, "r", encoding="utf-8") as lf:
                             local_versions = yaml.load(lf)
                             
-                    current_version = local_versions.get(translator_name, "none")
+                    current_version = local_versions.get(model_name, "none")
                     
                     # Force update if check file does not exist, even if version matches
                     needs_update = True
@@ -2230,7 +2230,7 @@ class HandlersMixin:
                             
                     if not needs_update:
                         self.progress.emit(100, "Hoàn tất")
-                        self.finished.emit(True, f"Bộ dịch '{translator_name}' đã ở phiên bản mới nhất ({current_version}) và đã được cài đặt. Không cần cập nhật.")
+                        self.finished.emit(True, f"Bộ dịch '{model_name}' đã ở phiên bản mới nhất ({current_version}) và đã được cài đặt. Không cần cập nhật.")
                         return
                         
                     self.progress.emit(70, f"Đang tiến hành lấy danh sách file từ {url}...")
@@ -2241,7 +2241,7 @@ class HandlersMixin:
                             if check_file_path:
                                 model_dir = os.path.join(base_dir, os.path.dirname(check_file_path))
                             else:
-                                model_dir = os.path.join(base_dir, "models", "Offline Translator", translator_name)
+                                model_dir = os.path.join(base_dir, "models", "Offline Translator", model_name)
                             os.makedirs(model_dir, exist_ok=True)
                             
                             tree_url = f"https://huggingface.co/api/models/{repo_id}/tree/main"
@@ -2305,7 +2305,7 @@ class HandlersMixin:
                                     model_dir = os.path.join(base_dir, os.path.dirname(check_file_path))
                                     local_path = os.path.join(base_dir, check_file_path)
                                 else:
-                                    model_dir = os.path.join(base_dir, "models", "Unknown", translator_name)
+                                    model_dir = os.path.join(base_dir, "models", "Unknown", model_name)
                                     import urllib.parse
                                     filename = os.path.basename(urllib.parse.urlparse(file_url).path)
                                     if not filename: filename = "model.bin"
@@ -2366,7 +2366,7 @@ class HandlersMixin:
                                 if check_file_path:
                                     model_dir = os.path.join(base_dir, os.path.dirname(check_file_path))
                                 else:
-                                    model_dir = os.path.join(base_dir, "models", "Unknown", translator_name)
+                                    model_dir = os.path.join(base_dir, "models", "Unknown", model_name)
                                 os.makedirs(model_dir, exist_ok=True)
                                 
                                 if zipball_url.lower().endswith('.tar.gz'):
@@ -2395,7 +2395,7 @@ class HandlersMixin:
                         return
                     
                     # Update local version
-                    local_versions[translator_name] = latest_version
+                    local_versions[model_name] = latest_version
                     with open(local_versions_file, "w", encoding="utf-8") as lf:
                         yaml.dump(local_versions, lf)
                         
@@ -2403,18 +2403,18 @@ class HandlersMixin:
                     if check_file_path:
                         model_dir = os.path.join(base_dir, os.path.dirname(check_file_path))
                     else:
-                        model_dir = os.path.join(base_dir, "models", "Unknown", translator_name)
+                        model_dir = os.path.join(base_dir, "models", "Unknown", model_name)
                         
                     os.makedirs(model_dir, exist_ok=True)
                     
                     self.progress.emit(100, "Tải Source Code và cài đặt thành công!")
-                    self.finished.emit(True, f"Đã tải Source Code và cài đặt thành công mô hình '{translator_name}' lên phiên bản {latest_version}!")
+                    self.finished.emit(True, f"Đã tải Source Code và cài đặt thành công mô hình '{model_name}' lên phiên bản {latest_version}!")
                 except Exception as e:
                     self.finished.emit(False, f"Lỗi không xác định: {str(e)}")
 
 
         from PySide6.QtWidgets import QProgressDialog
-        progress_dlg = QProgressDialog(f"Đang kiểm tra cập nhật cho {translator_name}...", "Hủy", 0, 100, self)
+        progress_dlg = QProgressDialog(f"Đang kiểm tra cập nhật cho {model_name}...", "Hủy", 0, 100, self)
         progress_dlg.setWindowTitle("Cập nhật Mô hình Dịch")
         from PySide6.QtCore import Qt
         progress_dlg.setWindowModality(Qt.WindowModality.WindowModal)

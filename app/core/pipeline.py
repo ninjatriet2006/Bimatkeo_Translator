@@ -161,7 +161,7 @@ class Pipeline:
                         log_callback("ERROR", f"Lỗi khởi tạo Cloud OCR: {e}")
                         cloud_ocr = None
                 else:
-                    detector_name = config_dict.get("offline_detector", "ctd")
+                    detector_name = config_dict.get("offline_detector", "dbconvnext")
                     ocr_name = config_dict.get("offline_ocr", "mocr")
 
                     from app.core.downloader import ModelDownloader
