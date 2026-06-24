@@ -49,6 +49,10 @@ class BaseAPITranslator(BaseTranslator):
                 self.log_callback("ERROR", f"Failed to parse API config: {e}")
 
     def _make_request(self, url: str, headers: Dict[str, str], data: Dict[str, Any]) -> dict:
+        # Add a default User-Agent if not provided to prevent 403 Forbidden from WAFs
+        if "User-Agent" not in headers:
+            headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            
         req = urllib.request.Request(
             url, 
             data=json.dumps(data).encode('utf-8'),
@@ -59,6 +63,11 @@ class BaseAPITranslator(BaseTranslator):
             with urllib.request.urlopen(req, timeout=30) as response:
                 result = json.loads(response.read().decode('utf-8'))
                 return result
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode('utf-8', errors='ignore')
+            if self.log_callback:
+                self.log_callback("ERROR", f"API Request Error: {e}\nResponse: {err_body}")
+            return {}
         except urllib.error.URLError as e:
             if self.log_callback:
                 self.log_callback("ERROR", f"API Request Error: {e}")
@@ -70,72 +79,111 @@ class BaseAPITranslator(BaseTranslator):
             
         system_prompt = self.prompt_builder.build_prompt(src_lang, tgt_lang, self.glossary_manager.glossary)
         
-        # Prepare the input nicely for the LLM so it can map line_index correctly
-        numbered_texts = [f"Line {i+1}: {t}" for i, t in enumerate(texts)]
-        combined_text = "\n".join(numbered_texts)
+        # We need to chunk the texts to avoid hitting API length limits (e.g., Felo limits to 2000 chars)
+        MAX_COMBINED_TEXT_LEN = 1000 # Keep it small to leave room for the system prompt
+        
+        chunks = []
+        current_chunk = []
+        current_chunk_len = 0
+        
+        for i, t in enumerate(texts):
+            line_str = f"Line {i+1}: {t}"
+            # If adding this line exceeds the limit (and the chunk is not empty)
+            if current_chunk_len + len(line_str) > MAX_COMBINED_TEXT_LEN and current_chunk:
+                chunks.append(current_chunk)
+                current_chunk = [line_str]
+                current_chunk_len = len(line_str)
+            else:
+                current_chunk.append(line_str)
+                current_chunk_len += len(line_str) + 1 # +1 for newline
+                
+        if current_chunk:
+            chunks.append(current_chunk)
+            
+        all_translated_list = []
         
         import re
         import json
-        raw_response = self._call_api(system_prompt, combined_text)
         
-        if not raw_response:
-            return texts
+        for chunk in chunks:
+            combined_text = "\n".join(chunk)
+            raw_response = self._call_api(system_prompt, combined_text)
             
-        # Strip <think> blocks that reasoning models generate
-        raw_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
-        
-        # Clean up Markdown code blocks if any
-        if raw_response.startswith('```json'):
-            raw_response = raw_response[7:]
-        elif raw_response.startswith('```'):
-            raw_response = raw_response[3:]
-        if raw_response.endswith('```'):
-            raw_response = raw_response[:-3]
-        raw_response = raw_response.strip()
+            if not raw_response:
+                # If API fails for this chunk, just append original texts for this chunk
+                for line_str in chunk:
+                    # Extract original text from "Line X: <text>"
+                    original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
+                    all_translated_list.append(original_line)
+                continue
+                
+            # Strip <think> blocks that reasoning models generate
+            raw_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+            
+            # Clean up Markdown code blocks if any
+            if raw_response.startswith('```json'):
+                raw_response = raw_response[7:]
+            elif raw_response.startswith('```'):
+                raw_response = raw_response[3:]
+            if raw_response.endswith('```'):
+                raw_response = raw_response[:-3]
+            raw_response = raw_response.strip()
 
-        try:
-            parsed = json.loads(raw_response)
-            
-            # Check metadata
-            meta = parsed.get("metadata", {})
-            if meta.get("status") not in ["success", ""]:
-                err = meta.get("error_reason", "Unknown error from AI")
-                if self.log_callback:
-                    self.log_callback("ERROR", f"AI Refused to translate: {err}")
-                return texts
+            try:
+                parsed = json.loads(raw_response)
                 
-            content = parsed.get("content", [])
-            translated_list = []
-            
-            # Extract translations maintaining the exact order
-            for i, original_line in enumerate(texts):
-                # Try to find the matching item in the content array
-                matching_item = None
-                for item in content:
-                    if item.get("line_index") == i + 1:
-                        matching_item = item
-                        break
-                
-                if matching_item:
-                    translated_list.append(matching_item.get("translated_text", ""))
-                else:
-                    # If AI missed a line, use the original
+                # Check metadata
+                meta = parsed.get("metadata", {})
+                if meta.get("status") not in ["success", ""]:
+                    err = meta.get("error_reason", "Unknown error from AI")
                     if self.log_callback:
-                        self.log_callback("WARNING", f"AI missed line {i+1}, using original text.")
-                    translated_list.append(original_line)
+                        self.log_callback("ERROR", f"AI Refused to translate chunk: {err}")
+                    # Append original texts
+                    for line_str in chunk:
+                        original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
+                        all_translated_list.append(original_line)
+                    continue
                     
-            # Apply glossary replacement post-translation just in case
-            translated_list = [self.glossary_manager.replace_post_translation(t) for t in translated_list]
-            return translated_list
-            
-        except json.JSONDecodeError as e:
-            if self.log_callback:
-                self.log_callback("ERROR", f"Failed to parse JSON response: {e}\nRaw Response: {raw_response[:200]}...")
-            return texts
-        except Exception as e:
-            if self.log_callback:
-                self.log_callback("ERROR", f"Translation processing error: {e}")
-            return texts
+                content = parsed.get("content", [])
+                
+                # Extract translations for this chunk
+                for line_str in chunk:
+                    line_idx_str = line_str.split(":", 1)[0].replace("Line ", "").strip()
+                    try:
+                        line_idx = int(line_idx_str)
+                    except ValueError:
+                        line_idx = -1
+                        
+                    matching_item = None
+                    for item in content:
+                        if item.get("line_index") == line_idx:
+                            matching_item = item
+                            break
+                    
+                    if matching_item:
+                        all_translated_list.append(matching_item.get("translated_text", ""))
+                    else:
+                        if self.log_callback:
+                            self.log_callback("WARNING", f"AI missed line {line_idx}, using original text.")
+                        original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
+                        all_translated_list.append(original_line)
+                        
+            except json.JSONDecodeError as e:
+                if self.log_callback:
+                    self.log_callback("ERROR", f"Failed to parse JSON response for chunk: {e}\nRaw: {raw_response[:200]}...")
+                for line_str in chunk:
+                    original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
+                    all_translated_list.append(original_line)
+            except Exception as e:
+                if self.log_callback:
+                    self.log_callback("ERROR", f"Unexpected error during translation chunk: {e}")
+                for line_str in chunk:
+                    original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
+                    all_translated_list.append(original_line)
+                    
+        # Apply glossary replacement post-translation just in case
+        translated_list = [self.glossary_manager.replace_post_translation(t) for t in all_translated_list]
+        return translated_list
 
     def _call_api(self, system_prompt: str, user_text: str) -> str:
         raise NotImplementedError
@@ -285,3 +333,27 @@ class SakuraTranslator(BaseAPITranslator):
         if self.log_callback:
             self.log_callback("WARNING", "Sakura translation schema is not yet implemented.")
         return ""
+
+@TranslatorFactory.register("felo")
+class FeloTranslator(BaseAPITranslator):
+    def _call_api(self, system_prompt: str, user_text: str) -> str:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.key}"
+        }
+        
+        # Felo API uses a single "query" field for web search augmented chat
+        query = f"{system_prompt}\n\nPlease strictly follow the instruction and translate the following lines:\n{user_text}"
+        data = {
+            "query": query
+        }
+        
+        url = self.endpoint
+        if not url.endswith("/chat"):
+            url = url.rstrip("/") + "/chat"
+            
+        result = self._make_request(url, headers, data)
+        try:
+            return result["data"]["answer"].strip()
+        except KeyError:
+            return ""

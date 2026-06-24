@@ -28,13 +28,10 @@ class VisionOCRCorrector:
                 
             # Mô phỏng AI sửa lỗi (Ví dụ: OCR nhầm l/I hoặc 1/I)
             # Trong thực tế, ở đây sẽ gói base64 ảnh và ném lên API Gemini.
-            corrected = text.replace("I", "l") if "I" in text and "l" not in text else text
+            # Tạm thời vô hiệu hóa việc thay thế I thành l do làm sai lệch kết quả
+            corrected = text
             
-            # Đánh dấu đã qua sửa lỗi
-            if corrected != text:
-                corrected_texts.append(f"{corrected} (Đã sửa bởi AI)")
-            else:
-                corrected_texts.append(text)
+            corrected_texts.append(corrected)
                 
         if self.log_callback:
             self.log_callback("SUCCESS", "Hoàn thành 2-Stage Vision Correction.")

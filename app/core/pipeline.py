@@ -194,7 +194,8 @@ class Pipeline:
                             "model": api_info.get('model'),
                             "key": api_info.get('api_key'),
                             "glossary_path": translator_dict.get('glossary_path', ''),
-                            "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None')
+                            "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None'),
+                            "project_base_dir": project_root
                         })
                     else:
                         provider_name = translator_dict.get('translator', 'openai')
@@ -205,7 +206,8 @@ class Pipeline:
                             "model": translator_dict.get('ai_model'),
                             "key": translator_dict.get('ai_api_key'),
                             "glossary_path": translator_dict.get('glossary_path', ''),
-                            "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None')
+                            "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None'),
+                            "project_base_dir": project_root
                         })
                 except Exception as e:
                     log_callback("ERROR", f"Failed to load translator: {e}")

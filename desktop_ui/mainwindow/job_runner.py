@@ -487,43 +487,49 @@ class JobRunnerMixin:
 
     def _run_visual_test(self, test_job, final_config):
         """Prepares and runs the pipeline on the single loaded test image."""
-        self.log("PIPELINE", "Starting visual test pipeline...")
+        try:
+            self.log("PIPELINE", "Starting visual test pipeline...")
 
-        source_dir = os.path.dirname(self.test_image_path)
-        source_name = os.path.splitext(os.path.basename(self.test_image_path))[0]
-        final_output_dir = os.path.join(source_dir, f"{source_name}_translated_test")
+            source_dir = os.path.dirname(self.test_image_path)
+            source_name = os.path.splitext(os.path.basename(self.test_image_path))[0]
+            final_output_dir = os.path.join(source_dir, f"{source_name}_translated_test")
 
-        if os.path.exists(final_output_dir):
-            shutil.rmtree(final_output_dir)
-
-        is_verbose = test_job['settings'].get("enable_verbose_output", False)
-
-        success = self._run_pipeline_in_process(
-            self.test_image_path,
-            final_output_dir,
-            final_config,
-            is_verbose,
-            "png",
-            is_single_test=True
-        )
-
-        if success:
-            self.log("SUCCESS", "Visual test backend process completed.")
-            result_files = os.listdir(final_output_dir)
-            if result_files:
-                original_filename = os.path.basename(self.test_image_path)
-                output_filename = os.path.splitext(original_filename)[0] + ".png"
-                result_path = os.path.join(final_output_dir, output_filename)
-                if os.path.exists(result_path):
-                    QTimer.singleShot(0, lambda: self._display_test_result(result_path))
-                else:
-                    self.log("ERROR", "Could not find the translated image in the output folder.")
-        else:
-            self.log("ERROR", "Visual test failed or was stopped.")
-            if os.path.exists(final_output_dir) and not os.listdir(final_output_dir):
+            if os.path.exists(final_output_dir):
                 shutil.rmtree(final_output_dir)
 
-        QTimer.singleShot(0, self._on_visual_test_finished)
+            is_verbose = test_job['settings'].get("enable_verbose_output", False)
+
+            success = self._run_pipeline_in_process(
+                self.test_image_path,
+                final_output_dir,
+                final_config,
+                is_verbose,
+                "png",
+                is_single_test=True
+            )
+
+            if success:
+                self.log("SUCCESS", "Visual test backend process completed.")
+                result_files = os.listdir(final_output_dir)
+                if result_files:
+                    original_filename = os.path.basename(self.test_image_path)
+                    output_filename = os.path.splitext(original_filename)[0] + ".png"
+                    result_path = os.path.join(final_output_dir, output_filename)
+                    if os.path.exists(result_path):
+                        if hasattr(self, 'visual_test_result_signal'):
+                            self.visual_test_result_signal.emit(result_path)
+                    else:
+                        self.log("ERROR", "Could not find the translated image in the output folder.")
+            else:
+                self.log("ERROR", "Visual test failed or was stopped.")
+                if os.path.exists(final_output_dir) and not os.listdir(final_output_dir):
+                    shutil.rmtree(final_output_dir)
+
+        except Exception as e:
+            self.log("ERROR", f"Exception during visual test: {e}")
+        finally:
+            if hasattr(self, 'visual_test_finished_signal'):
+                self.visual_test_finished_signal.emit()
 
     def _display_test_result(self, image_path: str):
         """Loads the result image and displays it in the '''Output''' view."""
@@ -716,10 +722,15 @@ class JobRunnerMixin:
                             translator_dict['ai_model'] = prof.get('model', '')
                             translator_dict['ai_api_key'] = prof.get('key', '')
                 
+                from app.core.api_utils import infer_ai_provider
+                ep = translator_dict.get('ai_endpoint', '')
+                if ep:
+                    inferred = infer_ai_provider(ep)
+                    if inferred and provider != inferred:
+                        provider = inferred
+                
                 if not provider or provider == 'none':
-                    from app.core.api_utils import infer_ai_provider
-                    ep = translator_dict.get('ai_endpoint', '')
-                    provider = infer_ai_provider(ep)
+                    provider = 'openai'
                     
                 translator_dict['translator'] = provider
 
@@ -786,7 +797,7 @@ class JobRunnerMixin:
         
         self.current_process = multiprocessing.Process(
             target=_pipeline_process_worker,
-            args=(job_or_path, output_path, config_dict, is_verbose, output_format, log_queue, result_queue, hitl_tx_queue, self.hitl_rx_queue, self.pipeline.temp_dir, self.pipeline.python_executable, is_single_test)
+            args=(job_or_path, output_path, config_dict, is_verbose, output_format, log_queue, result_queue, hitl_tx_queue, self.hitl_rx_queue, self.temp_dir, self.config_loader.python_executable, is_single_test)
         )
         self.current_process.start()
         

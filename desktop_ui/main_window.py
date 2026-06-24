@@ -31,8 +31,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QSize, QTimer, Signal, QByteArray, QEvent, QPoint
 from PySide6.QtGui import QFont, QCursor, QStandardItemModel, QFontDatabase, QPixmap, QPainter, QColor, QPalette
 
-# Core non-UI imports
-from app.core.pipeline import Pipeline
 from desktop_ui.config_loader import ConfigLoader
 
 # Import modularized components
@@ -64,6 +62,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
     models_fetched_signal = Signal(list, object)
     fetch_finished_signal = Signal(object)
     hitl_requested_signal = Signal(object)
+    visual_test_finished_signal = Signal()
+    visual_test_result_signal = Signal(str)
 
     GOOGLE_FONTS = [
         "Comic Neue",
@@ -150,23 +150,28 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         self.last_pan_pos = None
         self.temp_dir = os.path.join(self.project_base_dir, "temp")
         self.detected_vram_gb = 0
-        try:
-            python_exe = getattr(self, 'config_loader', None) and getattr(self.config_loader, 'python_executable', None) or sys.executable
-            cmd = [python_exe, "-c", "import torch; print(torch.cuda.get_device_properties(0).total_memory if torch.cuda.is_available() else 0)"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                val = result.stdout.strip()
-                if val.isdigit():
-                    mem_bytes = int(val)
-                    self.detected_vram_gb = mem_bytes / (1024**3)
-                    if self.detected_vram_gb > 0:
-                        print(f"[INFO] Detected {self.detected_vram_gb:.2f} GB of VRAM via subprocess.")
-        except Exception as e:
-            print(f"[WARNING] Could not detect VRAM. Automatic mode will default to Safe. Error: {e}")
+        def check_vram_background():
+            try:
+                python_exe = getattr(self, 'config_loader', None) and getattr(self.config_loader, 'python_executable', None) or sys.executable
+                cmd = [python_exe, "-c", "import torch; print(torch.cuda.get_device_properties(0).total_memory if torch.cuda.is_available() else 0)"]
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    val = result.stdout.strip()
+                    if val.isdigit():
+                        mem_bytes = int(val)
+                        self.detected_vram_gb = mem_bytes / (1024**3)
+                        if self.detected_vram_gb > 0:
+                            print(f"[INFO] Detected {self.detected_vram_gb:.2f} GB of VRAM via subprocess.")
+            except Exception as e:
+                print(f"[WARNING] Could not detect VRAM. Automatic mode will default to Safe. Error: {e}")
+        
+        threading.Thread(target=check_vram_background, daemon=True).start()
 
         # --- Pipeline for backend processing ---
-        temp_dir = os.path.join(self.project_base_dir, "temp")
-        self.pipeline = Pipeline(self, self.config_loader.python_executable, temp_dir)
+        self.temp_dir = os.path.join(self.project_base_dir, "temp")
+        os.makedirs(self.temp_dir, exist_ok=True)
+        # Pipeline is instantiated lazily inside background workers to save 15s of startup time.
+
 
         self._initialize_app()
         # Connect custom signals to their slots
@@ -176,6 +181,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         self.models_fetched_signal.connect(self._on_models_fetched)
         self.fetch_finished_signal.connect(self._on_fetch_finished)
         self.hitl_requested_signal.connect(self._on_hitl_requested)
+        self.visual_test_finished_signal.connect(self._on_visual_test_finished)
+        self.visual_test_result_signal.connect(self._display_test_result)
         # Apply saved theme if exists
         saved_theme = self.config_loader.oldsession_config.get("theme", "Default Qt")
         self._apply_theme(saved_theme)

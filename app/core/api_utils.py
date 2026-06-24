@@ -44,6 +44,8 @@ def infer_ai_provider(endpoint: str) -> str:
             return 'papago'
         case _ if "sakura" in ep_lower:
             return 'sakura'
+        case _ if "felo.ai" in ep_lower:
+            return 'felo'
         case _:
             return 'openai'
 
@@ -74,6 +76,8 @@ def fetch_remote_ai_models(endpoint: str, key: str, ai_provider: str) -> list[st
                 return [x[0] for x in gemini_models]
         except urllib.error.URLError as e:
             raise ValueError(f"Failed to fetch Gemini models: {e}") from e
+    elif ai_provider == 'felo':
+        return ['felo-search']
     else:
         base_url = endpoint.rstrip('/')
         url = f"{base_url}/models"

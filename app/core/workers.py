@@ -123,9 +123,13 @@ class TranslatorWorker(threading.Thread):
                 self.log_callback("TRANSLATE", f"Translating {ctx.page_id}...")
 
             if self.translator and ctx.original_texts:
+                if self.log_callback:
+                    self.log_callback("TRANSLATE", f"Input to translate: {ctx.original_texts}")
                 try:
                     translated = self.translator.translate(ctx.original_texts, self.src_lang, self.tgt_lang)
                     ctx.translated_texts = translated
+                    if self.log_callback:
+                        self.log_callback("TRANSLATE", f"Output from translator: {ctx.translated_texts}")
                 except Exception as e:
                     if self.log_callback:
                         self.log_callback("ERROR", f"Translation Error on {ctx.page_id}: {e}")

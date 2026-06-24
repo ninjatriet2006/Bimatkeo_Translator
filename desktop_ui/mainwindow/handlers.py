@@ -269,12 +269,8 @@ class HandlersMixin:
         endpoint = self._get_value_from_widget('ai_endpoint', self.setting_widgets.get('ai_endpoint'))
         key = self._get_value_from_widget('ai_key', self.setting_widgets.get('ai_key'))
         
-        # Auto-detect format based on endpoint string
-        ep_lower = endpoint.lower() if endpoint else ""
-        if "generativelanguage" in ep_lower:
-            ai_provider = 'gemini'
-        else:
-            ai_provider = 'openai'
+        from app.core.api_utils import infer_ai_provider
+        ai_provider = infer_ai_provider(endpoint)
             
         provider_widget = self.setting_widgets.get('ai_translator')
         if provider_widget and self._get_value_from_widget('ai_translator', provider_widget) != ai_provider:
@@ -535,6 +531,13 @@ class HandlersMixin:
                     widget = self.setting_widgets.get(key)
                     if widget:
                         val = profile.get(field, '')
+                        if field == 'provider' and service == 'Translator':
+                            from app.core.api_utils import infer_ai_provider
+                            inferred = infer_ai_provider(profile.get('endpoint', ''))
+                            if inferred and val != inferred:
+                                val = inferred
+                                profile[field] = val
+                                self._save_api_profiles(profiles)
                         self.current_settings[key] = val
                         self._set_widget_value(key, val, widget)
             finally:
