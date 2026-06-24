@@ -1,4 +1,0 @@
---- DUPLICATE PYTHON FUNCTIONS ---
---- FREQUENT CONFIG KEYS ACROSS FILES ---
-Key 'models' found in: .config/models/model_ai_translator.yaml, .config/configs/config_alignment.yaml, .config/models/model_ocr.yaml, .config/configs/config_direction.yaml, .config/models/model_colorizer.yaml, .config/configs/config_inpainting_precision.yaml, .config/configs/config_renderer.yaml, .config/models/model_inpainter.yaml, .config/models/model_upscaler.yaml, .config/models/model_detector.yaml, .config/models/model_offline_translator.yaml
-Key 'tasks' found in: .config/langs/en.yaml, .config/configs/studio_config.yaml, .config/langs/vi.yaml
