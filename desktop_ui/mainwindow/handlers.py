@@ -2177,7 +2177,9 @@ class HandlersMixin:
                     
                     if url.startswith('hf://'):
                         is_huggingface = True
-                        repo_id = url[5:]
+                        hf_url_parts = url[5:].split('@', 1)
+                        repo_id = hf_url_parts[0]
+                        hf_specific_file = hf_url_parts[1] if len(hf_url_parts) > 1 else None
                         latest_version = "hf_latest"
                         zipball_url = ""
                     elif url.lower().endswith(('.zip', '.tar.gz', '.tar')):
@@ -2249,6 +2251,8 @@ class HandlersMixin:
                             for item in files_data:
                                 if item.get("type") == "file":
                                     path = item.get("path", "")
+                                    if hf_specific_file and path != hf_specific_file:
+                                        continue
                                     ext = os.path.splitext(path)[1].lower()
                                     if ext not in [".msgpack", ".h5", ".ot", ".md"] and not path.startswith("."):
                                         target_files.append(item)

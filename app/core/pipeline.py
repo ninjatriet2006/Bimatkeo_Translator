@@ -18,6 +18,7 @@ try:
     import app.plugins.detector.dbconvnext_impl
     import app.plugins.detector.craft_impl
     import app.plugins.detector.paddle_det_impl
+    import app.plugins.detector.paddle_onnx_impl
     import app.plugins.recognizer.mocr_impl
     import app.plugins.recognizer.pixel_32px_impl
     import app.plugins.recognizer.pixel_48px_impl

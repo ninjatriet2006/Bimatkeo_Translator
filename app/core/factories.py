@@ -16,10 +16,21 @@ class BaseFactory:
     @classmethod
     def create(cls, name: str, model_path: str = "", **kwargs) -> Any:
         """Tạo và trả về instance của lớp triển khai."""
-        if not hasattr(cls, '_registry') or name not in cls._registry:
+        impl_class = None
+        if hasattr(cls, '_registry'):
+            if name in cls._registry:
+                impl_class = cls._registry[name]
+            else:
+                # Fallback check for longest matching prefix (e.g., paddle_onnx_v6_tiny -> paddle_onnx, not paddle)
+                longest_match = ""
+                for reg_name, reg_class in cls._registry.items():
+                    if name.startswith(reg_name) and len(reg_name) > len(longest_match):
+                        longest_match = reg_name
+                        impl_class = reg_class
+                        
+        if impl_class is None:
             raise ValueError(f"Mô hình '{name}' chưa được đăng ký vào Factory.")
         
-        impl_class = cls._registry[name]
         instance = impl_class()
         
         # Call load_weights or load_model based on the type
