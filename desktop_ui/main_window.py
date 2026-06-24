@@ -174,6 +174,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         saved_theme = self.config_loader.oldsession_config.get("theme", "Default Qt")
         self._apply_theme(saved_theme)
         self._on_translator_category_changed()
+        self._on_ocr_category_changed()
 
     def _initialize_app(self):
         """

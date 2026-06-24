@@ -187,7 +187,7 @@ class HandlersMixin:
         if 'ocr_pool_name' in self.setting_rows:
             self.setting_rows['ocr_pool_name'].setVisible(show_pool)
 
-        profile_selected = self.current_settings.get('ocr_api_name', '').strip()
+        profile_selected = str(self.current_settings.get('ocr_api_name', '') or '').strip()
         has_profile = bool(profile_selected and profile_selected.lower() not in ["none", "--- select ---"])
 
         for key in ['ocr_api_name', 'api_ocr', 'ocr_api_endpoint', 'ocr_api_model', 'ocr_api_key']:
