@@ -51,8 +51,8 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
         resize_w = int(w * ratio)
         
         # Ensure multiples of 32
-        resize_h = max(int(round(resize_h / 32) * 32), 32)
-        resize_w = max(int(round(resize_w / 32) * 32), 32)
+        resize_h = max(round(resize_h / 32) * 32, 32)
+        resize_w = max(round(resize_w / 32) * 32, 32)
         
         resized_img = cv2.resize(img, (resize_w, resize_h))
         
@@ -73,6 +73,8 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
         """
         Extract bounding boxes from probability map.
         """
+        Polygon = None
+        pyclipper = None
         try:
             from shapely.geometry import Polygon
             import pyclipper
@@ -95,11 +97,11 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
             points = np.array(points)
             
             # Unclip to expand bounding boxes (DB specific)
-            if use_advanced_clipper:
+            if use_advanced_clipper and Polygon is not None and pyclipper is not None:
                 poly = Polygon(points)
                 distance = poly.area * unclip_ratio / poly.length
-                offset = pyclipper.PyclipperOffset()
-                offset.AddPath(points, pyclipper.JT_ROUND, pyclipper.ET_CLOSEDPOLYGON)
+                offset = pyclipper.PyclipperOffset()  # type: ignore
+                offset.AddPath(points, pyclipper.JT_ROUND, pyclipper.ET_CLOSEDPOLYGON)  # type: ignore
                 expanded = np.array(offset.Execute(distance))
                 if len(expanded) == 0:
                     continue
