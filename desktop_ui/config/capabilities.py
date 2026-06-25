@@ -66,23 +66,18 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
                 "LOG_COLORS": yaml_data.get("LOG_COLORS", self._default_log_colors()),
             }
 
-        # Tự động lấy danh sách model từ registry nếu có
-        ai_translator_keys = []
-        if hasattr(self, 'model_registry') and "ai_translator" in self.model_registry:
-            ai_translator_keys = list(self.model_registry["ai_translator"].keys())
+        # Tự động lấy danh sách model từ registry (single source of truth)
+        if hasattr(self, 'model_registry'):
+            offline_keys = list(self.model_registry.get("offline_translator", {}).keys())
+            ai_keys = list(self.model_registry.get("ai_translator", {}).keys())
         else:
-            ai_translator_keys = [
-                "deepl", "gemini", "deepseek", "groq", "youdao", "baidu",
-                "caiyun", "sakura", "papago", "openai", "custom_openai", "felo"
-            ]
+            offline_keys = []
+            ai_keys = []
 
         default_capabilities = {
             "TRANSLATOR_GROUPS": {
-                CAT_OFFLINE_MODELS: [
-                    "m2m100", "m2m100_big", "nllb", "nllb_big", "mbart50",
-                    "jparacrawl", "jparacrawl_big", "qwen2", "qwen2_big", "offline"
-                ],
-                CAT_API_BASED: ai_translator_keys,
+                CAT_OFFLINE_MODELS: offline_keys,
+                CAT_API_BASED: ai_keys,
                 CAT_OTHER_ACTIONS: [
                     "original",
                     "none"

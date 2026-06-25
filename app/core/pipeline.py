@@ -30,7 +30,6 @@ try:
     
     import app.plugins.inpainter.lama_impl
     import app.plugins.upscaler.esrgan_impl
-    import app.plugins.colorizer.mc2_impl
     import app.plugins.renderer.pillow_impl
 except ImportError as e:
     print(f"Warning: Failed to import some plugins - {e}")

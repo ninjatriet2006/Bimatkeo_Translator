@@ -2490,8 +2490,7 @@ class HandlersMixin:
                 return
                 
             self.log("INFO", f"Đang cập nhật khả năng dịch cho bộ dịch: {translator_name}...")
-            if key == "ai_translator" and translator_name == "deepl":
-                api_key = self.config_loader.get_env_var('DEEPL_API_KEY')
+
         else:
             return
 

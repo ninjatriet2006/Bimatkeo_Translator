@@ -78,7 +78,6 @@ class RegistryMixin(_RegistryMixinBase):
             ],
             "colorizer": [
                 {"key": "none"},
-                {"key": "mc2", "check_file": "models/Colorizer/MC2/generator.zip"},
             ],
         },
     }
