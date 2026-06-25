@@ -130,9 +130,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         self.current_settings = self.config_loader.get_factory_defaults()
         if hasattr(self.config_loader, 'oldsession_config'):
             saved_settings = self.config_loader.oldsession_config.get("current_settings", {})
-            for k, v in saved_settings.items():
-                if k in self.current_settings:
-                    self.current_settings[k] = v
+            self.current_settings.update(saved_settings)
         if hasattr(self.config_loader, 'app_language'):
             self.current_settings['app_language'] = self.config_loader.app_language
         self.selected_job_id = None

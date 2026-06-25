@@ -33,7 +33,7 @@ if TYPE_CHECKING:
         all_model_fields: list[str]
         required_model_fields: list[str]
         def check_model_existence(self, model_name: str, field: str | None = None) -> bool: ...
-        def save_studio_config(self) -> None: ...
+        def save_oldsession_config(self) -> None: ...
 else:
     _RegistryMixinBase = object
 
@@ -407,11 +407,12 @@ class RegistryMixin(_RegistryMixinBase):
         """
         try:
             studio = getattr(self, "studio_config", None)
-            if not isinstance(studio, dict):
+            oldsession = getattr(self, "oldsession_config", None)
+            if not isinstance(oldsession, dict):
                 return
 
             fingerprint = self._machine_fingerprint()
-            if studio.get("registry_optimized_for") == fingerprint:
+            if oldsession.get("registry_optimized_for") == fingerprint:
                 return
 
             total_changes = []
@@ -438,17 +439,18 @@ class RegistryMixin(_RegistryMixinBase):
                     print(f"[Registry] optimize: failed sweeping profiles.yaml: {e}")
 
             # 2. Sweep default settings embedded in studio_config, if any.
-            default_settings = studio.get("default_settings")
-            if isinstance(default_settings, dict):
-                changes = self.sweep_settings(default_settings)
-                if changes:
-                    total_changes.extend(("<defaults>", k, o, n) for (k, o, n) in changes)
+            if isinstance(studio, dict):
+                default_settings = studio.get("default_settings")
+                if isinstance(default_settings, dict):
+                    changes = self.sweep_settings(default_settings)
+                    if changes:
+                        total_changes.extend(("<defaults>", k, o, n) for (k, o, n) in changes)
 
-            studio["registry_optimized_for"] = fingerprint
+            oldsession["registry_optimized_for"] = fingerprint
             try:
-                self.save_studio_config()
+                self.save_oldsession_config()
             except Exception as e:
-                print(f"[Registry] optimize: could not persist studio_config: {e}")
+                print(f"[Registry] optimize: could not persist oldsession_config: {e}")
 
             if total_changes:
                 print(f"[Registry] optimize: repaired {len(total_changes)} model field(s):")
