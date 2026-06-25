@@ -222,7 +222,7 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
                         rule = models[model_name]
                         break
         
-        if not rule:
+        if rule is None:
             if field and field.lower() == "ai_translator":
                 return True
             return False
