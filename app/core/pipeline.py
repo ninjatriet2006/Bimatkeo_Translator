@@ -26,8 +26,7 @@ try:
     import app.plugins.recognizer.paddle_onnx_rec_impl
     import app.plugins.cloud_ocr.gemini_vision_impl
     import app.plugins.cloud_ocr.google_vision_impl
-    import app.plugins.translator.api_translator_impl
-    import app.plugins.translator.offline_translator_impl
+    import app.plugins.translator
     
     import app.plugins.inpainter.lama_impl
     import app.plugins.upscaler.esrgan_impl

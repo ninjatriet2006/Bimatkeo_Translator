@@ -8,7 +8,6 @@ from app.core.interfaces import BaseRenderer
 from app.core.factories import RendererFactory
 
 @RendererFactory.register("pillow_renderer")
-@RendererFactory.register("default")
 class PillowRenderer_Impl(BaseRenderer):
     def __init__(self):
         self.font_path = None

@@ -1,6 +1,19 @@
 import copy
+from typing import TYPE_CHECKING, Dict, Any
 
-class LocalizerMixin:
+if TYPE_CHECKING:
+    class LocalizerMixinBase:
+        localization: Dict[str, Any]
+        ui_map: Dict[str, Any]
+        tasks_config: Dict[str, Any]
+        app_language: str
+        def _load_ui_map(self) -> Dict[str, Any]: ...
+        def _load_tasks_config(self) -> Dict[str, Any]: ...
+else:
+    class LocalizerMixinBase:
+        pass
+
+class LocalizerMixin(LocalizerMixinBase):
     def get_lang_data(self, language: str) -> dict:
         if not self.localization:
             return {}
