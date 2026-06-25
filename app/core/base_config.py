@@ -11,7 +11,7 @@ class BaseConfigLoader:
     backend_schema: dict[str, Any] | None
     ui_map: dict[str, Any]
     factory_defaults: dict[str, Any]
-    tasks_config: dict[str, Any]
+
 
     def _save_yaml_file(self, path: str, data: Any) -> None:
         from ruamel.yaml import YAML
@@ -103,22 +103,7 @@ class BaseConfigLoader:
                     
         return ui_map
 
-    def _load_tasks_config(self):
-        """Loads the special tasks configuration."""
-        if hasattr(self, 'studio_config') and self.studio_config and "tasks" in self.studio_config:
-            return self.studio_config["tasks"]
-        tasks_path = os.path.join(self.project_base_dir, '.config', 'configs', 'tasks.yaml')
-        try:
-            if not os.path.exists(tasks_path):
-                raise FileNotFoundError()
-            print("[ConfigLoader] Loading tasks configuration...")
-            return self._load_yaml_file(tasks_path)
-        except FileNotFoundError:
-            print(f"[ERROR] tasks.yaml not found at: {tasks_path}")
-            return {}
-        except Exception as e:
-            print(f"[ERROR] Tasks config loading failed: {e}")
-            return {}
+
     
     def _get_definition_from_ref(self, ref_path):
         try:
@@ -160,9 +145,7 @@ class BaseConfigLoader:
                 defaults[prop_key] = prop_value["default"]
         return defaults
 
-    def get_tasks_config(self):
-        """Returns the loaded tasks configuration."""
-        return getattr(self, "tasks_config", {})
+
 
     def get_factory_defaults(self):
         return getattr(self, "factory_defaults", {})

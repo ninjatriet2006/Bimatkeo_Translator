@@ -18,7 +18,7 @@ class ConfigLoader(BaseConfigLoader):
 
         self.backend_schema = self._load_backend_schema()
         self.ui_map = self._load_ui_map()
-        self.tasks_config = self._load_tasks_config()
+
 
         if not self.backend_schema:
             raise RuntimeError("Failed to load backend configuration schema.")

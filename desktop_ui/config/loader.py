@@ -95,7 +95,7 @@ class ConfigLoaderBase(BaseConfigLoader):
         self._initialize_and_repair_config()  # type: ignore
 
         self.ui_map = self._load_ui_map()
-        self.tasks_config = self._load_tasks_config()
+
 
         self.app_language = self.oldsession_config.get("app_language", self.studio_config.get("app_language", "English"))
         self.localize_ui_map(self.app_language)  # type: ignore

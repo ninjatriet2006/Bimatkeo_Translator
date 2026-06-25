@@ -770,12 +770,6 @@ class JobRunnerMixin:
         
         final_config['processing_device'] = settings.get('processing_device', 'CPU')
 
-        if job_type in ['R', 'U', 'C', 'TX']:
-            task_key_map = {'R': 'raw_output', 'U': 'upscale', 'C': 'colorize', 'TX': 'text_only_translation'}
-            task_info = self.config_loader.tasks_config.get(task_key_map.get(job_type), {})
-            backend_overrides = task_info.get("backend_config", {})
-            for cat, overrides in backend_overrides.items():
-                final_config.setdefault(cat, {}).update(overrides)
 
         if job_type == 'TX':
             final_config['pipeline'] = {
@@ -1025,83 +1019,7 @@ class JobRunnerMixin:
         self.progress_bar.setValue(int(percent * 100))
         self.progress_label.setText(text)
 
-    def _assign_task_to_selection(self, task_key: str):
-        """Applies a special task'''s configuration and type to all selected jobs."""
-        selected_items = self.queue_list_widget.selectedItems()
-        if not selected_items:
-            if self.queue_list_widget.count() > 0:
-                # UX Improvement: Auto-select all if nothing is explicitly selected
-                for i in range(self.queue_list_widget.count()):
-                    item = self.queue_list_widget.item(i)
-                    item.setSelected(True)
-                    selected_items.append(item)
-            else:
-                QMessageBox.information(self, "Queue is Empty", "Please add some files to the queue first.")
-                return
 
-        task_info = self.config_loader.tasks_config.get(task_key, {})
-        task_settings_from_ui = self.task_settings.get(task_key, {})
-
-        job_type_map = {'raw_output': 'R', 'upscale': 'U', 'colorize': 'C', 'text_only_translation': 'TX'}
-        job_type = job_type_map.get(task_key, '''?''')
-
-        try:
-            for item in selected_items:
-                job_id = item.data(Qt.ItemDataRole.UserRole)
-                job_data = next((job for job in self.job_queue if job['id'] == job_id), None)
-                if job_data:
-                    current_job_settings = task_settings_from_ui.copy()
-
-                    if task_key == 'upscale':
-                        upscale_value_str = current_job_settings.pop('task_upscale_grid', '2x')
-                        current_job_settings['upscale_ratio'] = int(upscale_value_str.replace('x', ''))
-
-                    if task_key == 'colorize' and current_job_settings.get('restore_size_after_colorize'):
-                        try:
-                            source_dir = job_data['source_path']
-                            first_image_name = next((f for f in os.listdir(source_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))), None)
-
-                            if first_image_name:
-                                image_path = os.path.join(source_dir, first_image_name)
-                                with Image.open(image_path) as img:
-                                    width, height = img.size
-
-                                original_long_side = max(width, height)
-                                target_colorize_size = int(current_job_settings.get('colorization_size', 576))
-
-                                if target_colorize_size > 0 and original_long_side > target_colorize_size:
-                                    division_ratio = original_long_side / target_colorize_size
-                                    calculated_upscale_ratio = max(2, round(division_ratio))
-
-                                    current_job_settings['upscale_ratio'] = calculated_upscale_ratio
-                                    current_job_settings['revert_upscaling'] = False
-                                    self.log("INFO", f"Job '{job_data['name']}': Auto-calculated upscale ratio: {calculated_upscale_ratio}x")
-                            else:
-                                self.log("WARNING", f"Job '{job_data['name']}': Could not find an image to calculate upscale ratio. Skipping auto-upscale.")
-
-                        except Exception as e:
-                            self.log("ERROR", f"Failed to auto-calculate upscale ratio for '{job_data['name']}': {e}")
-
-                    device_widget = self.tasks_processing_device_widget
-                    button_group = device_widget.findChild(QButtonGroup)
-                    selected_device = "CPU"
-                    if button_group and button_group.checkedButton():
-                        selected_device = button_group.checkedButton().text()
-                    
-                    current_job_settings['processing_device'] = selected_device
-                    current_job_settings['processing_mode'] = self._get_value_from_widget('processing_mode', self.setting_widgets.get('processing_mode'))
-                    current_job_settings['batch_size'] = self._get_value_from_widget('batch_size', self.setting_widgets.get('batch_size'))
-
-                    job_data['settings'] = current_job_settings
-                    job_data['job_type'] = job_type
-                    job_data['status'] = 'Ready'
-
-            self.log("INFO", f"Assigned task '{task_info.get('label')}' to {len(selected_items)} job(s).")
-            self._update_job_list_ui()
-        except Exception as e:
-            self.log("ERROR", f"Crash in _assign_task_to_selection: {e}")
-            import traceback
-            traceback.print_exc()
 
     def _on_pipeline_finished(self):
         """

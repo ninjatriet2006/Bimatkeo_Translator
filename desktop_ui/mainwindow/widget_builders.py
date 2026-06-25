@@ -124,130 +124,7 @@ class WidgetBuildersMixin:
         scroll_area.setWidget(content_widget)
         return scroll_area
 
-    def _build_tasks_tab_content(self) -> QWidget:
-        """Creates the content for the '''Tasks''' tab with improved layout."""
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
 
-        content_widget = QWidget()
-        layout = QVBoxLayout(content_widget)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(15)
-
-        # This widget is created manually and not from ui_map.json
-        device_widget_container = QWidget()
-        device_layout = QHBoxLayout(device_widget_container)
-        device_layout.setContentsMargins(0, 0, 0, 0)
-        device_layout.addWidget(QLabel("Task Processing Device:"))
-
-        # We reuse the segmented button logic for consistency
-        seg_button_container = QWidget()
-        seg_button_layout = QHBoxLayout(seg_button_container)
-        seg_button_layout.setContentsMargins(0, 0, 0, 0)
-        seg_button_layout.setSpacing(0)
-
-        button_group = QButtonGroup(seg_button_container)
-        button_group.setExclusive(True)
-
-        for val in ["CPU", "NVIDIA GPU"]:
-            button = QPushButton(val)
-            button.setCheckable(True)
-            seg_button_layout.addWidget(button)
-            button_group.addButton(button)
-            if val == "CPU":  # Default to CPU
-                button.setChecked(True)
-
-        seg_button_container.setLayout(seg_button_layout)
-        device_layout.addWidget(seg_button_container, stretch=1)
-
-        # Store a reference to this new widget so we can read its value later
-        self.tasks_processing_device_widget = seg_button_container
-
-        layout.addWidget(device_widget_container)
-
-        # Add a separator line
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.HLine)
-        separator.setFrameShadow(QFrame.Shadow.Sunken)
-        layout.addWidget(separator)
-
-        tasks_config = self.config_loader.tasks_config
-        if not tasks_config:
-            layout.addWidget(QLabel("Could not load tasks.json or it is empty."))
-            content_widget.setLayout(layout)
-            scroll_area.setWidget(content_widget)
-            return scroll_area
-
-        if not hasattr(self, '''task_settings'''):
-            self.task_settings = {}
-            self.task_widgets = {}
-
-        for task_key, task_info in tasks_config.items():
-            task_frame = QFrame()
-            task_frame.setObjectName("StyledPanel")
-            task_frame.setFrameShape(QFrame.Shape.StyledPanel)
-            task_layout = QVBoxLayout(task_frame)
-
-            # --- Top Section: Title and Description ---
-            title_label = QLabel(task_info.get("label", "Unnamed Task"))
-            font = title_label.font()
-            font.setPointSize(12)
-            font.setBold(True)
-            title_label.setFont(font)
-            task_layout.addWidget(title_label)
-
-            description_label = QLabel(task_info.get("description", ""))
-            description_label.setWordWrap(True)
-            task_layout.addWidget(description_label)
-
-            separator = QFrame()
-            separator.setFrameShape(QFrame.Shape.HLine)
-            separator.setFrameShadow(QFrame.Shadow.Sunken)
-            task_layout.addWidget(separator)
-
-            # --- Middle Section: Dynamically created settings ---
-            self.task_settings.setdefault(task_key, task_info.get("defaults", {}).copy())
-            self.task_widgets.setdefault(task_key, {})
-
-            settings_keys = task_info.get("settings_keys", [])
-            for setting_key in settings_keys:
-                widget_info = self.config_loader.full_config_data.get(setting_key)
-                if widget_info:
-                    widget_row = self._create_setting_row(widget_info, task_key)
-                    task_layout.addWidget(widget_row)
-                else:
-                    task_layout.addWidget(QLabel(f"Warning: Definition for '''{setting_key}''' not found."))
-
-            if hasattr(self, '_update_task_translator_visibility'):
-                self._update_task_translator_visibility(task_key)
-
-            task_layout.addStretch(1)  # Add stretch to push buttons to the bottom
-
-            # --- Bottom Section: Action Buttons ---
-            button_container = QWidget()
-            button_layout = QHBoxLayout(button_container)
-            button_layout.setContentsMargins(0, 0, 0, 0)
-
-            reset_button = QPushButton("Reset to Defaults")
-            reset_button.clicked.connect(lambda checked, tk=task_key: self._reset_task_settings(tk))
-
-            # Define the button first, then set its text and connect the signal.
-            run_button = QPushButton()
-            run_button.setText(f"Assign {task_info.get('label', 'Task')}")
-            run_button.clicked.connect(lambda checked, tk=task_key: self._assign_task_to_selection(tk))
-
-            button_layout.addWidget(reset_button, alignment=Qt.AlignmentFlag.AlignLeft)
-            button_layout.addStretch()  # Pushes the two buttons apart
-            button_layout.addWidget(run_button, alignment=Qt.AlignmentFlag.AlignRight)
-
-            task_layout.addWidget(button_container)
-            layout.addWidget(task_frame)
-
-        layout.addStretch(1)  # Pushes all task frames to the top
-        content_widget.setLayout(layout)
-        scroll_area.setWidget(content_widget)
-        return scroll_area
 
     def _create_setting_row(self, info: dict, context_key: str = None) -> QWidget:
         """
@@ -479,8 +356,7 @@ class WidgetBuildersMixin:
             tab_content_widget = self._build_dynamic_tab_content(tab_name, settings_list)
             self.settings_tab_view.addTab(tab_content_widget, tab_name)
 
-        tasks_tab_content = self._build_tasks_tab_content()
-        self.settings_tab_view.addTab(tasks_tab_content, "Tasks 🛠️")
+
 
     def _create_segmented_button(self, info: dict) -> QWidget:
         """Creates a group of toggleable buttons."""

@@ -2645,24 +2645,7 @@ class HandlersMixin:
         self._set_widget_value(key, current_val, combo)
         combo.blockSignals(False)
 
-    def _reset_task_settings(self, task_key: str):
-        """Resets the settings of a specific task to its defaults from tasks.json."""
-        if task_key not in self.task_settings:
-            return
 
-        task_info = self.config_loader.tasks_config.get(task_key, {})
-        defaults = task_info.get("defaults", {})
-
-        self.task_settings[task_key] = defaults.copy()
-
-        for setting_key, default_value in defaults.items():
-            widget = self.task_widgets.get(task_key, {}).get(setting_key)
-            if widget:
-                widget.blockSignals(True)
-                self._set_widget_value(setting_key, default_value, widget)
-                widget.blockSignals(False)
-
-        self.log("INFO", f"Settings for task '''{task_info.get('label')}''' have been reset.")
 
 
 class ConfigUpdateWorker(QThread):
