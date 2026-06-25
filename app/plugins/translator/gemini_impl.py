@@ -18,8 +18,9 @@ class GeminiTranslator(BaseAPITranslator):
                 "temperature": 0.3
             }
         }
+        endpoint = self.endpoint.rstrip('/') if self.endpoint else "https://generativelanguage.googleapis.com"
         # e.g., https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=...
-        url = f"{self.endpoint.rstrip('/')}/v1beta/models/{self.model}:generateContent?key={self.key}"
+        url = f"{endpoint}/v1beta/models/{self.model}:generateContent?key={self.key}"
             
         result = self._make_request(url, headers, data)
         try:

@@ -149,7 +149,7 @@ class HandlersMixin:
         profile_selected = self.current_settings.get('api_name', '').strip()
         has_profile = bool(profile_selected and profile_selected.lower() not in ["none", "--- select ---"])
         
-        for ai_key in ['api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
+        for ai_key in ['api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key', 'max_retries']:
             if ai_key in self.setting_rows:
                 if ai_key == 'api_name':
                     self.setting_rows[ai_key].setVisible(show_standalone)
@@ -175,6 +175,8 @@ class HandlersMixin:
                         if default_ep:
                             entry.setText(default_ep)
                             self.current_settings['ai_endpoint'] = default_ep
+                            # Force auto-save to profile
+                            self._on_setting_changed('ai_endpoint')
     def _get_active_ocr_category(self) -> str:
         """Returns 'Offline' or 'AI / Online' for OCR."""
         widget = self.setting_widgets.get('ocr_category')
@@ -233,6 +235,8 @@ class HandlersMixin:
                         if default_ep:
                             entry.setText(default_ep)
                             self.current_settings['ocr_api_endpoint'] = default_ep
+                            # Force auto-save to profile
+                            self._on_setting_changed('ocr_api_endpoint')
 
     def _on_ocr_category_changed(self):
         """Handles changes in OCR category (Offline vs AI/Online)."""
@@ -266,7 +270,7 @@ class HandlersMixin:
         profile_selected = settings.get('api_name', '').strip()
         has_profile = bool(profile_selected and profile_selected.lower() not in ["none", "--- select ---"])
         
-        for ai_key in ['api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
+        for ai_key in ['api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key', 'max_retries']:
             if ai_key in rows:
                 if ai_key == 'api_name':
                     rows[ai_key].setVisible(show_standalone)
@@ -419,7 +423,7 @@ class HandlersMixin:
     def _get_profile_mapping(self, service: str) -> dict:
         mappings = {
             "OCR": {'name': 'ocr_api_name', 'provider': 'api_ocr', 'endpoint': 'ocr_api_endpoint', 'model': 'ocr_api_model', 'key': 'ocr_api_key'},
-            "Translator": {'name': 'api_name', 'provider': 'ai_translator', 'endpoint': 'ai_endpoint', 'model': 'ai_model', 'key': 'ai_key'}
+            "Translator": {'name': 'api_name', 'provider': 'ai_translator', 'endpoint': 'ai_endpoint', 'model': 'ai_model', 'key': 'ai_key', 'max_retries': 'max_retries'},
         }
         return mappings.get(service, mappings["Translator"])
 
@@ -748,6 +752,10 @@ class HandlersMixin:
                 widget.stateChanged.connect(self._update_colorize_restore_ui_state)
         elif isinstance(widget, QLineEdit):
             widget.editingFinished.connect(handler)
+        elif widget_type == "spinbox":
+            from PySide6.QtWidgets import QSpinBox
+            if isinstance(widget, QSpinBox):
+                widget.valueChanged.connect(handler)
         elif widget_type in ["segmented_button", "grid_segmented_button"]:
             button_group = widget.findChild(QButtonGroup)
             if button_group:
@@ -808,7 +816,7 @@ class HandlersMixin:
             print(f"[Settings] Updated '''{key}''' to: {new_value}")
 
             # Auto-save changes to provider, endpoint, model, key into the currently active profile
-            if key in ['ai_translator', 'ai_endpoint', 'ai_model', 'ai_key', 'api_ocr', 'ocr_api_endpoint', 'ocr_api_model', 'ocr_api_key']:
+            if key in ['ai_translator', 'ai_endpoint', 'ai_model', 'ai_key', 'max_retries', 'api_ocr', 'ocr_api_endpoint', 'ocr_api_model', 'ocr_api_key']:
                 is_ocr = key.startswith('ocr_') or key == 'api_ocr'
                 p_key = 'ocr_api_name' if is_ocr else 'api_name'
                 profile_name = self.current_settings.get(p_key, '').strip()
@@ -1176,6 +1184,11 @@ class HandlersMixin:
             if entry:
                 return entry.text()
             return None
+        elif widget_type == "spinbox":
+            from PySide6.QtWidgets import QSpinBox
+            if isinstance(widget, QSpinBox):
+                return widget.value()
+            return None
         return None
 
     def _set_widget_value(self, key: str, value: any, widget: QWidget):
@@ -1249,6 +1262,13 @@ class HandlersMixin:
                 update_func = getattr(slider, 'update_label_func', None)
                 if update_func:
                     update_func(slider_value)
+        elif widget_type == "spinbox":
+            from PySide6.QtWidgets import QSpinBox
+            if isinstance(widget, QSpinBox) and value is not None:
+                try:
+                    widget.setValue(int(value))
+                except (ValueError, TypeError):
+                    pass
         elif widget_type == "entry_with_button":
             entry = widget.findChild(QLineEdit)
             if entry:

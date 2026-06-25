@@ -13,7 +13,7 @@ import copy
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton, QScrollArea,
     QButtonGroup, QListWidget, QListWidgetItem, QComboBox, QCheckBox, QSlider,
-    QLineEdit, QGridLayout, QColorDialog
+    QLineEdit, QGridLayout, QColorDialog, QSpinBox
 )
 from PySide6.QtCore import Qt, QTimer, QSize
 from PySide6.QtGui import QColor, QFont
@@ -202,6 +202,8 @@ class WidgetBuildersMixin:
                 widget = self._create_slider(info)
             elif widget_type == "entry":
                 widget = self._create_entry(info)
+            elif widget_type == "spinbox":
+                widget = self._create_spinbox(info)
             elif widget_type == "open_yaml_button":
                 widget = self._create_open_yaml_button(info)
             elif widget_type == "combobox_fonts":
@@ -534,6 +536,21 @@ class WidgetBuildersMixin:
         layout.addWidget(value_label)
         return container
 
+    def _create_spinbox(self, info: dict) -> QSpinBox:
+        """Creates a spinbox widget for integer input."""
+        spinbox = QSpinBox()
+        spinbox.setMinimum(info.get("min", 0))
+        spinbox.setMaximum(info.get("max", 100))
+        
+        default_val = info.get("default")
+        if default_val is not None:
+            try:
+                spinbox.setValue(int(default_val))
+            except ValueError:
+                pass
+                
+        return spinbox
+
     def _create_entry(self, info: dict) -> QLineEdit:
         """Creates a text input (QLineEdit) widget."""
         entry = QLineEdit()
@@ -795,6 +812,7 @@ class WidgetBuildersMixin:
         ai_endpoint = self.setting_widgets.get('ai_endpoint')
         ai_model_widget = self.setting_widgets.get('ai_model')
         ai_key = self.setting_widgets.get('ai_key')
+        max_retries = self.setting_widgets.get('max_retries')
         main_language_combo = self.setting_widgets.get('target_lang')
 
         if not all([enable_checkbox, chain_container, main_language_combo]):
@@ -805,7 +823,7 @@ class WidgetBuildersMixin:
         chain_container.setEnabled(is_chain_enabled)
         main_language_combo.setEnabled(not is_chain_enabled)
         
-        for w in [category_widget, offline_combo, ai_combo, ai_endpoint, ai_model_widget, ai_key]:
+        for w in [category_widget, offline_combo, ai_combo, ai_endpoint, ai_model_widget, ai_key, max_retries]:
             if w:
                 w.setEnabled(not is_chain_enabled)
 

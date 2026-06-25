@@ -190,7 +190,8 @@ class Pipeline:
                         translator.load_weights({
                             "endpoint": api_info.get('endpoint'),
                             "model": api_info.get('model'),
-                            "key": api_info.get('api_key'),
+                            "key": api_info.get('api_key', api_info.get('key', '')),
+                            "max_retries": translator_dict.get('max_retries', 3),
                             "glossary_path": translator_dict.get('glossary_path', ''),
                             "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None'),
                             "project_base_dir": project_root
@@ -202,7 +203,8 @@ class Pipeline:
                         translator.load_weights({
                             "endpoint": translator_dict.get('ai_endpoint'),
                             "model": translator_dict.get('ai_model'),
-                            "key": translator_dict.get('ai_api_key'),
+                            "key": translator_dict.get('ai_api_key', translator_dict.get('ai_key', '')),
+                            "max_retries": translator_dict.get('max_retries', 3),
                             "glossary_path": translator_dict.get('glossary_path', ''),
                             "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None'),
                             "project_base_dir": project_root
@@ -228,8 +230,8 @@ class Pipeline:
 
             # Initialize Workers for Fork-Join Pipeline
             ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback, cloud_ocr=cloud_ocr)
-            trans_worker = TranslatorWorker(q_trans, translator, "auto", target_lang, log_callback, hitl_callback=mtpe_callback)
-            inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback, enable_hitl=enable_hitl)
+            trans_worker = TranslatorWorker(q_trans, translator, "auto", target_lang, log_callback)
+            inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback)
             render_worker = RenderWorker(q_render, q_out, renderer, log_callback)
 
             # Start Workers

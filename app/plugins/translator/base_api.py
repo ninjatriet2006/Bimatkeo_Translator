@@ -25,9 +25,10 @@ class BaseAPITranslator(BaseTranslator):
         """
         try:
             config = json.loads(model_path) if isinstance(model_path, str) else model_path
-            self.endpoint = config.get("endpoint", "")
-            self.model = config.get("model", "")
-            self.key = config.get("key", "")
+            self.endpoint = config.get("endpoint") or ""
+            self.model = config.get("model") or ""
+            self.key = config.get("key") or ""
+            self.max_retries = int(config.get("max_retries", 3))
             
             project_base_dir = config.get("project_base_dir")
             if not project_base_dir:
@@ -79,77 +80,80 @@ class BaseAPITranslator(BaseTranslator):
             
         system_prompt = self.prompt_builder.build_prompt(src_lang, tgt_lang, self.glossary_manager.glossary)
         
-        # Calculate dynamic limit if self.max_query_len is set, otherwise use default 1000
-        # This helps to avoid hitting API length limits (e.g., Felo limits query to 2000 chars)
-        max_query_len = getattr(self, "max_query_len", None)
-        if max_query_len:
-            # Leave 200 chars for extra prompt formatting
-            MAX_COMBINED_TEXT_LEN = max(100, max_query_len - len(system_prompt) - 200)
-        else:
-            MAX_COMBINED_TEXT_LEN = 1000
-        
-        chunks = []
+        # Build single chunk of texts without splitting limit
         current_chunk = []
-        current_chunk_len = 0
-        
         for i, t in enumerate(texts):
-            line_str = f"Line {i+1}: {t}"
-            # If adding this line exceeds the limit (and the chunk is not empty)
-            if current_chunk_len + len(line_str) > MAX_COMBINED_TEXT_LEN and current_chunk:
-                chunks.append(current_chunk)
-                current_chunk = [line_str]
-                current_chunk_len = len(line_str)
-            else:
-                current_chunk.append(line_str)
-                current_chunk_len += len(line_str) + 1 # +1 for newline
-                
-        if current_chunk:
-            chunks.append(current_chunk)
+            current_chunk.append(f"Line {i+1}: {t}")
+            
+        chunks = [current_chunk] if current_chunk else []
             
         all_translated_list = []
         
         import re
         import json
+        import time
         
         for chunk in chunks:
             combined_text = "\n".join(chunk)
-            raw_response = self._call_api(system_prompt, combined_text)
             
-            if not raw_response:
-                # If API fails for this chunk, just append original texts for this chunk
+            raw_response = ""
+            retry_count = 0
+            max_retries = getattr(self, "max_retries", 3)
+            
+            while retry_count <= max_retries:
+                try:
+                    raw_response = self._call_api(system_prompt, combined_text)
+                except Exception as e:
+                    if self.log_callback:
+                        self.log_callback("WARNING", f"API Error: {e}")
+                    raw_response = None
+                
+                if raw_response:
+                    # Strip <think> blocks that reasoning models generate
+                    raw_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
+                    
+                    # Clean up Markdown code blocks if any
+                    if raw_response.startswith('```json'):
+                        raw_response = raw_response[7:]
+                    elif raw_response.startswith('```'):
+                        raw_response = raw_response[3:]
+                    if raw_response.endswith('```'):
+                        raw_response = raw_response[:-3]
+                    raw_response = raw_response.strip()
+                    
+                    try:
+                        parsed = json.loads(raw_response)
+                        meta = parsed.get("metadata", {})
+                        if meta.get("status") in ["success", ""]:
+                            break # Success, break out of retry loop
+                        else:
+                            err = meta.get("error_reason", "Unknown error from AI")
+                            if self.log_callback:
+                                self.log_callback("WARNING", f"AI Refused translation (attempt {retry_count + 1}/{max_retries + 1}): {err}")
+                    except json.JSONDecodeError as e:
+                        if self.log_callback:
+                            self.log_callback("WARNING", f"Failed to parse JSON (attempt {retry_count + 1}/{max_retries + 1}): {e}")
+                else:
+                    if self.log_callback:
+                        self.log_callback("WARNING", f"Empty API response (attempt {retry_count + 1}/{max_retries + 1})")
+                
+                retry_count += 1
+                if retry_count <= max_retries:
+                    time.sleep(2) # Delay before retry
+            
+            # If all retries failed or final parse failed
+            if not raw_response or retry_count > max_retries:
+                if self.log_callback:
+                    self.log_callback("ERROR", f"Translation failed after {max_retries + 1} attempts.")
+                # Append original texts
                 for line_str in chunk:
-                    # Extract original text from "Line X: <text>"
                     original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
                     all_translated_list.append(original_line)
                 continue
                 
-            # Strip <think> blocks that reasoning models generate
-            raw_response = re.sub(r'<think>.*?</think>', '', raw_response, flags=re.DOTALL).strip()
-            
-            # Clean up Markdown code blocks if any
-            if raw_response.startswith('```json'):
-                raw_response = raw_response[7:]
-            elif raw_response.startswith('```'):
-                raw_response = raw_response[3:]
-            if raw_response.endswith('```'):
-                raw_response = raw_response[:-3]
-            raw_response = raw_response.strip()
-
             try:
                 parsed = json.loads(raw_response)
                 
-                # Check metadata
-                meta = parsed.get("metadata", {})
-                if meta.get("status") not in ["success", ""]:
-                    err = meta.get("error_reason", "Unknown error from AI")
-                    if self.log_callback:
-                        self.log_callback("ERROR", f"AI Refused to translate chunk: {err}")
-                    # Append original texts
-                    for line_str in chunk:
-                        original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
-                        all_translated_list.append(original_line)
-                    continue
-                    
                 content = parsed.get("content", [])
                 
                 # Extract translations for this chunk

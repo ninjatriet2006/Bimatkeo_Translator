@@ -109,50 +109,69 @@ class TranslatorWorker(threading.Thread):
         self.src_lang = src_lang
         self.tgt_lang = tgt_lang
         self.log_callback = log_callback
-        self.hitl_callback = hitl_callback
         self.daemon = True
 
     def run(self):
-        while True:
-            ctx: PageContext = self.in_q.get()
-            if ctx is None:
+        batch = []
+        import queue
+        
+        def flush_batch():
+            if not batch: return
+            
+            if self.translator:
+                all_texts = []
+                for ctx in batch:
+                    if ctx.original_texts:
+                        all_texts.extend(ctx.original_texts)
+                
+                if all_texts:
+                    if self.log_callback:
+                        self.log_callback("TRANSLATE", f"Translating batch of {len(batch)} pages ({len(all_texts)} lines)...")
+                    try:
+                        all_translated = self.translator.translate(all_texts, self.src_lang, self.tgt_lang)
+                    except Exception as e:
+                        if self.log_callback:
+                            self.log_callback("ERROR", f"Translation Batch Error: {e}")
+                        all_translated = [""] * len(all_texts)
+                        
+                    # Split translated text back to each context
+                    cursor = 0
+                    for ctx in batch:
+                        if ctx.original_texts:
+                            ctx_len = len(ctx.original_texts)
+                            ctx.translated_texts = all_translated[cursor:cursor+ctx_len]
+                            cursor += ctx_len
+                        else:
+                            ctx.translated_texts = []
+                            
+            for ctx in batch:
+                ctx.trans_done.set()
                 self.in_q.task_done()
-                break
-            
-            if self.log_callback:
-                self.log_callback("TRANSLATE", f"Translating {ctx.page_id}...")
+                
+            batch.clear()
 
-            if self.translator and ctx.original_texts:
-                if self.log_callback:
-                    self.log_callback("TRANSLATE", f"Input to translate: {ctx.original_texts}")
-                try:
-                    translated = self.translator.translate(ctx.original_texts, self.src_lang, self.tgt_lang)
-                    ctx.translated_texts = translated
-                    if self.log_callback:
-                        self.log_callback("TRANSLATE", f"Output from translator: {ctx.translated_texts}")
-                except Exception as e:
-                    if self.log_callback:
-                        self.log_callback("ERROR", f"Translation Error on {ctx.page_id}: {e}")
-                    ctx.translated_texts = [""] * len(ctx.original_texts)
-
-            ctx.trans_done.set()  # Signal completion of this fork
-            
-            if self.hitl_callback:
-                self.hitl_callback(ctx)
-            else:
-                # If no HITL, auto-release the lock
-                ctx.hitl_lock.set()
-
-            self.in_q.task_done()
+        while True:
+            try:
+                ctx = self.in_q.get(timeout=0.5)
+                if ctx is None:
+                    flush_batch()
+                    self.in_q.task_done()
+                    break
+                    
+                batch.append(ctx)
+                if len(batch) >= 15:
+                    flush_batch()
+            except queue.Empty:
+                if batch:
+                    flush_batch()
 
 
 class InpaintWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, inpainter: BaseInpainter | None, log_callback=None, enable_hitl=False):
+    def __init__(self, in_q: queue.Queue, inpainter: BaseInpainter | None, log_callback=None):
         super().__init__()
         self.in_q = in_q
         self.inpainter = inpainter
         self.log_callback = log_callback
-        self.enable_hitl = enable_hitl
         self.daemon = True
 
     def run(self):
@@ -161,11 +180,6 @@ class InpaintWorker(threading.Thread):
             if ctx is None:
                 self.in_q.task_done()
                 break
-            
-            if self.enable_hitl:
-                ctx.hitl_lock.wait()
-            else:
-                ctx.hitl_lock.set()
             
             if self.log_callback:
                 self.log_callback("INPAINT", f"Inpainting {ctx.page_id}...")
