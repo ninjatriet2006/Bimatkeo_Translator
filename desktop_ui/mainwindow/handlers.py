@@ -151,13 +151,30 @@ class HandlersMixin:
         
         for ai_key in ['api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
             if ai_key in self.setting_rows:
-                if ai_key == 'ai_translator':
-                    self.setting_rows[ai_key].setVisible(False)
-                elif ai_key == 'api_name':
+                if ai_key == 'api_name':
                     self.setting_rows[ai_key].setVisible(show_standalone)
                 else:
                     self.setting_rows[ai_key].setVisible(show_standalone and has_profile)
 
+        # Dynamic locking for AI Endpoint
+        from PySide6.QtWidgets import QLineEdit
+        ai_provider = self._get_value_from_widget('ai_translator', self.setting_widgets.get('ai_translator'))
+        ai_endpoint_widget = self.setting_widgets.get('ai_endpoint')
+        if ai_endpoint_widget:
+            entry = ai_endpoint_widget if isinstance(ai_endpoint_widget, QLineEdit) else ai_endpoint_widget.findChild(QLineEdit)
+            if entry:
+                if ai_provider == 'custom_openai':
+                    entry.setEnabled(True)
+                    entry.setReadOnly(False)
+                else:
+                    entry.setEnabled(False)
+                    entry.setReadOnly(True)
+                    ai_registry = getattr(self.config_loader, 'model_registry', {}).get('ai_translator', {})
+                    if ai_provider in ai_registry:
+                        default_ep = ai_registry[ai_provider].get('default_endpoint', '')
+                        if default_ep:
+                            entry.setText(default_ep)
+                            self.current_settings['ai_endpoint'] = default_ep
     def _get_active_ocr_category(self) -> str:
         """Returns 'Offline' or 'AI / Online' for OCR."""
         widget = self.setting_widgets.get('ocr_category')
@@ -201,8 +218,8 @@ class HandlersMixin:
         from PySide6.QtWidgets import QLineEdit
         provider = self._get_value_from_widget('api_ocr', self.setting_widgets.get('api_ocr'))
         endpoint_widget = self.setting_widgets.get('ocr_api_endpoint')
-        if endpoint_widget and hasattr(endpoint_widget, 'findChild'):
-            entry = endpoint_widget.findChild(QLineEdit)
+        if endpoint_widget:
+            entry = endpoint_widget if isinstance(endpoint_widget, QLineEdit) else endpoint_widget.findChild(QLineEdit)
             if entry:
                 if provider == 'custom_ocr':
                     entry.setEnabled(True)
@@ -251,9 +268,7 @@ class HandlersMixin:
         
         for ai_key in ['api_name', 'ai_translator', 'ai_endpoint', 'ai_model', 'ai_key']:
             if ai_key in rows:
-                if ai_key == 'ai_translator':
-                    rows[ai_key].setVisible(False)
-                elif ai_key == 'api_name':
+                if ai_key == 'api_name':
                     rows[ai_key].setVisible(show_standalone)
                 else:
                     rows[ai_key].setVisible(show_standalone and has_profile)
@@ -269,12 +284,8 @@ class HandlersMixin:
         endpoint = self._get_value_from_widget('ai_endpoint', self.setting_widgets.get('ai_endpoint'))
         key = self._get_value_from_widget('ai_key', self.setting_widgets.get('ai_key'))
         
-        from app.core.api_utils import infer_ai_provider
-        ai_provider = infer_ai_provider(endpoint)
-            
         provider_widget = self.setting_widgets.get('ai_translator')
-        if provider_widget and self._get_value_from_widget('ai_translator', provider_widget) != ai_provider:
-            self._set_widget_value('ai_translator', ai_provider, provider_widget)
+        ai_provider = self._get_value_from_widget('ai_translator', provider_widget)
 
         if not endpoint and ai_provider != 'gemini':
             self.log("WARNING", "No API Endpoint URL provided. Please enter a valid URL.")
@@ -432,11 +443,7 @@ class HandlersMixin:
 
         endpoint = self._get_value_from_widget(mapping['endpoint'], self.setting_widgets.get(mapping['endpoint'])) or ''
         
-        if service == "Translator":
-            from app.core.api_utils import infer_ai_provider
-            provider = infer_ai_provider(endpoint)
-        else:
-            provider = self._get_value_from_widget(mapping['provider'], self.setting_widgets.get(mapping['provider'])) or ''
+        provider = self._get_value_from_widget(mapping['provider'], self.setting_widgets.get(mapping['provider'])) or ''
             
         model = self._get_value_from_widget(mapping['model'], self.setting_widgets.get(mapping['model'])) or ''
         key = self._get_value_from_widget(mapping['key'], self.setting_widgets.get(mapping['key'])) or ''
@@ -531,13 +538,6 @@ class HandlersMixin:
                     widget = self.setting_widgets.get(key)
                     if widget:
                         val = profile.get(field, '')
-                        if field == 'provider' and service == 'Translator':
-                            from app.core.api_utils import infer_ai_provider
-                            inferred = infer_ai_provider(profile.get('endpoint', ''))
-                            if inferred and val != inferred:
-                                val = inferred
-                                profile[field] = val
-                                self._save_api_profiles(profiles)
                         self.current_settings[key] = val
                         self._set_widget_value(key, val, widget)
             finally:
@@ -806,23 +806,25 @@ class HandlersMixin:
             self.current_settings[key] = new_value
             print(f"[Settings] Updated '''{key}''' to: {new_value}")
 
-            # Auto-save changes to endpoint, model, key into the currently active profile
-            if key in ['ai_endpoint', 'ai_model', 'ai_key', 'ocr_api_endpoint', 'ocr_api_model', 'ocr_api_key']:
-                is_ocr = key.startswith('ocr_')
+            # Auto-save changes to provider, endpoint, model, key into the currently active profile
+            if key in ['ai_translator', 'ai_endpoint', 'ai_model', 'ai_key', 'api_ocr', 'ocr_api_endpoint', 'ocr_api_model', 'ocr_api_key']:
+                is_ocr = key.startswith('ocr_') or key == 'api_ocr'
                 p_key = 'ocr_api_name' if is_ocr else 'api_name'
                 profile_name = self.current_settings.get(p_key, '').strip()
                 
                 if profile_name and profile_name.lower() not in ["none", "--- select ---"] and not getattr(self, '_loading_api_profile', False):
                     profiles = self._load_api_profiles()
                     if profile_name in profiles:
-                        if is_ocr:
+                        if key in ['ai_translator', 'api_ocr']:
+                            field_name = 'provider'
+                        elif is_ocr:
                             field_name = key.replace('ocr_api_', '')
                         else:
                             field_name = key.replace('ai_', '')
                         profiles[profile_name][field_name] = new_value
                         self._save_api_profiles(profiles)
             
-            if key in ['translator_category', 'ai_mode', 'api_name']:
+            if key in ['translator_category', 'ai_mode', 'api_name', 'ai_translator']:
                 self._update_translator_visibility()
                 
             if key in ['ocr_category', 'ocr_ai_mode', 'ocr_api_name', 'api_ocr']:
