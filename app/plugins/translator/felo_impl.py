@@ -4,6 +4,11 @@ from .base_api import BaseAPITranslator
 @TranslatorFactory.register("felo")
 class FeloTranslator(BaseAPITranslator):
     STATIC_MODELS = ["felo-search"]
+    
+    def __init__(self):
+        super().__init__()
+        self.max_query_len = 2000
+
     def _call_api(self, system_prompt: str, user_text: str) -> str:
         headers = {
             "Content-Type": "application/json",

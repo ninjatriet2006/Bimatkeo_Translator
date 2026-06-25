@@ -79,8 +79,14 @@ class BaseAPITranslator(BaseTranslator):
             
         system_prompt = self.prompt_builder.build_prompt(src_lang, tgt_lang, self.glossary_manager.glossary)
         
-        # We need to chunk the texts to avoid hitting API length limits (e.g., Felo limits to 2000 chars)
-        MAX_COMBINED_TEXT_LEN = 1000 # Keep it small to leave room for the system prompt
+        # Calculate dynamic limit if self.max_query_len is set, otherwise use default 1000
+        # This helps to avoid hitting API length limits (e.g., Felo limits query to 2000 chars)
+        max_query_len = getattr(self, "max_query_len", None)
+        if max_query_len:
+            # Leave 200 chars for extra prompt formatting
+            MAX_COMBINED_TEXT_LEN = max(100, max_query_len - len(system_prompt) - 200)
+        else:
+            MAX_COMBINED_TEXT_LEN = 1000
         
         chunks = []
         current_chunk = []
