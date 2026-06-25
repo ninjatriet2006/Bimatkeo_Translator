@@ -227,6 +227,12 @@ class RegistryMixin(_RegistryMixinBase):
         """Returns the display label for a model key (falls back to the key)."""
         if not isinstance(key, str):
             return str(key)
+        
+        if key == "none":
+            return "--- Not Used ---"
+        if key == "original":
+            return "--- Original ---"
+            
         labels = getattr(self, "model_labels", {})
         if field and field in labels and key in labels[field]:
             return labels[field][key]
