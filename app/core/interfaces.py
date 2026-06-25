@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 import numpy as np
-from typing import List
+from typing import List, Union, Dict
 
 class BaseTextDetector(ABC):
+    DISPLAY_NAME: Union[str, Dict[str, str]] = ""
+
     @abstractmethod
     def load_model(self, model_path: str) -> None:
         """Tải mô hình phát hiện khung chữ."""
@@ -15,6 +17,8 @@ class BaseTextDetector(ABC):
 
 
 class BaseTextRecognizer(ABC):
+    DISPLAY_NAME: Union[str, Dict[str, str]] = ""
+
     @abstractmethod
     def load_model(self, model_path: str) -> None:
         """Tải mô hình nhận diện chữ."""
@@ -27,6 +31,8 @@ class BaseTextRecognizer(ABC):
 
 
 class BaseCloudOCR(ABC):
+    DISPLAY_NAME: Union[str, Dict[str, str]] = ""
+
     @abstractmethod
     def load_model(self, api_key: str, endpoint: str | None = None, model_name: str | None = None, **kwargs) -> None:
         """
@@ -48,6 +54,8 @@ class BaseCloudOCR(ABC):
 
 
 class BaseUpscaler(ABC):
+    DISPLAY_NAME: Union[str, Dict[str, str]] = ""
+
     @abstractmethod
     def load_model(self, model_path: str) -> None:
         """Tải mô hình phóng đại ảnh."""
@@ -60,6 +68,8 @@ class BaseUpscaler(ABC):
 
 
 class BaseColorizer(ABC):
+    DISPLAY_NAME: Union[str, Dict[str, str]] = ""
+
     @abstractmethod
     def load_model(self, model_path: str) -> None:
         """Tải mô hình tô màu Manga."""
@@ -72,6 +82,9 @@ class BaseColorizer(ABC):
 
 
 class BaseTranslator(ABC):
+    DISPLAY_NAME: Union[str, Dict[str, str]] = ""
+    STATIC_MODELS: List[str] = []
+
     @classmethod
     def get_supported_languages(cls) -> dict:
         """Trả về dictionary chứa năng lực ngôn ngữ. VD: {'__any__': '__all__'} hoặc {'__any__': ['ENG', 'VIN']}"""
@@ -89,6 +102,8 @@ class BaseTranslator(ABC):
 
 
 class BaseInpainter(ABC):
+    DISPLAY_NAME: Union[str, Dict[str, str]] = ""
+
     @abstractmethod
     def load_model(self, model_path: str) -> None:
         """Tải mô hình inpainting lên bộ nhớ."""
@@ -101,6 +116,8 @@ class BaseInpainter(ABC):
 
 
 class BaseRenderer(ABC):
+    DISPLAY_NAME: Union[str, Dict[str, str]] = ""
+
     @abstractmethod
     def load_fonts(self, font_path: str) -> None:
         """Cấu hình và nạp font chữ."""

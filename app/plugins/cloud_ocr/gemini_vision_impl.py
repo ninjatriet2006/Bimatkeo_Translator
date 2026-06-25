@@ -11,6 +11,7 @@ from app.core.factories import CloudOCRFactory
 
 @CloudOCRFactory.register("gemini_ocr")
 class GeminiVisionImpl(BaseCloudOCR):
+    DISPLAY_NAME = "Gemini Vision OCR"
     def __init__(self):
         self.api_key = ""
         self.log_callback = None

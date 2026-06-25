@@ -3,6 +3,7 @@ from .base_api import BaseAPITranslator
 
 @TranslatorFactory.register("openai")
 class OpenAITranslator(BaseAPITranslator):
+    DISPLAY_NAME = "openai"
     def _call_api(self, system_prompt: str, user_text: str) -> str:
         headers = {
             "Content-Type": "application/json",
@@ -29,15 +30,18 @@ class OpenAITranslator(BaseAPITranslator):
 
 @TranslatorFactory.register("deepseek")
 class DeepSeekTranslator(OpenAITranslator):
+    DISPLAY_NAME = "deepseek"
     """DeepSeek uses an API completely compatible with OpenAI."""
     pass
 
 @TranslatorFactory.register("groq")
 class GroqTranslator(OpenAITranslator):
+    DISPLAY_NAME = "groq"
     """Groq uses an API completely compatible with OpenAI."""
     pass
 
 @TranslatorFactory.register("custom_openai")
 class CustomOpenAITranslator(OpenAITranslator):
+    DISPLAY_NAME = "Custom OCR (OpenAI-compatible)"
     """Custom OpenAI-compatible endpoints."""
     pass

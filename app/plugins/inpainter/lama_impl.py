@@ -34,6 +34,10 @@ def pad_img_to_modulo(img, mod):
 @InpainterFactory.register("lama")
 @InpainterFactory.register("manga_inpaint_v3")
 class LamaInpainter_Impl(BaseInpainter):
+    DISPLAY_NAME = {
+        "lama": "saic-mdal/lama (ONNX)",
+        "manga_inpaint_v3": "dremaz/manga-inpaint-v3"
+    }
     def __init__(self):
         self.model_path = None
         self.is_loaded = False

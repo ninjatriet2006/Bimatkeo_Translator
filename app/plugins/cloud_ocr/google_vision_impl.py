@@ -10,6 +10,7 @@ from app.core.factories import CloudOCRFactory
 
 @CloudOCRFactory.register("google_ocr")
 class GoogleVisionImpl(BaseCloudOCR):
+    DISPLAY_NAME = "Google Vision OCR"
     def __init__(self):
         self.api_key = ""
         self.log_callback = None

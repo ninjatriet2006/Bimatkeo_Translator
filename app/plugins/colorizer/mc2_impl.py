@@ -9,6 +9,7 @@ from app.core.downloader import ModelDownloader
 
 @ColorizerFactory.register("mc2")
 class MangaColorization_Impl(BaseColorizer):
+    DISPLAY_NAME = "qdraw/MangaColorizationV2"
     def __init__(self):
         self.model_path = None
         self.is_loaded = False

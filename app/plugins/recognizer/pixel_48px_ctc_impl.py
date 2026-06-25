@@ -8,6 +8,7 @@ from app.core.downloader import ModelDownloader
 
 @RecognizerFactory.register("48px_ctc")
 class Pixel48pxCTCRecognizerImpl(BaseTextRecognizer):
+    DISPLAY_NAME = "48px CTC (ONNX)"
     def __init__(self):
         self.session = None
         self.input_name = None

@@ -4,6 +4,10 @@ from .base_offline import BaseOfflineTranslator
 
 @TranslatorFactory.register("nllb")
 class NLLBTranslator(BaseOfflineTranslator):
+    DISPLAY_NAME = {
+        "nllb": "facebook/nllb-200-distilled-600M",
+        "nllb_big": "facebook/nllb-200-distilled-1.3B"
+    }
     def _perform_translation(self, texts: List[str], src_lang: str, tgt_lang: str) -> List[str]:
         if self.tokenizer is None or self.model is None:
             return []

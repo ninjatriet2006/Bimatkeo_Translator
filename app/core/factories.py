@@ -50,6 +50,35 @@ class BaseFactory:
             return [name for name, impl in cls._registry.items() if issubclass(impl, base_class_filter)]
         return list(cls._registry.keys())
 
+    @classmethod
+    def get_display_name(cls, name: str) -> str:
+        if not hasattr(cls, '_registry'):
+            return name
+        
+        impl_class = None
+        if name in cls._registry:
+            impl_class = cls._registry[name]
+        else:
+            longest_match = ""
+            for reg_name, reg_class in cls._registry.items():
+                if name.startswith(reg_name) and len(reg_name) > len(longest_match):
+                    longest_match = reg_name
+                    impl_class = reg_class
+        
+        if impl_class:
+            disp = getattr(impl_class, 'DISPLAY_NAME', name)
+            if isinstance(disp, dict):
+                return disp.get(name, name)
+            return disp or name
+        return name
+
+    @classmethod
+    def get_static_models(cls, name: str) -> list:
+        if hasattr(cls, '_registry') and name in cls._registry:
+            impl_class = cls._registry[name]
+            return getattr(impl_class, 'STATIC_MODELS', [])
+        return []
+
 class TranslatorFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}
 

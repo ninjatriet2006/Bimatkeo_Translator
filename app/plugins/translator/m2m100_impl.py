@@ -4,6 +4,10 @@ from .base_offline import BaseOfflineTranslator
 
 @TranslatorFactory.register("m2m100")
 class M2M100Translator(BaseOfflineTranslator):
+    DISPLAY_NAME = {
+        "m2m100": "facebook/m2m100_418M",
+        "m2m100_big": "facebook/m2m100_1.2B"
+    }
     def _perform_translation(self, texts: List[str], src_lang: str, tgt_lang: str) -> List[str]:
         if self.tokenizer is None or self.model is None:
             return []

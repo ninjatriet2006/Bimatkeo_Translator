@@ -10,6 +10,7 @@ from app.core.downloader import ModelDownloader
 @UpscalerFactory.register("esrgan")
 @UpscalerFactory.register("waifu2x")
 class ESRGANUpscaler_Impl(BaseUpscaler):
+    DISPLAY_NAME = "nihui/waifu2x-ncnn-vulkan"
     def __init__(self):
         self.model_path = None
         self.is_loaded = False

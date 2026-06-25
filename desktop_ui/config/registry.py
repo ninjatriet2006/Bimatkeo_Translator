@@ -13,6 +13,19 @@ _exe_ext = ".exe" if _os_suffix == "win" else ""
 
 
 from typing import TYPE_CHECKING
+from app.core.factories import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory
+
+FACTORY_MAP = {
+    "offline_translator": TranslatorFactory,
+    "ai_translator": TranslatorFactory,
+    "offline_detector": DetectorFactory,
+    "offline_ocr": RecognizerFactory,
+    "api_ocr": CloudOCRFactory,
+    "inpainter": InpainterFactory,
+    "upscaler": UpscalerFactory,
+    "colorizer": ColorizerFactory,
+    "renderer": RendererFactory,
+}
 
 if TYPE_CHECKING:
     class _RegistryMixinBase:
@@ -43,16 +56,11 @@ class RegistryMixin(_RegistryMixinBase):
         "required_fields": ["offline_detector", "offline_ocr", "inpainter"],
         "fields": {
             "offline_translator": [
-                {"key": "m2m100", "label": "facebook/m2m100_418M",
-                 "check_file": "models/Offline Translator/M2M100/sentencepiece.model",
-                 "capabilities": {"__any__": "__all__"}},
-                {"key": "offline", "label": "DavidVentura/offline-translator",
-                 "check_file": "models/Offline Translator/M2M100/sentencepiece.model",
-                 "capabilities": {"__any__": "__all__"}},
+                {"key": "m2m100", "check_file": "models/Offline Translator/M2M100/sentencepiece.model"},
+                {"key": "offline", "check_file": "models/Offline Translator/M2M100/sentencepiece.model"},
             ],
             "ai_translator": [
-                {"key": "gemini", "check_file": "app/translators/gemini.py",
-                 "check_module": "google.genai", "capabilities": {"__any__": "__all__"}},
+                {"key": "gemini", "check_file": "app/translators/gemini.py", "check_module": "google.genai"},
             ],
             "offline_ocr": [
                 {"key": "mocr", "check_file": "app/ocr/mocr.py", "check_module": "manga_ocr"},
@@ -66,8 +74,7 @@ class RegistryMixin(_RegistryMixinBase):
                 {"key": "none"},
             ],
             "upscaler": [
-                {"key": "waifu2x",
-                 "check_file": "models/Upscaler/Waifu2x/waifu2x-{os}/waifu2x-ncnn-vulkan{exe}"},
+                {"key": "waifu2x", "check_file": "models/Upscaler/Waifu2x/waifu2x-{os}/waifu2x-ncnn-vulkan{exe}"},
             ],
             "colorizer": [
                 {"key": "none"},
@@ -194,10 +201,8 @@ class RegistryMixin(_RegistryMixinBase):
         for field, group_name in self.GROUP_NAMES.items():
             by_key = self.model_registry.get(field, {})
             groups[group_name] = list(by_key.keys())
-            for key, entry in by_key.items():
-                caps = entry.get("capabilities")
-                if caps is None:
-                    caps = {"__any__": "__all__"}
+            for key in by_key.keys():
+                caps = TranslatorFactory.get_capabilities(key)
                 capabilities[key] = caps
         groups[CAT_OTHER_ACTIONS] = ["original", "none"]
         capabilities["original"] = {}
@@ -233,12 +238,28 @@ class RegistryMixin(_RegistryMixinBase):
         if key == "original":
             return "--- Original ---"
             
+        # 1. Query the dynamic factory for DISPLAY_NAME if field is provided
+        if field and field in FACTORY_MAP:
+            factory = FACTORY_MAP[field]
+            display = factory.get_display_name(key)
+            if display != key:
+                return display
+                
+        # 2. Query ALL factories if field is not provided
+        if not field:
+            for factory in FACTORY_MAP.values():
+                display = factory.get_display_name(key)
+                if display != key:
+                    return display
+                    
+        # 3. Fallback to YAML (legacy support)
         labels = getattr(self, "model_labels", {})
         if field and field in labels and key in labels[field]:
             return labels[field][key]
         for field_labels in labels.values():
             if key in field_labels:
                 return field_labels[key]
+                
         return key
 
     def list_field_keys(self, field):
