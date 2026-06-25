@@ -70,6 +70,12 @@ def fetch_remote_ai_models(endpoint: str, key: str, ai_provider: str) -> list[st
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
 
+    for item in _AI_TRANSLATOR_REGISTRY:
+        if item.get("key") == ai_provider:
+            static_models = item.get("static_models")
+            if static_models:
+                return static_models
+
     if ai_provider == 'gemini':
         base_url = endpoint.rstrip('/') if endpoint else "https://generativelanguage.googleapis.com/v1beta"
         url = f"{base_url}/models?key={key}"
@@ -87,8 +93,6 @@ def fetch_remote_ai_models(endpoint: str, key: str, ai_provider: str) -> list[st
                 return [x[0] for x in gemini_models]
         except urllib.error.URLError as e:
             raise ValueError(f"Failed to fetch Gemini models: {e}") from e
-    elif ai_provider == 'felo':
-        return ['felo-search']
     else:
         base_url = endpoint.rstrip('/')
         url = f"{base_url}/models"

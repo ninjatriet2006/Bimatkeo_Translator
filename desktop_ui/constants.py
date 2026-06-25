@@ -17,6 +17,4 @@ UPDATE_LANGS_LIST = "📥 Cập nhật danh sách ngôn ngữ..."
 INSTALL_NEW_FONT = "🔍 Install New Font..."
 UPDATE_ALL_FONTS = "📥 Update All Fonts..."
 
-# URLs
-FONT_METADATA_URL = "https://cdn.jsdelivr.net/npm/google-font-metadata/"
-FONT_CSS_URL = "https://fonts.googleapis.com/css?family="
+# URLs (Đã chuyển vào model_registry.yaml)

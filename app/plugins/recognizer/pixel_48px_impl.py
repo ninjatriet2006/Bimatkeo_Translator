@@ -27,8 +27,8 @@ class Pixel48pxRecognizerImpl(BaseTextRecognizer):
                 raise RuntimeError(f"Chưa có nguồn tải cho mô hình 48px. Vui lòng tự nạp mô hình vào {target_dir}")
         
         if log_callback: log_callback("INFO", f"Mô hình 48px OCR đã nạp: {model_path}")
-        self.model = "48px_Loaded_Model"
+        self.model = os.path.basename(model_path)
         
     def recognize(self, image_crop: np.ndarray) -> str:
         if self.model is None: return ""
-        return "[48px] Nhận diện chữ mẫu (Có hỗ trợ cong xPos)"
+        return "[48px] Mock OCR text (Curved xPos supported)"

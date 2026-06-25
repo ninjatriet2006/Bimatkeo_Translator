@@ -22,6 +22,22 @@ class PaddleONNXRecognizerImpl(BaseTextRecognizer):
         if not os.path.exists(self.dict_path):
             if log_callback: log_callback("INFO", "Đang tải từ điển ký tự PaddleOCR (en_dict.txt)...")
             url = "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/ppocr/utils/en_dict.txt"
+            
+            # Đọc từ file cấu hình nếu có
+            try:
+                import yaml
+                registry_path = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+                    ".config", "models", "model_registry.yaml"
+                )
+                with open(registry_path, "r", encoding="utf-8") as f:
+                    registry_data = yaml.safe_load(f)
+                    configured_url = registry_data.get("global_settings", {}).get("resources", {}).get("paddle_en_dict")
+                    if configured_url:
+                        url = configured_url
+            except Exception as e:
+                if log_callback: log_callback("WARNING", f"Không thể đọc cấu hình URL, sử dụng mặc định: {e}")
+                
             try:
                 os.makedirs(os.path.dirname(self.dict_path), exist_ok=True)
                 urllib.request.urlretrieve(url, self.dict_path)

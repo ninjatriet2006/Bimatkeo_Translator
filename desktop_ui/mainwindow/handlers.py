@@ -1500,13 +1500,21 @@ class HandlersMixin:
     def _save_font_version_from_online_metadata(self, font_family: str):
         """Fetches the latest online version of a single font family and saves it in config."""
         from PySide6.QtCore import Signal, QThread
+        
+        metadata_url = self.config_loader.global_settings.get("resources", {}).get(
+            "google_font_metadata", 
+            "https://cdn.jsdelivr.net/npm/google-font-metadata/data/google-fonts-v2.json"
+        )
+        
         class SingleVersionFetchWorker(QThread):
             done = Signal(str)
+            def __init__(self, url):
+                super().__init__()
+                self.url = url
             def run(self):
                 import urllib.request
                 try:
-                    url = "https://cdn.jsdelivr.net/npm/google-font-metadata/data/google-fonts-v2.json"
-                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    req = urllib.request.Request(self.url, headers={'User-Agent': 'Mozilla/5.0'})
                     with urllib.request.urlopen(req, timeout=5) as response:
                         data = json.loads(response.read().decode('utf-8'))
                     key = font_family.lower().replace(" ", "-")
@@ -1519,12 +1527,6 @@ class HandlersMixin:
                 except Exception as e:
                     print(f"[WARNING] Failed to fetch online metadata for single version check: {e}")
                 self.done.emit("")
-        
-        if not hasattr(self, "_active_ver_workers"):
-            self._active_ver_workers = set()
-            
-        worker = SingleVersionFetchWorker()
-        self._active_ver_workers.add(worker)
         
         def on_done(version):
             if version:
@@ -1789,7 +1791,11 @@ class HandlersMixin:
         progress_dialog.setStandardButtons(QMessageBox.StandardButton.NoButton)
         progress_dialog.show()
         
-        self._check_worker = CheckAllFontsWorker(installed_families, local_versions)
+        metadata_url = self.config_loader.global_settings.get("resources", {}).get(
+            "google_font_metadata", 
+            "https://cdn.jsdelivr.net/npm/google-font-metadata/data/google-fonts-v2.json"
+        )
+        self._check_worker = CheckAllFontsWorker(installed_families, local_versions, metadata_url)
         
         def on_check_finished(success, updates, error_msg):
             self._bulk_update_active = False
@@ -1851,7 +1857,11 @@ class HandlersMixin:
         main_font_combo.setEnabled(False)
         fonts_dir = os.path.join(self.project_base_dir, "fonts")
         
-        self._bulk_worker = BulkFontDownloadWorker(updates, fonts_dir)
+        css_url = self.config_loader.global_settings.get("resources", {}).get(
+            "google_font_css", 
+            "https://fonts.googleapis.com/css?family="
+        )
+        self._bulk_worker = BulkFontDownloadWorker(updates, fonts_dir, css_url)
         progress.canceled.connect(self._bulk_worker.terminate)
         
         def on_progress(current, total, family):
@@ -2597,43 +2607,17 @@ class HandlersMixin:
                 if code != "auto":
                     combo.addItem(name, code)
             combo.addItem(UPDATE_LANGS_LIST, "update_trigger")
-        elif key == "offline_translator":
-            values = mw.TRANSLATOR_GROUPS.get(CAT_OFFLINE_MODELS, [])
+        elif key in self.config_loader.all_model_fields:
+            if key not in ["offline_translator", "ai_translator", "api_ocr"]:
+                combo.addItem("--- Select ---", "none")
+                
+            values_data = self.config_loader.full_registry.get("fields", {}).get(key, [])
+            values = [item.get("key") for item in values_data if item.get("key") and item.get("key") != "none"]
+            
+            supports_langs = key in ["offline_translator", "ai_translator"]
+            has_any_check_file = any(self.config_loader._DEFAULT_CHECKS.get(key, {}).get(v, {}).get("check_file") for v in values)
+
             for val in values:
-                exists = self.config_loader.check_model_existence(val, field=key)
-                display_name = val if exists else f"{val} (Not Setup)"
-                combo.addItem(display_name, val)
-                if not exists:
-                    idx = combo.count() - 1
-                    combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
-            combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
-        elif key == "ai_translator":
-            values = mw.TRANSLATOR_GROUPS.get(CAT_API_BASED, [])
-            for val in values:
-                exists = self.config_loader.check_model_existence(val, field=key)
-                display_name = val if exists else f"{val} (Not Setup)"
-                combo.addItem(display_name, val)
-                if not exists:
-                    idx = combo.count() - 1
-                    combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
-            combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
-        elif key == "api_ocr":
-            values = self.config_loader.full_registry.get("fields", {}).get(key, [])
-            for item in values:
-                val = item.get("key")
-                if val == "none": continue
-                display_name = self.config_loader.format_display_label(val, key)
-                combo.addItem(display_name, val)
-        elif key in self.config_loader.all_model_fields and key not in ["offline_translator", "ai_translator", "api_ocr"]:
-            values = self.config_loader.full_config_data.get(key, {}).get("values", [])
-            combo.addItem("--- Select ---", "none")
-            for val in values:
-                if isinstance(val, dict):
-                    val = val.get("key")
-                if not val or val == "none":
-                    continue
                 exists = self.config_loader.check_model_existence(val, field=key)
                 display_name = self.config_loader.format_display_label(val, key)
                 if not exists:
@@ -2642,14 +2626,20 @@ class HandlersMixin:
                 if not exists:
                     idx = combo.count() - 1
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            is_en = self.current_settings.get('app_language', 'English') in ['English', 'en', 'ENG']
             
-            ui_map = getattr(self.config_loader, 'ui_map', {})
-            labels = ui_map.get("labels", {})
-            localized_key = labels.get(key, key.replace("_", " ").title())
-            
-            update_all_key_text = f"📥 Update ALL {localized_key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {localized_key}..."
-            combo.addItem(update_all_key_text, "update_all_software_trigger")
+            if supports_langs:
+                combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
+                
+            if has_any_check_file:
+                if key in ["offline_translator", "ai_translator"]:
+                    combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
+                else:
+                    is_en = self.current_settings.get('app_language', 'English') in ['English', 'en', 'ENG']
+                    ui_map = getattr(self.config_loader, 'ui_map', {})
+                    labels = ui_map.get("labels", {})
+                    localized_key = labels.get(key, key.replace("_", " ").title())
+                    update_all_key_text = f"📥 Update ALL {localized_key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {localized_key}..."
+                    combo.addItem(update_all_key_text, "update_all_software_trigger")
                     
         current_val = self.current_settings.get(key)
         self._set_widget_value(key, current_val, combo)
@@ -2731,16 +2721,16 @@ class ConfigUpdateWorker(QThread):
 class CheckAllFontsWorker(QThread):
     finished = Signal(bool, list, str)
     
-    def __init__(self, installed_families, local_versions):
+    def __init__(self, installed_families, local_versions, metadata_url):
         super().__init__()
         self.installed_families = installed_families
         self.local_versions = local_versions
+        self.metadata_url = metadata_url
 
     def run(self):
         import urllib.request
         try:
-            url = "https://cdn.jsdelivr.net/npm/google-font-metadata/data/google-fonts-v2.json"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            req = urllib.request.Request(self.metadata_url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=15) as response:
                 data = json.loads(response.read().decode('utf-8'))
             
@@ -2765,10 +2755,11 @@ class BulkFontDownloadWorker(QThread):
     progress = Signal(int, int, str)
     finished = Signal(bool, dict, str)
     
-    def __init__(self, updates_to_download, fonts_dir):
+    def __init__(self, updates_to_download, fonts_dir, css_url):
         super().__init__()
         self.updates_to_download = updates_to_download
         self.fonts_dir = fonts_dir
+        self.css_url = css_url
 
     def run(self):
         import urllib.request
@@ -2781,14 +2772,14 @@ class BulkFontDownloadWorker(QThread):
         for idx, (family, _, online_ver) in enumerate(self.updates_to_download):
             self.progress.emit(idx + 1, total, family)
             try:
-                url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(family)}:regular,italic,700,700italic"
+                url = f"{self.css_url}{urllib.parse.quote(family)}:regular,italic,700,700italic"
                 req = urllib.request.Request(url, headers={'User-Agent': 'curl/7.81.0'})
                 with urllib.request.urlopen(req, timeout=15) as response:
                     css_content = response.read().decode('utf-8')
                 
                 blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
                 if not blocks:
-                    url_fallback = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(family)}"
+                    url_fallback = f"{self.css_url}{urllib.parse.quote(family)}"
                     req_fb = urllib.request.Request(url_fallback, headers={'User-Agent': 'curl/7.81.0'})
                     with urllib.request.urlopen(req_fb, timeout=15) as response_fb:
                         css_content = response_fb.read().decode('utf-8')

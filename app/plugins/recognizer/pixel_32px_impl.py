@@ -27,8 +27,8 @@ class Pixel32pxRecognizerImpl(BaseTextRecognizer):
                 raise RuntimeError(f"Chưa có nguồn tải cho mô hình 32px. Vui lòng tự nạp mô hình vào {target_dir}")
         
         if log_callback: log_callback("INFO", f"Mô hình 32px OCR đã nạp: {model_path}")
-        self.model = "32px_Loaded_Model"
+        self.model = os.path.basename(model_path)
         
     def recognize(self, image_crop: np.ndarray) -> str:
         if self.model is None: return ""
-        return "[32px] Nhận diện chữ mẫu"
+        return "[32px] Mock OCR text"

@@ -34,7 +34,7 @@ class CTDetectorImpl(BaseTextDetector):
         else:
             print(f"[LOG:INFO] Mô hình CTD đã nạp lên VRAM từ {model_path}.")
             
-        self.model = "CTD_Loaded_Model_Placeholder"
+        self.model = os.path.basename(model_path)
         
     def detect(self, image: np.ndarray) -> list[list[int]]:
         """

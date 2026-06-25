@@ -27,7 +27,7 @@ class CRAFTDetectorImpl(BaseTextDetector):
                 raise RuntimeError(f"Chưa có nguồn tải cho CRAFT. Vui lòng tự nạp mô hình vào {target_dir}")
             
         if log_callback: log_callback("INFO", f"Mô hình CRAFT đã nạp: {model_path}")
-        self.model = "CRAFT_Loaded_Model"
+        self.model = os.path.basename(model_path)
         
     def detect(self, image: np.ndarray) -> list[list[int]]:
         if self.model is None: raise RuntimeError("Chưa nạp model CRAFT.")
