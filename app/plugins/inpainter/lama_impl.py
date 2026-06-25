@@ -1,5 +1,4 @@
 import os
-import yaml
 import cv2
 import numpy as np
 from typing import List
@@ -8,20 +7,44 @@ from app.core.interfaces import BaseInpainter
 from app.core.factories import InpainterFactory
 from app.core.downloader import ModelDownloader
 
+try:
+    import onnxruntime as ort
+except ImportError:
+    ort = None
+
+def ceil_modulo(x, mod):
+    if x % mod == 0:
+        return x
+    return (x // mod + 1) * mod
+
+def pad_img_to_modulo(img, mod):
+    h, w = img.shape[:2]
+    out_h = ceil_modulo(h, mod)
+    out_w = ceil_modulo(w, mod)
+    if out_h == h and out_w == w:
+        return img
+    pad_h = out_h - h
+    pad_w = out_w - w
+    if img.ndim == 3:
+        padded = np.pad(img, ((0, pad_h), (0, pad_w), (0, 0)), mode='symmetric')
+    else:
+        padded = np.pad(img, ((0, pad_h), (0, pad_w)), mode='symmetric')
+    return padded
+
 @InpainterFactory.register("lama")
 @InpainterFactory.register("manga_inpaint_v3")
 class LamaInpainter_Impl(BaseInpainter):
     def __init__(self):
         self.model_path = None
         self.is_loaded = False
-
-
+        self.session = None
+        self.input_name_img = None
+        self.input_name_mask = None
 
     def load_model(self, model_path: str, **kwargs) -> None:
         self.model_path = model_path
         
-        # Identify which key it is based on the path or kwargs.
-        # But we also registered two keys. Let's extract key from model_path string or hardcode default
+        # Identify which key it is based on the path
         key = "lama"
         if "manga_inpaint_v3" in model_path.lower():
             key = "manga_inpaint_v3"
@@ -42,20 +65,40 @@ class LamaInpainter_Impl(BaseInpainter):
                 print(f"[LaMa] No source URL found in registry for {key}.")
                 return
         
-        # Here we WOULD import torch and load the saicinpainting network.
-        # Since we are wrapping it for Phase 5 implementation:
-        print(f"[LaMa] Weights confirmed at {self.model_path}. Inference fallback to OpenCV until torch network is ported.")
-        self.is_loaded = True
+        if ort is None:
+            print("[LaMa] onnxruntime is not installed. Inference will fallback to OpenCV.")
+            return
+
+        try:
+            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+            self.session = ort.InferenceSession(self.model_path, providers=providers)
+            
+            inputs = self.session.get_inputs()
+            # LaMa usually takes 'image' and 'mask'
+            for inp in inputs:
+                if 'image' in inp.name.lower():
+                    self.input_name_img = inp.name
+                elif 'mask' in inp.name.lower():
+                    self.input_name_mask = inp.name
+                    
+            if not self.input_name_img:
+                self.input_name_img = inputs[0].name
+            if not self.input_name_mask:
+                self.input_name_mask = inputs[1].name
+
+            print(f"[LaMa] ONNX Model loaded successfully: {self.model_path}")
+            self.is_loaded = True
+        except Exception as e:
+            print(f"[LaMa] Failed to load ONNX model: {e}")
 
     def inpaint(self, image: np.ndarray, bboxes: List[List[int]]) -> np.ndarray:
-        if not self.is_loaded:
+        if not bboxes:
             return image
-        
+
         # Create mask from bboxes
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
         for box in bboxes:
             x_min, y_min, x_max, y_max = box
-            # Expand the box slightly to ensure it covers the text anti-aliasing
             pad = 5
             x1 = max(0, x_min - pad)
             y1 = max(0, y_min - pad)
@@ -63,10 +106,48 @@ class LamaInpainter_Impl(BaseInpainter):
             y2 = min(image.shape[0], y_max + pad)
             cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
             
-        # Optional: Use Dense CRF or better mask expansion here if needed.
-        
-        # Fallback to OpenCV INPAINT_TELEA since actual LaMa inference code (ResNet) 
-        # requires full model architecture files which are not present yet.
-        print("[LaMa] Executing OpenCV INPAINT_TELEA fallback...")
-        inpainted = cv2.inpaint(image, mask, 5, cv2.INPAINT_TELEA)
-        return inpainted
+        if not self.is_loaded or self.session is None:
+            print("[LaMa] Executing OpenCV INPAINT_TELEA fallback...")
+            return cv2.inpaint(image, mask, 5, cv2.INPAINT_TELEA)
+
+        try:
+            # Preprocess
+            image_padded = pad_img_to_modulo(image, 8)
+            mask_padded = pad_img_to_modulo(mask, 8)
+
+            img_rgb = cv2.cvtColor(image_padded, cv2.COLOR_BGR2RGB)
+            img_input = img_rgb.astype(np.float32) / 255.0
+            img_input = np.transpose(img_input, (2, 0, 1))
+            img_input = np.expand_dims(img_input, axis=0)
+
+            mask_input = mask_padded.astype(np.float32) / 255.0
+            mask_input[mask_input > 0] = 1.0
+            mask_input = np.expand_dims(mask_input, axis=0)
+            mask_input = np.expand_dims(mask_input, axis=0)
+
+            # Inference
+            inputs = {
+                self.input_name_img: img_input,
+                self.input_name_mask: mask_input
+            }
+            outputs = self.session.run(None, inputs)
+            out_tensor = outputs[0]
+
+            # Postprocess
+            out_img = out_tensor[0]
+            out_img = np.transpose(out_img, (1, 2, 0))
+            out_img = np.clip(out_img * 255.0, 0, 255).astype(np.uint8)
+            out_img_bgr = cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR)
+
+            # Crop padded part
+            h, w = image.shape[:2]
+            out_img_bgr = out_img_bgr[:h, :w]
+
+            # Blend
+            mask_bool = (mask > 0)[:, :, np.newaxis]
+            result = image * (~mask_bool) + out_img_bgr * mask_bool
+            return result.astype(np.uint8)
+            
+        except Exception as e:
+            print(f"[LaMa] ONNX Inference failed: {e}. Executing OpenCV INPAINT_TELEA fallback...")
+            return cv2.inpaint(image, mask, 5, cv2.INPAINT_TELEA)

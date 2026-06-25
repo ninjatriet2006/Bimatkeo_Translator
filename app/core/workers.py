@@ -222,6 +222,9 @@ class RenderWorker(threading.Thread):
                         ctx.rendered_image = bg_image.copy()
                 else:
                     ctx.rendered_image = bg_image.copy() if bg_image is not None else None
+            else:
+                bg_image = ctx.inpainted_image if ctx.inpainted_image is not None else ctx.original_image
+                ctx.rendered_image = bg_image.copy() if bg_image is not None else None
 
             self.out_q.put(ctx)
             self.in_q.task_done()

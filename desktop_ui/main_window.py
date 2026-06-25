@@ -45,7 +45,7 @@ from desktop_ui.mainwindow import (
     ConsoleMixin,
     HandlersMixin
 )
-from .mainwindow.ui_utils import build_grouped_settings_tabs
+from desktop_ui.mainwindow.ui_utils import build_grouped_settings_tabs
 
 # Dynamic configuration mapping placeholders (shared globally)
 LANGUAGES = {}
@@ -61,7 +61,6 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
     pipeline_progress_signal = Signal(int, int, str)
     models_fetched_signal = Signal(list, object)
     fetch_finished_signal = Signal(object)
-    hitl_requested_signal = Signal(object)
     visual_test_finished_signal = Signal()
     visual_test_result_signal = Signal(str)
 
@@ -142,11 +141,6 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         self.pipeline_process = None
         self.available_themes = {}
 
-        # --- Variables for the Visual Compare Tab ---
-        self.test_image_path = None
-        self.original_pixmap_item = None
-        self.translated_pixmap_item = None
-        self.is_panning = False
         self.last_pan_pos = None
         self.temp_dir = os.path.join(self.project_base_dir, "temp")
         self.detected_vram_gb = 0
@@ -180,7 +174,6 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         self.pipeline_progress_signal.connect(self._update_progress_bar)
         self.models_fetched_signal.connect(self._on_models_fetched)
         self.fetch_finished_signal.connect(self._on_fetch_finished)
-        self.hitl_requested_signal.connect(self._on_hitl_requested)
         self.visual_test_finished_signal.connect(self._on_visual_test_finished)
         self.visual_test_result_signal.connect(self._display_test_result)
         # Apply saved theme if exists
@@ -327,12 +320,10 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         """Creates the right panel widget containing the main tabs."""
         self.main_tabs = QTabWidget()
         tab_config = self._create_settings_tab_container()
-        tab_compare = self._create_visual_compare_tab()
-        tab_mtpe = self._create_mtpe_tab()
+        tab_preview_tester = self._create_preview_tester_tab()
 
         self.main_tabs.addTab(tab_config, "Configuration ⚙️")
-        self.main_tabs.addTab(tab_compare, "Visual Compare 🔍")
-        self.main_tabs.addTab(tab_mtpe, "MTPE Editor 🖍️")
+        self.main_tabs.addTab(tab_preview_tester, "Preview Tester 🔍")
 
         return self.main_tabs
 
@@ -353,83 +344,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
 
         return container_widget
 
-    def _create_visual_compare_tab(self) -> QWidget:
-        """Creates the entire UI for the Visual Compare tab and connects its signals."""
-        container = QWidget()
-        layout = QVBoxLayout(container)
-
-        # 1. Top Controls Panel
-        controls_frame = QFrame()
-        controls_layout = QHBoxLayout(controls_frame)
-
-        load_button = QPushButton("Load Test Image...")
-        load_button.clicked.connect(self._load_test_image)
-
-        self.fast_preview_check = QCheckBox("Fast Preview")
-        self.fast_preview_check.setChecked(True)
-
-        self.run_test_button = QPushButton("Run Test")
-        self.run_test_button.setEnabled(False)
-        self.run_test_button.clicked.connect(self._run_visual_test_thread)
-
-        reset_button = QPushButton("Reset View")
-        reset_button.clicked.connect(self._fit_image_to_view)
-
-        self.zoom_label = QLabel("Zoom: 100%")
-
-        self.limit_zoom_check = QCheckBox("Limit Zoom")
-        self.limit_zoom_check.setChecked(True)
-        self.limit_zoom_check.setToolTip("When checked, zoom is limited between 5% and 800%.")
-
-        controls_layout.addWidget(load_button)
-        controls_layout.addWidget(self.fast_preview_check)
-        controls_layout.addStretch()
-        controls_layout.addWidget(self.zoom_label)
-        controls_layout.addWidget(reset_button)
-        controls_layout.addWidget(self.run_test_button)
-
-        # 2. Image Display Area
-        image_area_frame = QFrame()
-        image_area_frame.setFrameShape(QFrame.Shape.StyledPanel)
-        self.image_area_layout = QHBoxLayout(image_area_frame)
-
-        self.original_view = QGraphicsView()
-        self.original_scene = QGraphicsScene()
-        self.original_view.setScene(self.original_scene)
-        self.original_view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.original_view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-
-        self.translated_view = QGraphicsView()
-        self.translated_scene = QGraphicsScene()
-        self.translated_view.setScene(self.translated_scene)
-        self.translated_view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.translated_view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-
-        # Connect events for zooming and synchronized panning
-        self.original_view.wheelEvent = self._wheel_event_zoom
-        self.translated_view.wheelEvent = self._wheel_event_zoom
-        self.original_view.horizontalScrollBar().valueChanged.connect(self.translated_view.horizontalScrollBar().setValue)
-        self.original_view.verticalScrollBar().valueChanged.connect(self.translated_view.verticalScrollBar().setValue)
-        self.translated_view.horizontalScrollBar().valueChanged.connect(self.original_view.horizontalScrollBar().setValue)
-        self.translated_view.verticalScrollBar().valueChanged.connect(self.original_view.verticalScrollBar().setValue)
-
-        original_container = QWidget()
-        original_layout = QVBoxLayout(original_container)
-        original_layout.addWidget(QLabel("Original (Ctrl+Scroll=Zoom, Drag=Pan)"))
-        original_layout.addWidget(self.original_view)
-
-        translated_container = QWidget()
-        translated_layout = QVBoxLayout(translated_container)
-        translated_layout.addWidget(QLabel("Output"))
-        translated_layout.addWidget(self.translated_view)
-
-        self.image_area_layout.addWidget(original_container)
-        self.image_area_layout.addWidget(translated_container)
-
-        layout.addWidget(controls_frame)
-        layout.addWidget(image_area_frame, stretch=1)
-
-        return container
+        # Remove old visual compare UI methods
 
     def _update_progress_bar(self, current: int, total: int, text: str):
         """Updates the progress bar and status label from background threads."""
@@ -439,76 +354,4 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
             self.progress_bar.setValue(current)
             self.progress_label.setText(text)
 
-    def _on_hitl_requested(self, hitl_data):
-        from PySide6.QtGui import QImage, QPixmap
-        import numpy as np
-        
-        self.current_hitl_data = hitl_data
-        
-        # Switch to MTPE tab (it is the 3rd tab: index 2)
-        self.main_tabs.setCurrentIndex(2)
-        
-        # Update Image
-        img_array = hitl_data.get("image")
-        if img_array is not None:
-            height, width, channel = img_array.shape
-            bytesPerLine = 3 * width
-            q_img = QImage(img_array.data, width, height, bytesPerLine, QImage.Format.Format_BGR888)
-            pixmap = QPixmap.fromImage(q_img)
-            
-            self.mtpe_scene.clear()
-            self.mtpe_scene.addPixmap(pixmap)
-            
-            # Draw BBoxes
-            from PySide6.QtWidgets import QGraphicsRectItem
-            from PySide6.QtGui import QPen, QColor
-            bboxes = hitl_data.get("bboxes", [])
-            for box in bboxes:
-                x1, y1, x2, y2 = box
-                rect_item = QGraphicsRectItem(x1, y1, x2-x1, y2-y1)
-                rect_item.setPen(QPen(QColor(0, 255, 0), 2))
-                self.mtpe_scene.addItem(rect_item)
-                
-        # Update Table
-        original_texts = hitl_data.get("original_texts", [])
-        translated_texts = hitl_data.get("translated_texts", [])
-        
-        from PySide6.QtWidgets import QTableWidgetItem
-        self.mtpe_table.setRowCount(len(original_texts))
-        for i in range(len(original_texts)):
-            orig_item = QTableWidgetItem(original_texts[i])
-            orig_item.setFlags(orig_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-            self.mtpe_table.setItem(i, 0, orig_item)
-            
-            trans_text = translated_texts[i] if i < len(translated_texts) else ""
-            trans_item = QTableWidgetItem(trans_text)
-            self.mtpe_table.setItem(i, 1, trans_item)
-            
-        self.log("INFO", f"[MTPE] Vui lòng chỉnh sửa văn bản cho trang {hitl_data.get('page_id')} và bấm Approve.")
-
-    def _on_mtpe_approved(self):
-        if not hasattr(self, 'current_hitl_data') or not self.current_hitl_data:
-            return
-            
-        # Get updated translations from table
-        translated_texts = []
-        for i in range(self.mtpe_table.rowCount()):
-            item = self.mtpe_table.item(i, 1)
-            translated_texts.append(item.text() if item else "")
-            
-        self.current_hitl_data["translated_texts"] = translated_texts
-        
-        # Send data back via multiprocessing queue to unlock backend
-        if hasattr(self, 'hitl_rx_queue'):
-            self.hitl_rx_queue.put({
-                "page_id": self.current_hitl_data["page_id"],
-                "bboxes": self.current_hitl_data["bboxes"],
-                "translated_texts": translated_texts
-            })
-            
-        self.log("INFO", f"[MTPE] Đã Phê duyệt {self.current_hitl_data.get('page_id')}.")
-        self.current_hitl_data = None
-        
-        # Switch back to Visual Compare or keep MTPE open
-        self.mtpe_scene.clear()
-        self.mtpe_table.setRowCount(0)
+        # Removed _on_hitl_requested and _on_mtpe_approved

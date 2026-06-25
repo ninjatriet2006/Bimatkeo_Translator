@@ -27,40 +27,12 @@ def _pipeline_process_worker(job_or_path, output_path, config_dict, is_verbose, 
     def log_callback(level, message):
         log_queue.put((level, message))
         
-    def mtpe_callback(ctx):
-        waiting_ctxs[ctx.page_id] = ctx
-        hitl_tx_queue.put({
-            "page_id": ctx.page_id,
-            "bboxes": ctx.bboxes,
-            "original_texts": ctx.original_texts,
-            "translated_texts": ctx.translated_texts,
-            "image": ctx.original_image
-        })
-        
-    def hitl_rx_listener():
-        while True:
-            try:
-                data = hitl_rx_queue.get()
-                if data is None: break
-                page_id = data.get("page_id")
-                if page_id in waiting_ctxs:
-                    ctx = waiting_ctxs[page_id]
-                    if "bboxes" in data: ctx.bboxes = data["bboxes"]
-                    if "translated_texts" in data: ctx.translated_texts = data["translated_texts"]
-                    ctx.hitl_lock.set()
-                    del waiting_ctxs[page_id]
-            except Exception as e:
-                log_callback("ERROR", f"HITL RX Listener Error: {e}")
-                
-    rx_thread = threading.Thread(target=hitl_rx_listener, daemon=True)
-    rx_thread.start()
-        
     try:
         pipeline = Pipeline(None, python_exec, temp_dir)
         if is_single_test:
             success = pipeline.run_single_image_test(job_or_path, output_path, config_dict, log_callback, is_verbose)
         else:
-            success = pipeline.run(job_or_path, output_path, config_dict, log_callback, is_verbose, output_format, mtpe_callback=mtpe_callback)
+            success = pipeline.run(job_or_path, output_path, config_dict, log_callback, is_verbose, output_format)
             
         result_queue.put({"success": success})
     except Exception as e:
@@ -351,6 +323,9 @@ class JobRunnerMixin:
 
     def _load_test_image(self):
         """Opens a file dialog to load a test image and displays it."""
+        from PySide6.QtGui import QPixmap
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        
         file_path, _ = QFileDialog.getOpenFileName(self, "Select a Test Image", "", "Image Files (*.png *.jpg *.jpeg *.webp *.bmp)")
         if not file_path:
             return
@@ -363,11 +338,22 @@ class JobRunnerMixin:
             if pixmap.isNull():
                 raise ValueError("Pixmap is null. The image file may be corrupt or in an unsupported format.")
 
-            self.original_scene.clear()
-            self.translated_scene.clear()
+            # Load the original image into the detector view as a preview
+            if hasattr(self, 'scene_detector'):
+                if getattr(self, 'item_detector', None):
+                    self.scene_detector.removeItem(self.item_detector)
+                self.scene_detector.clear()
+                self.item_detector = self.scene_detector.addPixmap(pixmap)
 
-            self.original_pixmap_item = self.original_scene.addPixmap(pixmap)
-            self.translated_pixmap_item = self.translated_scene.addPixmap(QPixmap())
+            # Clear other scenes
+            for attr_name, scene in [('item_inpainter', getattr(self, 'scene_inpainter', None)), 
+                                     ('item_render', getattr(self, 'scene_render', None))]:
+                if scene is not None:
+                    item = getattr(self, attr_name, None)
+                    if item:
+                        scene.removeItem(item)
+                    scene.clear()
+                    setattr(self, attr_name, None)
 
             self.run_test_button.setEnabled(True)
             QTimer.singleShot(50, self._fit_image_to_view)
@@ -378,24 +364,36 @@ class JobRunnerMixin:
 
     def _fit_image_to_view(self):
         """Resets the view to fit the entire image within the visible area."""
-        if not self.original_pixmap_item or self.original_pixmap_item.pixmap().isNull():
-            return
-        self.original_view.fitInView(self.original_pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
-        self.translated_view.fitInView(self.original_pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
+        from PySide6.QtCore import Qt
+        for view, scene, item_attr in [
+            (getattr(self, 'view_detector', None), getattr(self, 'scene_detector', None), 'item_detector'),
+            (getattr(self, 'view_inpainter', None), getattr(self, 'scene_inpainter', None), 'item_inpainter'),
+            (getattr(self, 'view_render', None), getattr(self, 'scene_render', None), 'item_render')
+        ]:
+            if view and scene and getattr(self, item_attr, None):
+                view.fitInView(scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
         self._update_zoom_label()
 
     def _wheel_event_zoom(self, event):
         """Handles zooming with Ctrl+MouseWheel, respecting the zoom limit checkbox."""
         from PySide6.QtWidgets import QGraphicsView
-        if not self.original_pixmap_item or event.modifiers() != Qt.KeyboardModifier.ControlModifier:
-            QGraphicsView.wheelEvent(self.original_view, event)
-            QGraphicsView.wheelEvent(self.translated_view, event)
+        from PySide6.QtCore import Qt
+        
+        # Check if the event source is one of our views
+        views = [getattr(self, 'view_detector', None), getattr(self, 'view_inpainter', None), getattr(self, 'view_render', None)]
+        views = [v for v in views if v is not None]
+        
+        if not views or event.modifiers() != Qt.KeyboardModifier.ControlModifier:
+            for v in views:
+                if v and v.underMouse():
+                    QGraphicsView.wheelEvent(v, event)
             return
 
         zoom_in_factor = 1.15
         zoom_out_factor = 1 / zoom_in_factor
 
-        current_zoom = self.original_view.transform().m11()
+        # Use the first valid view as reference for current zoom
+        current_zoom = views[0].transform().m11()
 
         if event.angleDelta().y() > 0:
             zoom_factor = zoom_in_factor
@@ -406,21 +404,23 @@ class JobRunnerMixin:
             min_zoom, max_zoom = 0.05, 8.0
             if (current_zoom * zoom_factor > min_zoom
                     and current_zoom * zoom_factor < max_zoom):
-                self.original_view.scale(zoom_factor, zoom_factor)
-                self.translated_view.scale(zoom_factor, zoom_factor)
+                for v in views:
+                    v.scale(zoom_factor, zoom_factor)
         else:
             min_zoom, max_zoom = 0.01, 100.0
             if (current_zoom * zoom_factor > min_zoom
                     and current_zoom * zoom_factor < max_zoom):
-                self.original_view.scale(zoom_factor, zoom_factor)
-                self.translated_view.scale(zoom_factor, zoom_factor)
+                for v in views:
+                    v.scale(zoom_factor, zoom_factor)
 
         self._update_zoom_label()
 
     def _update_zoom_label(self):
         """Updates the zoom level display label."""
-        zoom = self.original_view.transform().m11()
-        self.zoom_label.setText(f"Zoom: {zoom * 100:.0f}%")
+        view = getattr(self, 'view_detector', None)
+        if view:
+            zoom = view.transform().m11()
+            self.zoom_label.setText(f"Zoom: {zoom * 100:.0f}%")
 
     def _run_visual_test_thread(self):
         """Starts the visual test pipeline in a separate thread to avoid freezing the UI."""
@@ -510,16 +510,8 @@ class JobRunnerMixin:
 
             if success:
                 self.log("SUCCESS", "Visual test backend process completed.")
-                result_files = os.listdir(final_output_dir)
-                if result_files:
-                    original_filename = os.path.basename(self.test_image_path)
-                    output_filename = os.path.splitext(original_filename)[0] + ".png"
-                    result_path = os.path.join(final_output_dir, output_filename)
-                    if os.path.exists(result_path):
-                        if hasattr(self, 'visual_test_result_signal'):
-                            self.visual_test_result_signal.emit(result_path)
-                    else:
-                        self.log("ERROR", "Could not find the translated image in the output folder.")
+                if hasattr(self, 'visual_test_result_signal'):
+                    self.visual_test_result_signal.emit(final_output_dir)
             else:
                 self.log("ERROR", "Visual test failed or was stopped.")
                 if os.path.exists(final_output_dir) and not os.listdir(final_output_dir):
@@ -531,21 +523,83 @@ class JobRunnerMixin:
             if hasattr(self, 'visual_test_finished_signal'):
                 self.visual_test_finished_signal.emit()
 
-    def _display_test_result(self, image_path: str):
-        """Loads the result image and displays it in the '''Output''' view."""
-        print(f"[Visual Test] Displaying result from: {image_path}")
+    def _display_test_result(self, output_dir: str):
+        """Loads the intermediate results and displays them in the Preview Tester sub-tabs."""
+        import json
+        from PySide6.QtWidgets import QTableWidgetItem
+        from PySide6.QtCore import Qt
+        
+        self.log("INFO", f"Đang hiển thị kết quả từ: {output_dir}")
         try:
-            pixmap = QPixmap(image_path)
-            if pixmap.isNull():
-                raise ValueError("Result pixmap is null.")
-
-            self.translated_scene.clear()
-            self.translated_pixmap_item = self.translated_scene.addPixmap(pixmap)
+            # 1. Detector
+            det_path = os.path.join(output_dir, "test_detector.png")
+            if os.path.exists(det_path):
+                if getattr(self, 'item_detector', None):
+                    self.scene_detector.removeItem(self.item_detector)
+                self.scene_detector.clear()
+                self.item_detector = self.scene_detector.addPixmap(QPixmap(det_path))
+                
+            # 2. Inpainter
+            inp_path = os.path.join(output_dir, "test_inpainter.png")
+            if os.path.exists(inp_path):
+                if getattr(self, 'item_inpainter', None):
+                    self.scene_inpainter.removeItem(self.item_inpainter)
+                self.scene_inpainter.clear()
+                self.item_inpainter = self.scene_inpainter.addPixmap(QPixmap(inp_path))
+                
+            # 3. Render Output
+            if hasattr(self, 'test_image_path'):
+                original_filename = os.path.basename(self.test_image_path)
+                output_filename = os.path.splitext(original_filename)[0] + ".png"
+                ren_path = os.path.join(output_dir, output_filename)
+                if os.path.exists(ren_path):
+                    if getattr(self, 'item_render', None):
+                        self.scene_render.removeItem(self.item_render)
+                    self.scene_render.clear()
+                    self.item_render = self.scene_render.addPixmap(QPixmap(ren_path))
+            
+            # 4. Text Data (OCR and Translator)
+            json_path = os.path.join(output_dir, "test_data.json")
+            if os.path.exists(json_path):
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    
+                bboxes = data.get("bboxes", [])
+                original_texts = data.get("original_texts", [])
+                translated_texts = data.get("translated_texts", [])
+                
+                # Update OCR Table
+                self.table_ocr.setRowCount(len(bboxes))
+                for i in range(len(bboxes)):
+                    box_str = str(bboxes[i]) if i < len(bboxes) else ""
+                    orig_str = original_texts[i] if i < len(original_texts) else ""
+                    
+                    item_box = QTableWidgetItem(box_str)
+                    item_orig = QTableWidgetItem(orig_str)
+                    item_box.setFlags(item_box.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                    item_orig.setFlags(item_orig.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                    
+                    self.table_ocr.setItem(i, 0, item_box)
+                    self.table_ocr.setItem(i, 1, item_orig)
+                    
+                # Update Translator Table
+                self.table_translator.setRowCount(len(original_texts))
+                for i in range(len(original_texts)):
+                    orig_str = original_texts[i] if i < len(original_texts) else ""
+                    trans_str = translated_texts[i] if i < len(translated_texts) else ""
+                    
+                    item_orig = QTableWidgetItem(orig_str)
+                    item_trans = QTableWidgetItem(trans_str)
+                    item_orig.setFlags(item_orig.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                    
+                    self.table_translator.setItem(i, 0, item_orig)
+                    self.table_translator.setItem(i, 1, item_trans)
+            
             self._fit_image_to_view()
 
         except Exception as e:
-            print(f"[ERROR] Failed to load result image: {e}")
-            QMessageBox.critical(self, "Error", f"Could not load the result image:\n{e}")
+            self.log("ERROR", f"Failed to load preview results: {e}")
+            QMessageBox.critical(self, "Error", f"Could not load the preview results:\n{e}")
 
     def _on_visual_test_finished(self):
         """Resets the '''Run Test''' button to its normal state."""
@@ -804,14 +858,6 @@ class JobRunnerMixin:
                 except queue.Empty:
                     break
                     
-            while True:
-                try:
-                    hitl_data = hitl_tx_queue.get_nowait()
-                    if hasattr(self, 'hitl_requested_signal'):
-                        self.hitl_requested_signal.emit(hitl_data)
-                except queue.Empty:
-                    break
-            
             if self._stopped_by_user:
                 self.current_process.terminate()
                 self.current_process.join()

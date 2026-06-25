@@ -1186,57 +1186,119 @@ class WidgetBuildersMixin:
             
         return img_path.replace("\\", "/")
 
-    def _create_mtpe_tab(self) -> QWidget:
-        from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QTableWidget, QTableWidgetItem, QHeaderView, QPushButton, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsRectItem
-        from PySide6.QtCore import Qt, QRectF
-        from PySide6.QtGui import QPen, QBrush, QColor, QImage, QPixmap
+    def _create_preview_tester_tab(self) -> QWidget:
+        """Creates the Preview Tester tab containing sub-tabs for each pipeline stage."""
+        from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFrame, QPushButton, QCheckBox, QLabel, QTabWidget, QGraphicsView, QGraphicsScene, QTableWidget, QHeaderView
+        from PySide6.QtCore import Qt
+        from PySide6.QtGui import QPixmap
+        
+        container = QWidget()
+        layout = QVBoxLayout(container)
 
-        mtpe_widget = QWidget()
-        layout = QVBoxLayout(mtpe_widget)
-        layout.setContentsMargins(10, 10, 10, 10)
+        # 1. Top Controls Panel
+        controls_frame = QFrame()
+        controls_layout = QHBoxLayout(controls_frame)
+
+        load_button = QPushButton("Load Test Image...")
+        load_button.clicked.connect(self._load_test_image)
+
+        self.fast_preview_check = QCheckBox("Fast Preview")
+        self.fast_preview_check.setChecked(True)
+
+        self.run_test_button = QPushButton("Run Test")
+        self.run_test_button.setEnabled(False)
+        self.run_test_button.clicked.connect(self._run_visual_test_thread)
+
+        reset_button = QPushButton("Reset View")
+        reset_button.clicked.connect(self._fit_image_to_view)
+
+        self.zoom_label = QLabel("Zoom: 100%")
+
+        self.limit_zoom_check = QCheckBox("Limit Zoom")
+        self.limit_zoom_check.setChecked(True)
+        self.limit_zoom_check.setToolTip("When checked, zoom is limited between 5% and 800%.")
+
+        controls_layout.addWidget(load_button)
+        controls_layout.addWidget(self.fast_preview_check)
+        controls_layout.addStretch()
+        controls_layout.addWidget(self.zoom_label)
+        controls_layout.addWidget(reset_button)
+        controls_layout.addWidget(self.run_test_button)
+
+        layout.addWidget(controls_frame)
+
+        # 2. Sub-tabs for Preview Tester
+        self.preview_tabs = QTabWidget()
         
-        splitter = QSplitter(Qt.Orientation.Horizontal)
+        # Detector Tab
+        self.tab_detector = QWidget()
+        det_layout = QVBoxLayout(self.tab_detector)
+        self.view_detector = QGraphicsView()
+        self.scene_detector = QGraphicsScene()
+        self.view_detector.setScene(self.scene_detector)
+        self.view_detector.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        det_layout.addWidget(self.view_detector)
+        self.preview_tabs.addTab(self.tab_detector, "Detector")
+
+        # OCR Tab
+        self.tab_ocr = QWidget()
+        ocr_layout = QVBoxLayout(self.tab_ocr)
+        self.table_ocr = QTableWidget()
+        self.table_ocr.setColumnCount(2)
+        self.table_ocr.setHorizontalHeaderLabels(["BBox", "Original Text"])
+        self.table_ocr.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        ocr_layout.addWidget(self.table_ocr)
+        self.preview_tabs.addTab(self.tab_ocr, "OCR")
+
+        # Translator Tab
+        self.tab_translator = QWidget()
+        trans_layout = QVBoxLayout(self.tab_translator)
+        self.table_translator = QTableWidget()
+        self.table_translator.setColumnCount(2)
+        self.table_translator.setHorizontalHeaderLabels(["Original Text", "Translated Text"])
+        self.table_translator.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        trans_layout.addWidget(self.table_translator)
+        self.preview_tabs.addTab(self.tab_translator, "Translator")
+
+        # Inpainter Tab
+        self.tab_inpainter = QWidget()
+        inp_layout = QVBoxLayout(self.tab_inpainter)
+        self.view_inpainter = QGraphicsView()
+        self.scene_inpainter = QGraphicsScene()
+        self.view_inpainter.setScene(self.scene_inpainter)
+        self.view_inpainter.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        inp_layout.addWidget(self.view_inpainter)
+        self.preview_tabs.addTab(self.tab_inpainter, "Image Inpainter")
+
+        # Render Output Tab
+        self.tab_render = QWidget()
+        ren_layout = QVBoxLayout(self.tab_render)
+        self.view_render = QGraphicsView()
+        self.scene_render = QGraphicsScene()
+        self.view_render.setScene(self.scene_render)
+        self.view_render.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        ren_layout.addWidget(self.view_render)
+        self.preview_tabs.addTab(self.tab_render, "Render Output")
+
+        # Connect events for synchronized zooming/panning across image views
+        self.view_detector.wheelEvent = self._wheel_event_zoom
+        self.view_inpainter.wheelEvent = self._wheel_event_zoom
+        self.view_render.wheelEvent = self._wheel_event_zoom
         
-        # Left side: Image and BBoxes
-        self.mtpe_view = QGraphicsView()
-        self.mtpe_scene = QGraphicsScene()
-        self.mtpe_view.setScene(self.mtpe_scene)
-        self.mtpe_view.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-        
-        # Right side: Text Table
-        right_panel = QWidget()
-        right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(0, 0, 0, 0)
-        
-        self.mtpe_table = QTableWidget()
-        self.mtpe_table.setColumnCount(2)
-        self.mtpe_table.setHorizontalHeaderLabels(["Original Text", "Translated Text"])
-        self.mtpe_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        
-        self.mtpe_approve_btn = QPushButton("✅ Approve & Render")
-        self.mtpe_approve_btn.setMinimumHeight(50)
-        self.mtpe_approve_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #10b981;
-                color: white;
-                font-weight: bold;
-                font-size: 16px;
-                border-radius: 8px;
-            }
-            QPushButton:hover {
-                background-color: #059669;
-            }
-        """)
-        
-        right_layout.addWidget(self.mtpe_table)
-        right_layout.addWidget(self.mtpe_approve_btn)
-        
-        self.mtpe_approve_btn.clicked.connect(self._on_mtpe_approved)
-        
-        splitter.addWidget(self.mtpe_view)
-        splitter.addWidget(right_panel)
-        splitter.setSizes([600, 400])
-        
-        layout.addWidget(splitter)
-        
-        return mtpe_widget
+        # Link scrollbars
+        views = [self.view_detector, self.view_inpainter, self.view_render]
+        for i in range(len(views)):
+            for j in range(len(views)):
+                if i != j:
+                    views[i].horizontalScrollBar().valueChanged.connect(views[j].horizontalScrollBar().setValue)
+                    views[i].verticalScrollBar().valueChanged.connect(views[j].verticalScrollBar().setValue)
+
+        layout.addWidget(self.preview_tabs, stretch=1)
+
+        # Map old names to new ones for compatibility with existing code
+        self.original_view = self.view_detector
+        self.original_scene = self.scene_detector
+        self.translated_view = self.view_render
+        self.translated_scene = self.scene_render
+
+        return container

@@ -303,6 +303,31 @@ class Pipeline:
                     if ctx.rendered_image is not None:
                         cv2.imwrite(output_file, ctx.rendered_image)
                         log_callback("SUCCESS", f"Đã lưu kết quả: {output_filename}")
+                        
+                    # ---------------------------------------------------------
+                    # NEW: Dump intermediate states if running as a single test
+                    # ---------------------------------------------------------
+                    if config_dict.get('is_single_file', False):
+                        import json
+                        
+                        # Save Inpainted Image
+                        if ctx.inpainted_image is not None:
+                            cv2.imwrite(os.path.join(output_path, "test_inpainter.png"), ctx.inpainted_image)
+                        
+                        # Save BBoxes Image (Detector)
+                        if ctx.original_image is not None and ctx.bboxes:
+                            det_img = ctx.original_image.copy()
+                            for box in ctx.bboxes:
+                                cv2.rectangle(det_img, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 2)
+                            cv2.imwrite(os.path.join(output_path, "test_detector.png"), det_img)
+                        
+                        # Save Text Data (OCR and Translator)
+                        with open(os.path.join(output_path, "test_data.json"), "w", encoding="utf-8") as f:
+                            json.dump({
+                                "bboxes": ctx.bboxes,
+                                "original_texts": ctx.original_texts,
+                                "translated_texts": ctx.translated_texts
+                            }, f, ensure_ascii=False, indent=2)
                 
                 completed += 1
                 q_out.task_done()
