@@ -466,6 +466,7 @@ class HandlersMixin:
         combo.addItems(filtered_profiles)
         combo.setCurrentText(profile_name)
         combo.blockSignals(False)
+        self.current_settings[mapping['name']] = profile_name
 
         self.log("SUCCESS", f"API Profile '{profile_name}' saved to local config.")
 

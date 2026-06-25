@@ -77,7 +77,9 @@ def fetch_remote_ai_models(endpoint: str, key: str, ai_provider: str) -> list[st
                 return static_models
 
     if ai_provider == 'gemini':
-        base_url = endpoint.rstrip('/') if endpoint else "https://generativelanguage.googleapis.com/v1beta"
+        base_url = endpoint.rstrip('/') if endpoint else "https://generativelanguage.googleapis.com"
+        if not base_url.endswith("/v1beta"):
+            base_url += "/v1beta"
         url = f"{base_url}/models?key={key}"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         try:
