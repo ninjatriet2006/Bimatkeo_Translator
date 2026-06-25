@@ -833,10 +833,10 @@ class HandlersMixin:
                         profiles[profile_name][field_name] = new_value
                         self._save_api_profiles(profiles)
             
-            if key in ['translator_category', 'ai_mode', 'api_name', 'ai_translator']:
+            if key in ['translator_category', 'ai_mode', 'ai_translator']:
                 self._update_translator_visibility()
                 
-            if key in ['ocr_category', 'ocr_ai_mode', 'ocr_api_name', 'api_ocr']:
+            if key in ['ocr_category', 'ocr_ai_mode', 'api_ocr']:
                 self._update_ocr_visibility()
 
             if key == 'app_language':

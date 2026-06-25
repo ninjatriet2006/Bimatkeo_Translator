@@ -71,7 +71,8 @@ class PromptBuilder:
             "You are a professional manga/comic translator. "
             "Your task is to translate the following text from {src} to {tgt}. "
             "Maintain the tone, emotions, and formatting of the original text. "
-            "If the text contains sound effects or onomatopoeia, translate them naturally."
+            "If the text contains sound effects or onomatopoeia, translate them naturally.\n"
+            "IMPORTANT: The input lines may be split across multiple speech bubbles but form a single continuous conversation or sentence. Mentally combine them to understand the full context before translating, then distribute the translated sentence back across the corresponding lines naturally so they make sense when read together."
         )
         json_rules = (
             "CRITICAL RULES: \n"
