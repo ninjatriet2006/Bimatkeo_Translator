@@ -59,3 +59,66 @@ def sort_comic_text_boxes(bboxes: List[List[int]], direction: str = "rtl_ttb", i
 
     sorted_items = sorted(boxes_with_centers, key=get_score)
     return [item["box"] for item in sorted_items]
+
+def merge_nearby_boxes_and_texts(bboxes: List[List[int]], texts: List[str], image_width: int, image_height: int) -> tuple[List[List[int]], List[str]]:
+    """
+    Gom các bong bóng chữ ở gần nhau thành 1 bong bóng duy nhất.
+    Giúp tránh tình trạng 1 câu bị ngắt thành nhiều dòng dịch (word-by-word) làm mất ngữ cảnh.
+    """
+    if not bboxes or not texts or len(bboxes) != len(texts):
+        return bboxes, texts
+
+    clusters = []
+    for i, box in enumerate(bboxes):
+        text = texts[i]
+        matched_cluster_idx = -1
+        
+        # Tìm xem box hiện tại có nên gộp với cluster nào không
+        for j, cluster in enumerate(clusters):
+            c_box = cluster["box"]
+            
+            # Tính khoảng cách giữa box hiện tại và cluster box
+            dx = max(0, max(c_box[0], box[0]) - min(c_box[2], box[2]))
+            dy = max(0, max(c_box[1], box[1]) - min(c_box[3], box[3]))
+            
+            # Tính kích thước để làm hệ tham chiếu
+            w1, h1 = box[2] - box[0], box[3] - box[1]
+            w2, h2 = c_box[2] - c_box[0], c_box[3] - c_box[1]
+            
+            # Lấy kích thước nhỏ hơn để tránh 1 box khổng lồ nuốt chửng mọi thứ
+            min_w = min(w1, w2)
+            min_h = min(h1, h2)
+            
+            # Ngưỡng gap động: 50% chiều rộng nhỏ nhất, 80% chiều cao nhỏ nhất (tối thiểu 20px)
+            max_gap_x = max(20, int(min_w * 0.5))
+            max_gap_y = max(20, int(min_h * 0.8))
+            
+            if dx <= max_gap_x and dy <= max_gap_y:
+                matched_cluster_idx = j
+                break
+                
+        if matched_cluster_idx != -1:
+            c = clusters[matched_cluster_idx]
+            c_box = c["box"]
+            c["box"] = [
+                min(c_box[0], box[0]),
+                min(c_box[1], box[1]),
+                max(c_box[2], box[2]),
+                max(c_box[3], box[3])
+            ]
+            c["texts"].append(text)
+        else:
+            clusters.append({
+                "box": list(box),
+                "texts": [text]
+            })
+            
+    merged_bboxes = []
+    merged_texts = []
+    for c in clusters:
+        merged_bboxes.append(c["box"])
+        # Nối các câu lại, nếu không có dấu kết câu ở trước thì nối bằng dấu cách
+        merged_text = " ".join([t for t in c["texts"] if t.strip()])
+        merged_texts.append(merged_text)
+        
+    return merged_bboxes, merged_texts

@@ -53,12 +53,19 @@ class OCRWorker(threading.Thread):
                 # Map sorted boxes to text
                 box_to_text = {tuple(r["box"]): r["text"] for r in results}
                 
-                ctx.bboxes = sorted_bboxes
-                ctx.original_texts = [box_to_text[tuple(b)] for b in sorted_bboxes]
+                from app.core.vision_utils import merge_nearby_boxes_and_texts
+                merged_bboxes, merged_texts = merge_nearby_boxes_and_texts(
+                    sorted_bboxes, 
+                    [box_to_text[tuple(b)] for b in sorted_bboxes], 
+                    w, h
+                )
+                
+                ctx.bboxes = merged_bboxes
+                ctx.original_texts = merged_texts
                 ctx.translated_texts = [""] * len(ctx.original_texts)
                 
                 if self.log_callback:
-                    self.log_callback("OCR", f"Cloud OCR đã xử lý {len(ctx.bboxes)} bong bóng chữ.")
+                    self.log_callback("OCR", f"Cloud OCR đã xử lý và gom lại thành {len(ctx.bboxes)} bong bóng chữ.")
 
             elif self.detector and ctx.original_image is not None:
                 h, w = ctx.original_image.shape[:2]
@@ -86,11 +93,17 @@ class OCRWorker(threading.Thread):
                             
                 # Stage 2: Vision OCR Correction
                 texts = self.corrector.correct(texts, ctx.original_image)
-                ctx.original_texts = texts
-                ctx.translated_texts = [""] * len(texts)
+                
+                # Stage 3: Merge nearby boxes and texts
+                from app.core.vision_utils import merge_nearby_boxes_and_texts
+                merged_bboxes, merged_texts = merge_nearby_boxes_and_texts(bboxes, texts, w, h)
+                
+                ctx.bboxes = merged_bboxes
+                ctx.original_texts = merged_texts
+                ctx.translated_texts = [""] * len(merged_texts)
                 
                 if self.log_callback:
-                    self.log_callback("OCR", f"Detector tìm thấy {len(bboxes)} bong bóng chữ.")
+                    self.log_callback("OCR", f"Detector tìm thấy và gom lại thành {len(merged_bboxes)} bong bóng chữ.")
             
             # Fork (Push to 3 queues simultaneously)
             self.out_q_trans.put(ctx)
