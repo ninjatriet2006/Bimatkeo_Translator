@@ -77,8 +77,10 @@ class Pixel48pxCTCRecognizerImpl(BaseTextRecognizer):
     def _ctc_greedy_decoder(self, preds):
         # preds shape: (batch=1, time, vocab_size)
         preds_idx = preds.argmax(axis=2)[0]
+        preds_prob = preds.max(axis=2)[0]
         
         char_list = []
+        conf_list = []
         for i in range(len(preds_idx)):
             idx = preds_idx[i]
             # 0 is CTC blank token
@@ -88,11 +90,13 @@ class Pixel48pxCTCRecognizerImpl(BaseTextRecognizer):
                     if char == "<SP>":
                         char = " "
                     char_list.append(char)
+                    conf_list.append(preds_prob[i])
                     
-        return ''.join(char_list)
+        conf = float(np.mean(conf_list)) if conf_list else 0.0
+        return ''.join(char_list), conf
 
-    def recognize(self, image_crop: np.ndarray) -> str:
-        if self.session is None: return "Mock OCR Text (48px CTC ONNX Rec not loaded)"
+    def recognize(self, image_crop: np.ndarray) -> tuple[str, float]:
+        if self.session is None: return "", 0.0
         
         tensor = self._resize_norm_img(image_crop, img_h=48)
         
@@ -100,5 +104,5 @@ class Pixel48pxCTCRecognizerImpl(BaseTextRecognizer):
         # outputs[0] is char_logits, outputs[1] is color_values
         char_logits = outputs[0]
         
-        text = self._ctc_greedy_decoder(char_logits)
-        return text
+        text, conf = self._ctc_greedy_decoder(char_logits)
+        return text, conf

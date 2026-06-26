@@ -29,7 +29,7 @@ class DBConvNeXtDetectorImpl(BaseTextDetector):
         if log_callback: log_callback("INFO", f"Mô hình DBConvNeXt đã nạp: {model_path}")
         self.model = os.path.basename(model_path)
         
-    def detect(self, image: np.ndarray) -> list[list[int]]:
+    def detect(self, image: np.ndarray) -> tuple[list[list[int]], list[list[list[int]]]]:
         if self.model is None: raise RuntimeError("Chưa nạp model DBConvNeXt.")
         h, w = image.shape[:2]
-        return [[w//5, h//5, w*4//5, h*4//5]]
+        return [[w//5, h//5, w*4//5, h*4//5]], []

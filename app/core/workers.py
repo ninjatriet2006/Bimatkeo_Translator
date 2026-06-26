@@ -56,6 +56,33 @@ class OCRWorker(threading.Thread):
             
         return filtered_bboxes, filtered_texts
 
+    def _detect_orientation(self, det_image, recognizer, detector):
+        import cv2, numpy as np
+        import re
+        raw_bboxes, _ = detector.detect(det_image)
+        if not raw_bboxes: return 0
+        boxes = sorted(raw_bboxes, key=lambda b: (b[2]-b[0])*(b[3]-b[1]), reverse=True)[:3]
+        angles = [0, 90, 180, 270]
+        angle_scores = {a: 0.0 for a in angles}
+        mocr_mode = "mangaocr" in type(recognizer).__name__.lower() or "mocr" in type(recognizer).__name__.lower()
+        
+        for angle in angles:
+            scores = []
+            for box in boxes:
+                crop = det_image[box[1]:box[3], box[0]:box[2]]
+                if crop.size == 0: continue
+                if angle == 90: crop = cv2.rotate(crop, cv2.ROTATE_90_CLOCKWISE)
+                elif angle == 180: crop = cv2.rotate(crop, cv2.ROTATE_180)
+                elif angle == 270: crop = cv2.rotate(crop, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                text, conf = recognizer.recognize(crop)
+                if mocr_mode:
+                    valid = len(re.findall(r'[\w\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]', text))
+                    scores.append(valid)
+                else:
+                    scores.append(conf)
+            if scores: angle_scores[angle] = sum(scores) / len(scores)
+        return max(angle_scores.items(), key=lambda x: x[1])[0]
+
     def run(self):
         while True:
             ctx: PageContext = self.in_q.get()
@@ -100,19 +127,80 @@ class OCRWorker(threading.Thread):
 
             elif self.detector and ctx.original_image is not None:
                 h, w = ctx.original_image.shape[:2]
-                raw_bboxes = self.detector.detect(ctx.original_image)
+                
+                import cv2
+                import numpy as np
+                det_image = ctx.original_image.copy()
+                
+                # 1. Invert colors if requested
+                if self.ocr_config.get('det_invert'):
+                    det_image = cv2.bitwise_not(det_image)
+                
+                # 2. Apply Gamma Correction if requested
+                gamma = float(self.ocr_config.get('det_gamma_correct', 1.0))
+                if gamma != 1.0:
+                    inv_gamma = 1.0 / gamma
+                    table = np.array([((i / 255.0) ** inv_gamma) * 255
+                                      for i in np.arange(0, 256)]).astype("uint8")
+                    det_image = cv2.LUT(det_image, table)
+                    
+                # 3. Auto-Rotate check
+                if self.ocr_config.get('det_auto_rotate') and self.recognizer:
+                    best_angle = self._detect_orientation(det_image, self.recognizer, self.detector)
+                    if best_angle != 0:
+                        if self.log_callback:
+                            self.log_callback("OCR", f"Auto-Rotate: Phát hiện ảnh bị xoay, tự động xoay lại {best_angle} độ.")
+                        if best_angle == 90:
+                            ctx.original_image = cv2.rotate(ctx.original_image, cv2.ROTATE_90_CLOCKWISE)
+                            det_image = cv2.rotate(det_image, cv2.ROTATE_90_CLOCKWISE)
+                        elif best_angle == 180:
+                            ctx.original_image = cv2.rotate(ctx.original_image, cv2.ROTATE_180)
+                            det_image = cv2.rotate(det_image, cv2.ROTATE_180)
+                        elif best_angle == 270:
+                            ctx.original_image = cv2.rotate(ctx.original_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                            det_image = cv2.rotate(det_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                        h, w = ctx.original_image.shape[:2]
+                        
+                raw_bboxes, raw_polygons = self.detector.detect(det_image)
+                
+                # Bundle box and polygon to keep them together during sorting
+                if not raw_polygons:
+                    raw_polygons = [[] for _ in raw_bboxes]
+                bundled_boxes = [box + [poly] for box, poly in zip(raw_bboxes, raw_polygons)]
+                
                 # Sắp xếp lại box theo chuẩn đọc truyện. 
                 # (TODO: Đọc direction từ config_dict, tạm thời gán cứng rtl_ttb)
-                bboxes = sort_comic_text_boxes(raw_bboxes, direction="rtl_ttb", image_width=w, image_height=h)
+                bundled_boxes = sort_comic_text_boxes(bundled_boxes, direction="rtl_ttb", image_width=w, image_height=h)
+                
+                bboxes = [b[:4] for b in bundled_boxes]
+                polygons = [b[4] for b in bundled_boxes]
                 
                 texts = []
+                prob_thresh = float(self.ocr_config.get('prob', 0.0) or 0.0)
+                
                 if self.recognizer and bboxes:
-                    for box in bboxes:
-                        # box format: [x_min, y_min, x_max, y_max]
+                    for i, box in enumerate(bboxes):
+                        poly = polygons[i]
                         try:
-                            crop = ctx.original_image[box[1]:box[3], box[0]:box[2]]
+                            if self.ocr_config.get('det_rotate') and poly:
+                                poly_arr = np.array(poly, dtype=np.float32)
+                                rect = cv2.minAreaRect(poly_arr)
+                                (center, (width, height), angle) = rect
+                                if height > width:
+                                    width, height = height, width
+                                    angle += 90.0
+                                
+                                M = cv2.getRotationMatrix2D(center, angle, 1.0)
+                                box_w, box_h = int(width), int(height)
+                                rotated = cv2.warpAffine(ctx.original_image, M, (ctx.original_image.shape[1], ctx.original_image.shape[0]))
+                                crop = cv2.getRectSubPix(rotated, (box_w, box_h), center)
+                            else:
+                                crop = ctx.original_image[box[1]:box[3], box[0]:box[2]]
+                                
                             if crop.size > 0:
-                                text = self.recognizer.recognize(crop)
+                                text, conf = self.recognizer.recognize(crop)
+                                if conf > 0 and conf < prob_thresh:
+                                    text = "" # Bỏ qua do điểm tự tin thấp
                             else:
                                 text = ""
                         except Exception as e:

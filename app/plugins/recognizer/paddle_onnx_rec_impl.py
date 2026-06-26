@@ -120,8 +120,8 @@ class PaddleONNXRecognizerImpl(BaseTextRecognizer):
         conf = float(np.mean(conf_list)) if conf_list else 0.0
         return text, conf
 
-    def recognize(self, image_crop: np.ndarray) -> str:
-        if self.session is None: return "Mock OCR Text (Paddle ONNX Rec not loaded)"
+    def recognize(self, image_crop: np.ndarray) -> tuple[str, float]:
+        if self.session is None: return "Mock OCR Text (Paddle ONNX Rec not loaded)", 0.0
         
         h, w = image_crop.shape[:2]
         max_wh_ratio = max(w * 1.0 / h, 1.0)
@@ -131,4 +131,4 @@ class PaddleONNXRecognizerImpl(BaseTextRecognizer):
         preds = outputs[0]
         
         text, conf = self._ctc_greedy_decoder(preds)
-        return text
+        return text, conf

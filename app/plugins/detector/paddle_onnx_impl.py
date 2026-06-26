@@ -92,6 +92,7 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
         contours, _ = cv2.findContours((bitmap * 255).astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         num_contours = min(len(contours), 1000)
         boxes = []
+        polygons = []
         for index in range(num_contours):
             contour = contours[index]
             points, sside = self._get_mini_boxes(contour)
@@ -129,12 +130,14 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
             points[:, 0] = np.clip(np.round(points[:, 0] / width * dest_width), 0, dest_width)
             points[:, 1] = np.clip(np.round(points[:, 1] / height * dest_height), 0, dest_height)
             
+            polygons.append(points.astype(int).tolist())
+            
             # Convert 4 points to top-left and bottom-right bbox
             xs = points[:, 0]
             ys = points[:, 1]
             boxes.append([int(np.min(xs)), int(np.min(ys)), int(np.max(xs)), int(np.max(ys))])
             
-        return boxes
+        return boxes, polygons
         
     def _get_mini_boxes(self, contour):
         bounding_box = cv2.minAreaRect(contour)
@@ -155,7 +158,7 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
         box = [points[index_1], points[index_2], points[index_3], points[index_4]]
         return box, min(bounding_box[1])
 
-    def detect(self, image: np.ndarray) -> list[list[int]]:
+    def detect(self, image: np.ndarray) -> tuple[list[list[int]], list[list[list[int]]]]:
         if self.session is None: raise RuntimeError("Chưa nạp model Paddle ONNX.")
         
         # 1. Preprocess
@@ -173,6 +176,6 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
         prob_map = preds[0, 0, :, :]
         bitmap = prob_map > text_threshold
         
-        boxes = self._boxes_from_bitmap(prob_map, bitmap, ori_shape[1], ori_shape[0], box_thresh=box_threshold, unclip_ratio=unclip_ratio)
+        boxes, polygons = self._boxes_from_bitmap(prob_map, bitmap, ori_shape[1], ori_shape[0], box_thresh=box_threshold, unclip_ratio=unclip_ratio)
         
-        return boxes
+        return boxes, polygons

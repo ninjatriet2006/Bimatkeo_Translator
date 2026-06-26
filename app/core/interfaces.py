@@ -11,8 +11,8 @@ class BaseTextDetector(ABC):
         pass
 
     @abstractmethod
-    def detect(self, image: np.ndarray) -> List[List[int]]:
-        """Quét tìm và trả về danh sách tọa độ bboxes [x_min, y_min, x_max, y_max]."""
+    def detect(self, image: np.ndarray) -> tuple[list[list[int]], list[list[list[int]]]]:
+        """Quét tìm và trả về (danh sách bboxes [x_min, y_min, x_max, y_max], danh sách polygons)."""
         pass
 
 
@@ -25,8 +25,10 @@ class BaseTextRecognizer(ABC):
         pass
 
     @abstractmethod
-    def recognize(self, image_crop: np.ndarray) -> str:
-        """Nhận ảnh đã cắt gọt chứa 1 dòng chữ và trả về văn bản text."""
+    def recognize(self, image_crop: np.ndarray) -> tuple[str, float]:
+        """
+        Takes an image crop containing text and returns the recognized text and a confidence score (0.0 to 1.0).
+        """
         pass
 
 

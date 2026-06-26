@@ -23,12 +23,12 @@ class MangaOCRImpl(BaseTextRecognizer):
         self.mocr = MangaOcr()
         _log("INFO", "Nạp MangaOCR hoàn tất. Mô hình đã sẵn sàng.")
         
-    def recognize(self, image_crop: np.ndarray) -> str:
+    def recognize(self, image_crop: np.ndarray) -> tuple[str, float]:
         """
-        Nhận ảnh crop chứa 1 dòng chữ và trả về văn bản Text.
+        Nhận ảnh crop chứa 1 dòng chữ và trả về văn bản Text cùng điểm tự tin (MangaOCR default 1.0).
         """
         if self.mocr is None:
-            return "Mock OCR Text (manga-ocr is not installed)"
+            return "Mock OCR Text (manga-ocr is not installed)", 0.0
             
         import cv2
         from PIL import Image
@@ -39,4 +39,4 @@ class MangaOCRImpl(BaseTextRecognizer):
         
         # Nhận diện
         text = self.mocr(pil_image)
-        return text
+        return text, 1.0

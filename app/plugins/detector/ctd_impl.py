@@ -36,7 +36,7 @@ class CTDetectorImpl(BaseTextDetector):
             
         self.model = os.path.basename(model_path)
         
-    def detect(self, image: np.ndarray) -> list[list[int]]:
+    def detect(self, image: np.ndarray) -> tuple[list[list[int]], list[list[list[int]]]]:
         """
         Nhận ảnh Numpy và trả về danh sách Bounding Boxes.
         Trong giai đoạn này, hàm tạm thời trả về một Mock Box ở giữa ảnh.
@@ -46,4 +46,4 @@ class CTDetectorImpl(BaseTextDetector):
             
         h, w = image.shape[:2]
         # Giả lập Box tìm được ở trung tâm ảnh
-        return [[w//4, h//4, w*3//4, h*3//4]]
+        return [[w//4, h//4, w*3//4, h*3//4]], []

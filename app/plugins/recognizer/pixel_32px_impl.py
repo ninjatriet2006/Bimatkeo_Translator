@@ -29,6 +29,6 @@ class Pixel32pxRecognizerImpl(BaseTextRecognizer):
         if log_callback: log_callback("INFO", f"Mô hình 32px OCR đã nạp: {model_path}")
         self.model = os.path.basename(model_path)
         
-    def recognize(self, image_crop: np.ndarray) -> str:
-        if self.model is None: return ""
-        return "[32px] Mock OCR text"
+    def recognize(self, image_crop: np.ndarray) -> tuple[str, float]:
+        if self.model is None: return "", 0.0
+        return "[32px] Mock OCR text", 1.0

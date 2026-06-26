@@ -29,6 +29,6 @@ class Pixel48pxRecognizerImpl(BaseTextRecognizer):
         if log_callback: log_callback("INFO", f"Mô hình 48px OCR đã nạp: {model_path}")
         self.model = os.path.basename(model_path)
         
-    def recognize(self, image_crop: np.ndarray) -> str:
-        if self.model is None: return ""
-        return "[48px] Mock OCR text (Curved xPos supported)"
+    def recognize(self, image_crop: np.ndarray) -> tuple[str, float]:
+        if self.model is None: return "", 0.0
+        return "[48px] Mock OCR text (Curved xPos supported)", 1.0

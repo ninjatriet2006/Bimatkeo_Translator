@@ -29,7 +29,8 @@ class CRAFTDetectorImpl(BaseTextDetector):
         if log_callback: log_callback("INFO", f"Mô hình CRAFT đã nạp: {model_path}")
         self.model = os.path.basename(model_path)
         
-    def detect(self, image: np.ndarray) -> list[list[int]]:
+    def detect(self, image: np.ndarray) -> tuple[list[list[int]], list[list[list[int]]]]:
         if self.model is None: raise RuntimeError("Chưa nạp model CRAFT.")
         h, w = image.shape[:2]
-        return [[w//4, h//4, w//2, h//2], [w//2, h//2, w*3//4, h*3//4]]
+        boxes = [[w//4, h//4, w//2, h//2], [w//2, h//2, w*3//4, h*3//4]]
+        return (boxes, [])
