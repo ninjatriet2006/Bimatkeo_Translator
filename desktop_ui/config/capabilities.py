@@ -35,6 +35,17 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
     localization: dict
     system_prompts: dict
     _DEFAULT_CHECKS: dict
+    
+    @property
+    def _tesseract_langs_cache(self):
+        if not hasattr(self, '_tess_langs'):
+            try:
+                import pytesseract
+                self._tess_langs = pytesseract.get_languages()
+            except Exception:
+                self._tess_langs = []
+        return self._tess_langs
+
     def _initialize_and_repair_config(self) -> None: pass
     def _load_translator_capabilities(self):
         """Returns translator groups + capabilities.
@@ -166,6 +177,20 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
             return True
         
         if model_name.lower() in ["none", "original", "auto"]:
+            return True
+
+        if model_name.startswith("tesseract_"):
+            lang = model_name.replace("tesseract_", "")
+            required_langs = []
+            if lang == "mixed" or lang == "all_horizontal":
+                required_langs = ["jpn", "jpn_vert", "chi_sim", "chi_sim_vert", "chi_tra", "chi_tra_vert", "kor", "kor_vert"]
+            else:
+                required_langs = [lang]
+            
+            tess_langs = self._tesseract_langs_cache
+            for req in required_langs:
+                if req not in tess_langs:
+                    return False
             return True
 
         if field:

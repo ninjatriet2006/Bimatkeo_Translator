@@ -2202,7 +2202,36 @@ class HandlersMixin:
             
         source_url = getattr(self.config_loader, "model_source_map", {}).get(model_name)
         if not source_url:
-            QMessageBox.information(self, "Thông tin", f"Mô hình '{model_name}' không hỗ trợ tính năng tự động tải dữ liệu qua giao diện (có thể là API hoặc phần mềm hệ thống như Tesseract).")
+            if model_name.startswith("tesseract_"):
+                lang = model_name.replace("tesseract_", "")
+                tess_packages = ["tesseract-ocr"]
+                if lang == "mixed" or lang == "all_horizontal":
+                    tess_packages.extend(["tesseract-ocr-jpn", "tesseract-ocr-jpn-vert", "tesseract-ocr-chi-sim", "tesseract-ocr-chi-sim-vert", "tesseract-ocr-chi-tra", "tesseract-ocr-chi-tra-vert", "tesseract-ocr-kor", "tesseract-ocr-kor-vert"])
+                else:
+                    tess_lang = lang.replace("_", "-")
+                    tess_packages.append(f"tesseract-ocr-{tess_lang}")
+                
+                cmd = f"sudo apt-get install {' '.join(tess_packages)}"
+                
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Hướng dẫn cài đặt Tesseract")
+                msg.setText(f"Mô hình '{model_name}' yêu cầu phần mềm hệ thống Tesseract OCR.\n\nVui lòng copy câu lệnh sau và dán vào Terminal để cài đặt:")
+                msg.setDetailedText(cmd)
+                msg.setIcon(QMessageBox.Icon.Information)
+                
+                copy_btn = msg.addButton("Copy Lệnh", QMessageBox.ButtonRole.ActionRole)
+                close_btn = msg.addButton("Đóng", QMessageBox.ButtonRole.RejectRole)
+                
+                msg.exec()
+                
+                if msg.clickedButton() == copy_btn:
+                    from PyQt6.QtGui import QGuiApplication
+                    clipboard = QGuiApplication.clipboard()
+                    if clipboard:
+                        clipboard.setText(cmd)
+                        QMessageBox.information(self, "Thành công", "Đã copy câu lệnh vào khay nhớ tạm!")
+            else:
+                QMessageBox.information(self, "Thông tin", f"Mô hình '{model_name}' không hỗ trợ tính năng tự động tải dữ liệu qua giao diện (có thể là API hoặc phần mềm hệ thống).")
             return
 
         reply = QMessageBox.question(
