@@ -21,7 +21,7 @@ class Pixel48pxCTCRecognizerImpl(BaseTextRecognizer):
                 char = line.strip('\n')
                 self.character_dict.append(char)
                 
-    def load_model(self, model_path: str | None = None, log_callback=None) -> None:
+    def load_model(self, model_path: str | None = None, log_callback=None, **kwargs) -> None:
         try:
             import onnxruntime as ort  # type: ignore
         except ImportError:

@@ -56,7 +56,7 @@ class PaddleONNXRecognizerImpl(BaseTextRecognizer):
         self.character_dict.append(' ')
         self.character_dict.insert(0, 'blank') # Index 0 is blank in PP-OCRv3/v4/v6
 
-    def load_model(self, model_path: str | None = None, log_callback=None) -> None:
+    def load_model(self, model_path: str | None = None, log_callback=None, **kwargs) -> None:
         try:
             import onnxruntime as ort  # type: ignore
         except ImportError:

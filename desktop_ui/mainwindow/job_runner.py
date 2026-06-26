@@ -638,19 +638,20 @@ class JobRunnerMixin:
                         QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn AI Model trước khi bắt đầu.")
                         return
 
-        # Block the run if any READY job has a required model field (detector,
-        # ocr, inpainter) that is blank or not set up. Report clearly instead
-        # of letting the backend crash mid-pipeline.
+        # Block the run if any REQUIRED model field (detector,
+        # ocr, inpainter) is blank or not set up in the global settings.
+        # We validate against self.current_settings because _build_final_config_for_job
+        # uses global settings as the single source of truth.
         blocked = []
+        global_missing = self.config_loader.missing_required_fields(self.current_settings)
+
         for job in self.job_queue:
             if job.get('status') != 'Ready':
                 continue
             if job.get('job_type') == 'TX':
                 continue
-            settings = job.get('settings', {})
-            missing = self.config_loader.missing_required_fields(settings)
-            if missing:
-                names = ", ".join(self.config_loader.full_config_data.get(f, {}).get("label", f.replace("_", " ").title()) for f in missing)
+            if global_missing:
+                names = ", ".join(self.config_loader.full_config_data.get(f, {}).get("label", f.replace("_", " ").title()) for f in global_missing)
                 blocked.append((job.get('id', '?'), names))
 
         if blocked:
@@ -930,7 +931,6 @@ class JobRunnerMixin:
                         elif export_mode == 'Create New Folder (Overwrite Existing)':
                             target_path = os.path.join(output_dir, final_output_folder_name)
                             if os.path.exists(target_path):
-                                import shutil
                                 try:
                                     shutil.rmtree(target_path)
                                     self.log("INFO", f"Deleted existing output folder for overwrite: {target_path}")
