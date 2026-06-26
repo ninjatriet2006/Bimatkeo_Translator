@@ -217,7 +217,7 @@ class OCRWorker(threading.Thread):
                             else:
                                 crop = ctx.original_image[box[1]:box[3], box[0]:box[2]]
                                 
-                            if crop.size > 0:
+                            if crop.size > 0 and crop.shape[0] >= 8 and crop.shape[1] >= 8:
                                 text, conf = self.recognizer.recognize(crop)
                                 if conf > 0 and conf < prob_thresh:
                                     text = "" # Bỏ qua do điểm tự tin thấp

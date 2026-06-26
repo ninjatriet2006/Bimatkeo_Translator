@@ -121,6 +121,11 @@ class BaseAPITranslator(BaseTranslator):
                         raw_response = raw_response[:-3]
                     raw_response = raw_response.strip()
                     
+                    if '{' in raw_response and '}' in raw_response:
+                        start_idx = raw_response.find('{')
+                        end_idx = raw_response.rfind('}') + 1
+                        raw_response = raw_response[start_idx:end_idx]
+                    
                     try:
                         parsed = json.loads(raw_response)
                         meta = parsed.get("metadata", {})

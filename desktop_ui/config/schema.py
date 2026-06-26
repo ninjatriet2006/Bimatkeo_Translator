@@ -45,7 +45,7 @@ class SchemaMixin:
                         merged_info['values'] = custom_choices if custom_choices is not None else enum_def["enum"]
             
             # Manually handle UI-only enum settings
-            if key in self.all_model_fields:
+            if key in self.all_model_fields or key == "system_prompt_profile":
                 custom_choices = self._load_custom_models(key)
                 if custom_choices is not None:
                     merged_info['values'] = custom_choices

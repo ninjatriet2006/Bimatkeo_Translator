@@ -883,7 +883,8 @@ class HandlersMixin:
                 import os
                 project_base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             builder = PromptBuilder(project_base, sys_profile)
-            sys_prompt_len = len(builder.build_prompt())
+            tgt_lang = self.current_settings.get('target_lang', 'ENG')
+            sys_prompt_len = len(builder.build_prompt("auto", tgt_lang))
             
         # 3. Calculate max available length
         if max_chars > 0:
