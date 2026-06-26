@@ -9,7 +9,7 @@ class CRAFTDetectorImpl(BaseTextDetector):
     def __init__(self):
         self.model = None
         
-    def load_model(self, model_path: str | None = None, log_callback=None) -> None:
+    def load_model(self, model_path: str | None = None, log_callback=None, **kwargs) -> None:
         if not model_path:
             raise ValueError("model_path is required")
         target_dir = os.path.dirname(model_path)

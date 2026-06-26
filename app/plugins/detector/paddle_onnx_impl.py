@@ -10,8 +10,10 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
     def __init__(self):
         self.session = None
         self.input_name = None
+        self.config = {}
         
-    def load_model(self, model_path: str | None = None, log_callback=None) -> None:
+    def load_model(self, model_path: str | None = None, log_callback=None, **kwargs) -> None:
+        self.config = kwargs
         try:
             import onnxruntime as ort
         except ImportError:
@@ -30,10 +32,11 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
         except Exception as e:
             raise RuntimeError(f"Lỗi khi khởi tạo Paddle ONNX: {e}")
             
-    def _preprocess(self, img: np.ndarray, limit_side_len=960, limit_type='max'):
+    def _preprocess(self, img: np.ndarray, limit_type='max'):
         """
         Resize image and normalize for PP-OCR det.
         """
+        limit_side_len = int(self.config.get('detection_size', 2048))
         h, w, _ = img.shape
         
         if limit_type == 'max':
@@ -163,9 +166,13 @@ class PaddleONNXDetectorImpl(BaseTextDetector):
         preds = outputs[0]
         
         # 3. Postprocess
+        text_threshold = float(self.config.get('text_threshold', 0.5))
+        box_threshold = float(self.config.get('box_threshold', 0.7))
+        unclip_ratio = float(self.config.get('unclip_ratio', 2.3))
+
         prob_map = preds[0, 0, :, :]
-        bitmap = prob_map > 0.3
+        bitmap = prob_map > text_threshold
         
-        boxes = self._boxes_from_bitmap(prob_map, bitmap, ori_shape[1], ori_shape[0])
+        boxes = self._boxes_from_bitmap(prob_map, bitmap, ori_shape[1], ori_shape[0], box_thresh=box_threshold, unclip_ratio=unclip_ratio)
         
         return boxes

@@ -167,13 +167,13 @@ class Pipeline:
                     # Initialize Local Models
                     try:
                         det_path = ModelDownloader.get_model_path_from_registry("offline_detector", detector_name)
-                        detector = DetectorFactory.create(detector_name, model_path=det_path, log_callback=log_callback)
+                        detector = DetectorFactory.create(detector_name, model_path=det_path, log_callback=log_callback, **config_dict.get("detector", {}))
                     except ValueError:
                         detector = DetectorFactory.create("dummy_detector", log_callback=log_callback)
                         
                     try:
                         rec_path = ModelDownloader.get_model_path_from_registry("offline_ocr", ocr_name)
-                        recognizer = RecognizerFactory.create(ocr_name, model_path=rec_path, log_callback=log_callback)
+                        recognizer = RecognizerFactory.create(ocr_name, model_path=rec_path, log_callback=log_callback, **config_dict.get("ocr", {}))
                     except ValueError:
                         recognizer = RecognizerFactory.create("dummy_recognizer", log_callback=log_callback)
                 
@@ -216,7 +216,7 @@ class Pipeline:
             try:
                 from app.core.downloader import ModelDownloader
                 inp_path = ModelDownloader.get_model_path_from_registry("inpainter", inpainter_name)
-                inpainter = InpainterFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback) if enable_inpainter and inpainter_name != "none" else None
+                inpainter = InpainterFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback, **config_dict.get("inpainter", {})) if enable_inpainter and inpainter_name != "none" else None
             except ValueError:
                 log_callback("WARNING", f"Inpainter '{inpainter_name}' not found, falling back to None.")
                 inpainter = None
@@ -231,7 +231,7 @@ class Pipeline:
                 renderer = None
 
             # Initialize Workers for Fork-Join Pipeline
-            ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback, cloud_ocr=cloud_ocr)
+            ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback, cloud_ocr=cloud_ocr, ocr_config=config_dict.get("ocr", {}))
             trans_worker = TranslatorWorker(q_trans, translator, "auto", target_lang, log_callback)
             inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback)
             render_worker = RenderWorker(q_render, q_out, renderer, log_callback)

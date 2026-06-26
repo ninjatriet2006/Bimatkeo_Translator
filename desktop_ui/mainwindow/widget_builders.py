@@ -237,9 +237,19 @@ class WidgetBuildersMixin:
             if not context_key and info.get('key') in ['offline_translator', 'offline_detector', 'offline_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer', 'font_family']:
                 self._setup_dynamic_action_buttons(info.get('key'), widget, right_layout)
             elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
-                spacer = QWidget()
-                spacer.setFixedWidth(30)
-                right_layout.addWidget(spacer)
+                if info.get('recommendation'):
+                    try:
+                        from app.core.hardware_utils import get_recommended_size
+                        rec_size = get_recommended_size()
+                        rec_label = QLabel(f"(Recommend: {rec_size})")
+                        rec_label.setStyleSheet("color: #4CAF50; font-size: 11px; font-style: italic;")
+                        right_layout.addWidget(rec_label)
+                    except Exception:
+                        pass
+                else:
+                    spacer = QWidget()
+                    spacer.setFixedWidth(30)
+                    right_layout.addWidget(spacer)
 
             row_layout.addWidget(right_container, stretch=2)
 

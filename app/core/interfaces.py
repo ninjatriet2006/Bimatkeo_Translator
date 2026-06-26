@@ -6,7 +6,7 @@ class BaseTextDetector(ABC):
     DISPLAY_NAME: Union[str, Dict[str, str]] = ""
 
     @abstractmethod
-    def load_model(self, model_path: str) -> None:
+    def load_model(self, model_path: str, **kwargs) -> None:
         """Tải mô hình phát hiện khung chữ."""
         pass
 
@@ -20,7 +20,7 @@ class BaseTextRecognizer(ABC):
     DISPLAY_NAME: Union[str, Dict[str, str]] = ""
 
     @abstractmethod
-    def load_model(self, model_path: str) -> None:
+    def load_model(self, model_path: str, **kwargs) -> None:
         """Tải mô hình nhận diện chữ."""
         pass
 
@@ -57,7 +57,7 @@ class BaseUpscaler(ABC):
     DISPLAY_NAME: Union[str, Dict[str, str]] = ""
 
     @abstractmethod
-    def load_model(self, model_path: str) -> None:
+    def load_model(self, model_path: str, **kwargs) -> None:
         """Tải mô hình phóng đại ảnh."""
         pass
 
@@ -71,7 +71,7 @@ class BaseColorizer(ABC):
     DISPLAY_NAME: Union[str, Dict[str, str]] = ""
 
     @abstractmethod
-    def load_model(self, model_path: str) -> None:
+    def load_model(self, model_path: str, **kwargs) -> None:
         """Tải mô hình tô màu Manga."""
         pass
 
@@ -105,7 +105,7 @@ class BaseInpainter(ABC):
     DISPLAY_NAME: Union[str, Dict[str, str]] = ""
 
     @abstractmethod
-    def load_model(self, model_path: str) -> None:
+    def load_model(self, model_path: str, **kwargs) -> None:
         """Tải mô hình inpainting lên bộ nhớ."""
         pass
 

@@ -44,9 +44,11 @@ class LamaInpainter_Impl(BaseInpainter):
         self.session = None
         self.input_name_img = None
         self.input_name_mask = None
+        self.config = {}
 
     def load_model(self, model_path: str, **kwargs) -> None:
         self.model_path = model_path
+        self.config = kwargs
         
         # Identify which key it is based on the path
         key = "lama"
@@ -115,9 +117,24 @@ class LamaInpainter_Impl(BaseInpainter):
             return cv2.inpaint(image, mask, 5, cv2.INPAINT_TELEA)
 
         try:
+            inpainting_size = int(self.config.get('inpainting_size', 2048))
+            h, w = image.shape[:2]
+            
+            # Downscale if needed
+            ratio = 1.0
+            if max(h, w) > inpainting_size:
+                ratio = float(inpainting_size) / max(h, w)
+                resize_h = int(h * ratio)
+                resize_w = int(w * ratio)
+                work_img = cv2.resize(image, (resize_w, resize_h), interpolation=cv2.INTER_AREA)
+                work_mask = cv2.resize(mask, (resize_w, resize_h), interpolation=cv2.INTER_NEAREST)
+            else:
+                work_img = image.copy()
+                work_mask = mask.copy()
+
             # Preprocess
-            image_padded = pad_img_to_modulo(image, 8)
-            mask_padded = pad_img_to_modulo(mask, 8)
+            image_padded = pad_img_to_modulo(work_img, 8)
+            mask_padded = pad_img_to_modulo(work_mask, 8)
 
             img_rgb = cv2.cvtColor(image_padded, cv2.COLOR_BGR2RGB)
             img_input = img_rgb.astype(np.float32) / 255.0
@@ -144,8 +161,12 @@ class LamaInpainter_Impl(BaseInpainter):
             out_img_bgr = cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR)
 
             # Crop padded part
-            h, w = image.shape[:2]
-            out_img_bgr = out_img_bgr[:h, :w]
+            work_h, work_w = work_img.shape[:2]
+            out_img_bgr = out_img_bgr[:work_h, :work_w]
+            
+            # Upscale back to original size if it was downscaled
+            if ratio < 1.0:
+                out_img_bgr = cv2.resize(out_img_bgr, (w, h), interpolation=cv2.INTER_CUBIC)
 
             # Blend
             mask_bool = (mask > 0)[:, :, np.newaxis]

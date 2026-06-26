@@ -17,7 +17,7 @@ def release_gpu_memory():
     gc.collect()
 
 class OCRWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None, cloud_ocr: BaseCloudOCR | None = None):
+    def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None, cloud_ocr: BaseCloudOCR | None = None, ocr_config: dict = None):
         super().__init__()
         self.in_q = in_q
         self.out_q_trans = out_q_trans
@@ -26,9 +26,35 @@ class OCRWorker(threading.Thread):
         self.detector = detector
         self.recognizer = recognizer
         self.cloud_ocr = cloud_ocr
+        self.ocr_config = ocr_config or {}
         self.log_callback = log_callback
         self.corrector = VisionOCRCorrector(use_llm=True, log_callback=log_callback)
         self.daemon = True
+
+    def _apply_filters(self, bboxes, texts):
+        min_text_length = int(self.ocr_config.get('min_text_length', 0))
+        ignore_bubble = int(self.ocr_config.get('ignore_bubble', 0))
+        filter_text_str = self.ocr_config.get('filter_text', '')
+        filter_texts = [f.strip() for f in filter_text_str.split(',')] if filter_text_str else []
+
+        filtered_bboxes = []
+        filtered_texts = []
+        for box, text in zip(bboxes, texts):
+            w_box = box[2] - box[0]
+            h_box = box[3] - box[1]
+            if w_box * h_box < ignore_bubble:
+                continue
+            
+            if len(text.strip()) < min_text_length:
+                continue
+                
+            if any(f in text for f in filter_texts):
+                continue
+                
+            filtered_bboxes.append(box)
+            filtered_texts.append(text)
+            
+        return filtered_bboxes, filtered_texts
 
     def run(self):
         while True:
@@ -48,10 +74,14 @@ class OCRWorker(threading.Thread):
                 results = self.cloud_ocr.recognize_full_page(ctx.original_image)
                 
                 raw_bboxes = [r["box"] for r in results]
-                sorted_bboxes = sort_comic_text_boxes(raw_bboxes, direction="rtl_ttb", image_width=w, image_height=h)
+                raw_texts = [r["text"] for r in results]
+                
+                filtered_bboxes, filtered_texts = self._apply_filters(raw_bboxes, raw_texts)
+                
+                sorted_bboxes = sort_comic_text_boxes(filtered_bboxes, direction="rtl_ttb", image_width=w, image_height=h)
                 
                 # Map sorted boxes to text
-                box_to_text = {tuple(r["box"]): r["text"] for r in results}
+                box_to_text = {tuple(b): t for b, t in zip(filtered_bboxes, filtered_texts)}
                 
                 from app.core.vision_utils import merge_nearby_boxes_and_texts
                 merged_bboxes, merged_texts = merge_nearby_boxes_and_texts(
@@ -60,6 +90,7 @@ class OCRWorker(threading.Thread):
                     w, h
                 )
                 
+                ctx.raw_bboxes = sorted_bboxes
                 ctx.bboxes = merged_bboxes
                 ctx.original_texts = merged_texts
                 ctx.translated_texts = [""] * len(ctx.original_texts)
@@ -73,7 +104,6 @@ class OCRWorker(threading.Thread):
                 # Sắp xếp lại box theo chuẩn đọc truyện. 
                 # (TODO: Đọc direction từ config_dict, tạm thời gán cứng rtl_ttb)
                 bboxes = sort_comic_text_boxes(raw_bboxes, direction="rtl_ttb", image_width=w, image_height=h)
-                ctx.bboxes = bboxes
                 
                 texts = []
                 if self.recognizer and bboxes:
@@ -94,9 +124,15 @@ class OCRWorker(threading.Thread):
                 # Stage 2: Vision OCR Correction
                 texts = self.corrector.correct(texts, ctx.original_image)
                 
+                # Stage 2.5: Filtering
+                bboxes, texts = self._apply_filters(bboxes, texts)
+                
                 # Stage 3: Merge nearby boxes and texts
                 from app.core.vision_utils import merge_nearby_boxes_and_texts
-                merged_bboxes, merged_texts = merge_nearby_boxes_and_texts(bboxes, texts, w, h)
+                if self.ocr_config.get('use_mocr_merge', False):
+                    merged_bboxes, merged_texts = merge_nearby_boxes_and_texts(bboxes, texts, w, h)
+                else:
+                    merged_bboxes, merged_texts = bboxes, texts
                 
                 ctx.raw_bboxes = bboxes
                 ctx.bboxes = merged_bboxes
