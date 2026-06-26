@@ -1380,8 +1380,11 @@ class HandlersMixin:
         self.theme_combobox.addItems(sorted(self.available_themes.keys()))
 
     def _apply_theme(self, theme_name: str):
-        """Applies the selected theme'''s stylesheet to the entire application."""
-        font_size_text = self.font_scale_combobox.currentText()
+        """Applies the selected theme's stylesheet to the entire application."""
+        if hasattr(self, 'font_scale_combobox'):
+            font_size_text = self.font_scale_combobox.currentText()
+        else:
+            font_size_text = "100%"
         percentage = int(font_size_text.split('%')[0])
         base_font_size = 10
         font_size = f"{base_font_size * (percentage / 100.0)}pt"
