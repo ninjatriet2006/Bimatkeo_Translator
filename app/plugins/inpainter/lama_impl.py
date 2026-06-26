@@ -120,17 +120,40 @@ class LamaInpainter_Impl(BaseInpainter):
             inpainting_size = int(self.config.get('inpainting_size', 2048))
             h, w = image.shape[:2]
             
-            # Downscale if needed
-            ratio = 1.0
-            if max(h, w) > inpainting_size:
-                ratio = float(inpainting_size) / max(h, w)
-                resize_h = int(h * ratio)
-                resize_w = int(w * ratio)
-                work_img = cv2.resize(image, (resize_w, resize_h), interpolation=cv2.INTER_AREA)
-                work_mask = cv2.resize(mask, (resize_w, resize_h), interpolation=cv2.INTER_NEAREST)
+            # Check if model has a fixed expected shape
+            is_fixed_shape = False
+            fixed_h, fixed_w = None, None
+            
+            try:
+                for inp in self.session.get_inputs():
+                    shape = inp.shape
+                    print(f"[LaMa] Input '{inp.name}' expected shape: {shape}")
+                    if shape and len(shape) == 4:
+                        if isinstance(shape[2], (int, float)) and isinstance(shape[3], (int, float)):
+                            is_fixed_shape = True
+                            fixed_h = int(shape[2])
+                            fixed_w = int(shape[3])
+                            break
+            except Exception as e:
+                print(f"[LaMa] Warning: Could not inspect ONNX shapes: {e}")
+                    
+            if is_fixed_shape and fixed_h and fixed_w:
+                print(f"[LaMa] Detected fixed spatial dimensions. Forcing resize to {fixed_w}x{fixed_h}.")
+                work_img = cv2.resize(image, (fixed_w, fixed_h), interpolation=cv2.INTER_AREA)
+                work_mask = cv2.resize(mask, (fixed_w, fixed_h), interpolation=cv2.INTER_NEAREST)
+                ratio = -1.0 # Force resize back later
             else:
-                work_img = image.copy()
-                work_mask = mask.copy()
+                # Downscale if needed
+                ratio = 1.0
+                if max(h, w) > inpainting_size:
+                    ratio = float(inpainting_size) / max(h, w)
+                    resize_h = int(h * ratio)
+                    resize_w = int(w * ratio)
+                    work_img = cv2.resize(image, (resize_w, resize_h), interpolation=cv2.INTER_AREA)
+                    work_mask = cv2.resize(mask, (resize_w, resize_h), interpolation=cv2.INTER_NEAREST)
+                else:
+                    work_img = image.copy()
+                    work_mask = mask.copy()
 
             # Preprocess
             image_padded = pad_img_to_modulo(work_img, 8)

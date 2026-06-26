@@ -61,7 +61,7 @@ class BaseAPITranslator(BaseTranslator):
             method="POST"
         )
         try:
-            with urllib.request.urlopen(req, timeout=30) as response:
+            with urllib.request.urlopen(req, timeout=120) as response:
                 result = json.loads(response.read().decode('utf-8'))
                 return result
         except urllib.error.HTTPError as e:
