@@ -234,7 +234,7 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
                     return False
 
         check_file = rule.get("check_file")
-        if check_file:
+        if check_file and str(check_file).lower() != "none":
             files_to_check = [check_file]
             
             found = False

@@ -32,11 +32,9 @@ def pad_img_to_modulo(img, mod):
     return padded
 
 @InpainterFactory.register("lama")
-@InpainterFactory.register("manga_inpaint_v3")
 class LamaInpainter_Impl(BaseInpainter):
     DISPLAY_NAME = {
-        "lama": "saic-mdal/lama (ONNX)",
-        "manga_inpaint_v3": "dremaz/manga-inpaint-v3"
+        "lama": "saic-mdal/lama (ONNX)"
     }
     def __init__(self):
         self.model_path = None
@@ -52,8 +50,6 @@ class LamaInpainter_Impl(BaseInpainter):
         
         # Identify which key it is based on the path
         key = "lama"
-        if "manga_inpaint_v3" in model_path.lower():
-            key = "manga_inpaint_v3"
             
         if not os.path.exists(self.model_path):
             source_url = ModelDownloader.get_source_url_from_registry("inpainter", key)

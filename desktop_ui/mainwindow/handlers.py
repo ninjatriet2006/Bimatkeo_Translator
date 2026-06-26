@@ -2199,6 +2199,11 @@ class HandlersMixin:
         if not model_name or model_name in ["none", "original"]:
             QMessageBox.information(self, "Thông tin", f"Bộ dịch '''{model_name}''' không hỗ trợ cập nhật phần mềm.")
             return
+            
+        source_url = getattr(self.config_loader, "model_source_map", {}).get(model_name)
+        if not source_url:
+            QMessageBox.information(self, "Thông tin", f"Mô hình '{model_name}' không hỗ trợ tính năng tự động tải dữ liệu qua giao diện (có thể là API hoặc phần mềm hệ thống như Tesseract).")
+            return
 
         reply = QMessageBox.question(
             self,

@@ -236,7 +236,7 @@ class Pipeline:
                 except Exception as e:
                     log_callback("ERROR", f"Failed to load translator: {e}")
                     translator = None
-            inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "manga_inpaint_v3")
+            inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "lama")
             try:
                 from app.core.downloader import ModelDownloader
                 inp_path = ModelDownloader.get_model_path_from_registry("inpainter", inpainter_name)
