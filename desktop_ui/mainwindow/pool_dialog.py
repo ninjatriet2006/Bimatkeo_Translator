@@ -13,9 +13,10 @@ class ManagePoolsDialog(QDialog):
     models_fetched_signal = Signal(list)
     fetch_finished_signal = Signal()
 
-    def __init__(self, main_window):
+    def __init__(self, main_window, service="Translator"):
         super().__init__(main_window)
         self.main_window = main_window
+        self.service = service
         self.setWindowTitle("Manage API Pools")
         self.resize(500, 600)
         
@@ -189,13 +190,10 @@ class ManagePoolsDialog(QDialog):
             
         endpoint = self.new_api_endpoint.text().strip()
         if self.service == "OCR":
-            provider = "gemini_ocr" # Default or maybe user enters it? They can't select provider here, it's just endpoint... we just put empty or gemini_ocr
+            provider = "gemini_ocr" # OCR currently relies mostly on gemini models or custom, default to gemini_ocr
         else:
             from app.core.api_utils import infer_ai_provider
             provider = infer_ai_provider(endpoint)
-        
-        if self.service == "OCR":
-            provider = self.new_api_endpoint.text().strip() # Not quite right, wait
         
         profile = {
             "type": "Standalone",
@@ -273,10 +271,6 @@ class ManagePoolsDialog(QDialog):
         from app.core.api_utils import infer_ai_provider
         ai_provider = infer_ai_provider(endpoint)
         
-        if not endpoint:
-            QMessageBox.warning(self, "Warning", "Please enter a valid URL in Endpoint URL.")
-            return
-
         self.fetch_models_btn.setEnabled(False)
         self.fetch_models_btn.setText("...")
 

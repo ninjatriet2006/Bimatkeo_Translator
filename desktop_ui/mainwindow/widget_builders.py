@@ -967,8 +967,25 @@ class WidgetBuildersMixin:
             
         layout.addWidget(combo, stretch=1)
         
-        manage_btn = QPushButton("Manage Pools")
+        manage_btn = QPushButton("⚙️ Manage Pools")
         manage_btn.setToolTip("Open Manage Pools Dialog")
+        manage_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        manage_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                color: #0078D7;
+                border: 1px solid #0078D7;
+                border-radius: 4px;
+                padding: 4px 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: rgba(0, 120, 215, 0.1);
+            }
+            QPushButton:pressed {
+                background-color: rgba(0, 120, 215, 0.2);
+            }
+        """)
         manage_btn.clicked.connect(lambda _, s=service: self._open_manage_pools_dialog(s))
         layout.addWidget(manage_btn)
         
