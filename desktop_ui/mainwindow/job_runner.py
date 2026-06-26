@@ -705,7 +705,7 @@ class JobRunnerMixin:
             translator_keys = ["processing_device", "translator_category", "api_name", "offline_translator", "ai_translator", "ai_endpoint", "ai_model", "ai_key", "max_retries", "enable_translator_chain", "translator_chain", "target_lang", "no_text_lang_skip", "skip_lang", "system_prompt_profile"]
             if key in translator_keys:
                 target_dict = final_config.setdefault("translator", {})
-            elif key in ["ocr", "use_mocr_merge", "min_text_length", "ignore_bubble", "prob"]:
+            elif key in ["ocr", "merge_nearby_boxes", "min_text_length", "ignore_bubble", "prob"]:
                 target_dict = final_config.setdefault("ocr", {})
             elif key in ["detector", "detection_size", "text_threshold", "det_rotate", 
                          "det_auto_rotate", "det_invert", "det_gamma_correct", "box_threshold", "unclip_ratio"]:

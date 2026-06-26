@@ -19,7 +19,6 @@ try:
     import app.plugins.detector.craft_impl
 
     import app.plugins.detector.paddle_onnx_impl
-    import app.plugins.recognizer.mocr_impl
     import app.plugins.recognizer.pixel_32px_impl
     import app.plugins.recognizer.pixel_48px_impl
     import app.plugins.recognizer.pixel_48px_ctc_impl
@@ -39,17 +38,17 @@ except ImportError as e:
 class DummyDetector(BaseTextDetector):
     def load_model(self, model_path: str, **kwargs) -> None:
         pass
-    def detect(self, image: np.ndarray) -> list:
+    def detect(self, image: np.ndarray) -> tuple[list[list[int]], list[list[list[int]]]]:
         h, w = image.shape[:2]
-        # Return a mock box in the center
-        return [[w//4, h//4, w*3//4, h*3//4]]
+        # Return a mock box in the center and empty polygon
+        return [[w//4, h//4, w*3//4, h*3//4]], [[[]]]
 
 @RecognizerFactory.register("dummy_recognizer")
 class DummyRecognizer(BaseTextRecognizer):
     def load_model(self, model_path: str, **kwargs) -> None:
         pass
-    def recognize(self, image_crop: np.ndarray) -> str:
-        return "Mock Original Text"
+    def recognize(self, image_crop: np.ndarray) -> tuple[str, float]:
+        return "Mock Original Text", 1.0
 
 @TranslatorFactory.register("dummy_translator")
 class DummyTranslator(BaseTranslator):
@@ -160,7 +159,7 @@ class Pipeline:
                         cloud_ocr = None
                 else:
                     detector_name = config_dict.get("offline_detector", "dbconvnext")
-                    ocr_name = config_dict.get("offline_ocr", "mocr")
+                    ocr_name = config_dict.get("offline_ocr", "paddle_onnx_rec")
 
                     from app.core.downloader import ModelDownloader
 

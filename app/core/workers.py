@@ -17,7 +17,7 @@ def release_gpu_memory():
     gc.collect()
 
 class OCRWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None, cloud_ocr: BaseCloudOCR | None = None, ocr_config: dict = None):
+    def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None, cloud_ocr: BaseCloudOCR | None = None, ocr_config: dict | None = None):
         super().__init__()
         self.in_q = in_q
         self.out_q_trans = out_q_trans
@@ -58,13 +58,11 @@ class OCRWorker(threading.Thread):
 
     def _detect_orientation(self, det_image, recognizer, detector):
         import cv2, numpy as np
-        import re
         raw_bboxes, _ = detector.detect(det_image)
         if not raw_bboxes: return 0
         boxes = sorted(raw_bboxes, key=lambda b: (b[2]-b[0])*(b[3]-b[1]), reverse=True)[:3]
         angles = [0, 90, 180, 270]
         angle_scores = {a: 0.0 for a in angles}
-        mocr_mode = "mangaocr" in type(recognizer).__name__.lower() or "mocr" in type(recognizer).__name__.lower()
         
         for angle in angles:
             scores = []
@@ -75,11 +73,7 @@ class OCRWorker(threading.Thread):
                 elif angle == 180: crop = cv2.rotate(crop, cv2.ROTATE_180)
                 elif angle == 270: crop = cv2.rotate(crop, cv2.ROTATE_90_COUNTERCLOCKWISE)
                 text, conf = recognizer.recognize(crop)
-                if mocr_mode:
-                    valid = len(re.findall(r'[\w\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]', text))
-                    scores.append(valid)
-                else:
-                    scores.append(conf)
+                scores.append(conf)
             if scores: angle_scores[angle] = sum(scores) / len(scores)
         return max(angle_scores.items(), key=lambda x: x[1])[0]
 
@@ -170,7 +164,7 @@ class OCRWorker(threading.Thread):
                 
                 # Sắp xếp lại box theo chuẩn đọc truyện. 
                 # (TODO: Đọc direction từ config_dict, tạm thời gán cứng rtl_ttb)
-                bundled_boxes = sort_comic_text_boxes(bundled_boxes, direction="rtl_ttb", image_width=w, image_height=h)
+                bundled_boxes = sort_comic_text_boxes(bundled_boxes, direction="rtl_ttb", image_width=w, image_height=h) # type: ignore
                 
                 bboxes = [b[:4] for b in bundled_boxes]
                 polygons = [b[4] for b in bundled_boxes]
@@ -217,7 +211,7 @@ class OCRWorker(threading.Thread):
                 
                 # Stage 3: Merge nearby boxes and texts
                 from app.core.vision_utils import merge_nearby_boxes_and_texts
-                if self.ocr_config.get('use_mocr_merge', False):
+                if self.ocr_config.get('merge_nearby_boxes', False):
                     merged_bboxes, merged_texts = merge_nearby_boxes_and_texts(bboxes, texts, w, h)
                 else:
                     merged_bboxes, merged_texts = bboxes, texts
@@ -325,8 +319,11 @@ class InpaintWorker(threading.Thread):
             if self.inpainter and (ctx.raw_bboxes or ctx.bboxes) and ctx.original_image is not None:
                 try:
                     boxes_to_inpaint = ctx.raw_bboxes if ctx.raw_bboxes is not None else ctx.bboxes
-                    inpainted = self.inpainter.inpaint(ctx.original_image, boxes_to_inpaint)
-                    ctx.inpainted_image = inpainted
+                    if boxes_to_inpaint is not None:
+                        inpainted = self.inpainter.inpaint(ctx.original_image, boxes_to_inpaint)
+                        ctx.inpainted_image = inpainted
+                    else:
+                        ctx.inpainted_image = ctx.original_image.copy()
                 except Exception as e:
                     if self.log_callback:
                         self.log_callback("ERROR", f"Inpaint Error on {ctx.page_id}: {e}")
