@@ -301,6 +301,7 @@ class Pipeline:
                 chained_translators.append((translator, target_lang))
             
             no_text_lang_skip = config_dict.get("translator", {}).get("no_text_lang_skip", False)
+            max_request_length = int(config_dict.get("translator", {}).get("max_request_length", 2000))
 
             trans_worker = TranslatorWorker(
                 q_trans, 
@@ -310,7 +311,8 @@ class Pipeline:
                 log_callback,
                 skip_languages=skip_languages,
                 filter_texts=filter_texts,
-                no_text_lang_skip=no_text_lang_skip
+                no_text_lang_skip=no_text_lang_skip,
+                max_request_length=max_request_length
             )
             inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback)
             render_worker = RenderWorker(q_render, q_out, renderer, log_callback)

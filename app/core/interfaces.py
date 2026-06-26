@@ -86,6 +86,7 @@ class BaseColorizer(ABC):
 class BaseTranslator(ABC):
     DISPLAY_NAME: Union[str, Dict[str, str]] = ""
     STATIC_MODELS: List[str] = []
+    MAX_CHARS: int = -1
 
     @classmethod
     def get_supported_languages(cls) -> dict:

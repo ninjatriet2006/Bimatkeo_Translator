@@ -1,0 +1,95 @@
+Admin Preset (Creator's custom config - hardware dependent):
+  filter_text: ''
+# Trình kết xuất đồ họa (default/advanced/none)
+  renderer: default
+# Tự động căn lề văn bản (auto/left/center/right)
+  alignment: auto
+# Tắt viền chữ để tối ưu hoặc dễ đọc hơn
+  disable_font_border: false
+# Tăng/giảm kích thước chữ dịch (px)
+  font_size_offset: 0
+# Kích thước chữ tối thiểu (px)
+  font_size_minimum: -1
+# Hướng văn bản (auto/ltr/rtl)
+  direction: auto
+# Dịch toàn bộ chữ thành IN HOA
+  uppercase: false
+# Dịch toàn bộ chữ thành in thường
+  lowercase: false
+# Đường dẫn tới file Font dùng để render
+  gimp_font: fonts/Arial-Unicode-Regular.ttf
+# Không ngắt từ khi xuống dòng
+  no_hyphenation: false
+# Mã màu chữ mặc định (HEX)
+  font_color: '000000'
+  line_spacing:
+  font_size:
+# Chế độ chữ từ Phải sang Trái (Right-to-Left)
+  rtl: true
+# Mô hình Upscale ảnh (để trống nếu không dùng)
+  upscaler: ''
+# Hoàn tác Upscale sau khi xử lý xong chữ
+  revert_upscaling: false
+# Tỷ lệ phóng to ảnh
+  upscale_ratio:
+# Mô hình Dịch thuật (mbart50, gpt, gemini, ...)
+  translator: mbart50
+# Ngôn ngữ đích (ENG, VIE, ...)
+  target_lang: ENG
+# Không bỏ qua khung thoại không có chữ
+  no_text_lang_skip: false
+# Bỏ qua các khung thoại chứa ngôn ngữ này
+  skip_lang: ''
+# Cấu hình riêng cho GPT
+  gpt_config:
+# Chuỗi dịch thuật (Ví dụ: JPN->ENG->VIE)
+  translator_chain: ''
+# Chỉ dịch các ngôn ngữ được chọn
+  selective_translation:
+# Mô hình nhận diện vùng chữ (default, manga-ocr...)
+  detector: none
+# Kích thước ảnh đầu vào cho mô hình Detector
+  detection_size: 2048
+# Ngưỡng tin cậy của chữ (0.0 -> 1.0)
+  text_threshold: 0.5
+  det_rotate: false
+  det_auto_rotate: false
+  det_invert: false
+  det_gamma_correct: false
+# Ngưỡng tin cậy của khung chữ (0.0 -> 1.0)
+  box_threshold: 0.7
+# Tỷ lệ nới rộng khung chữ
+  unclip_ratio: 2.3
+# Kích thước mô hình tô màu
+  colorization_size: 576
+# Độ khử nhiễu
+  denoise_sigma: 30
+# Mô hình tô màu ảnh
+  colorizer: none
+# Mô hình xóa chữ nền (lama, original, ...)
+  inpainter: original
+# Kích thước ảnh đầu vào cho Inpainter
+  inpainting_size: 1024.0
+# Độ chính xác Inpainting (fp32, bf16)
+  inpainting_precision: bf16
+  use_mocr_merge: false
+# Mô hình trích xuất chữ (manga-ocr, paddle...)
+  ocr: ''
+# Bỏ qua chữ nếu quá ngắn
+  min_text_length: 0
+  ignore_bubble: 0
+  prob:
+  kernel_size: 3
+  mask_dilation_offset: 0
+# Thiết bị tính toán (CPU, NVIDIA GPU)
+  processing_device: NVIDIA GPU
+  processing_mode: Safe
+# Ngôn ngữ gốc (auto: tự động nhận diện)
+  source_lang: auto
+  font_family: Arial-Unicode-Regular.ttf
+# Tự động đổi tên file sau khi dịch
+  auto_rename: true
+  backup_original: false
+  overwrite_output: false
+  enable_verbose_output: false
+  enable_debug_logging: false

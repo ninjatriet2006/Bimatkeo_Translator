@@ -846,6 +846,10 @@ class HandlersMixin:
             
             if key in ['translator_category', 'ai_mode', 'ai_translator']:
                 self._update_translator_visibility()
+                self._update_max_length_label()
+
+            if key in ['system_prompt_profile', 'api_name']:
+                self._update_max_length_label()
                 
             if key in ['ocr_category', 'ocr_ai_mode', 'api_ocr']:
                 self._update_ocr_visibility()
@@ -854,6 +858,43 @@ class HandlersMixin:
                 self.config_loader.oldsession_config["app_language"] = new_value
                 self.config_loader.save_oldsession_config()
                 self._rebuild_settings_tab()
+
+    def _update_max_length_label(self):
+        """Updates the label of max_request_length dynamically based on plugin MAX_CHARS and system prompt."""
+        from app.core.factories import TranslatorFactory
+        from app.core.translator_utils import PromptBuilder
+        
+        # 1. Get the current translator plugin's MAX_CHARS
+        translator_name = self._get_active_translator_name()
+        max_chars = -1
+        try:
+            translator_class = TranslatorFactory.get_class(translator_name)
+            if translator_class and hasattr(translator_class, 'MAX_CHARS'):
+                max_chars = translator_class.MAX_CHARS
+        except Exception:
+            pass
+            
+        # 2. Calculate system prompt length
+        sys_prompt_len = 0
+        sys_profile = self.current_settings.get('system_prompt_profile', 'example')
+        if sys_profile and sys_profile != "None":
+            project_base = getattr(self.config_loader, 'project_base_dir', "")
+            if not project_base:
+                import os
+                project_base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            builder = PromptBuilder(project_base, sys_profile)
+            sys_prompt_len = len(builder.build_prompt())
+            
+        # 3. Calculate max available length
+        if max_chars > 0:
+            available = max_chars - sys_prompt_len
+            label_text = f"Max Request Length (Max: {available} chars):"
+        else:
+            label_text = "Max Request Length (Max: -1 chars):"
+            
+        # 4. Update the label UI
+        if hasattr(self, 'setting_labels') and 'max_request_length' in self.setting_labels:
+            self.setting_labels['max_request_length'].setText(label_text)
 
     def _on_translator_changed(self, translator_name: str):
         """Handles changes in the main translator selection."""

@@ -703,7 +703,7 @@ class JobRunnerMixin:
                 continue
 
             group = prop_info.get("group", "")
-            translator_keys = ["processing_device", "translator_category", "api_name", "offline_translator", "ai_translator", "ai_endpoint", "ai_model", "ai_key", "max_retries", "enable_translator_chain", "translator_chain", "target_lang", "no_text_lang_skip", "skip_lang", "system_prompt_profile"]
+            translator_keys = ["processing_device", "translator_category", "api_name", "offline_translator", "ai_translator", "ai_endpoint", "ai_model", "ai_key", "max_retries", "enable_translator_chain", "translator_chain", "target_lang", "no_text_lang_skip", "skip_lang", "system_prompt_profile", "max_request_length"]
             if key in translator_keys:
                 target_dict = final_config.setdefault("translator", {})
             elif key in ["ocr", "merge_nearby_boxes", "min_text_length", "ignore_bubble", "prob", "filter_text"]:

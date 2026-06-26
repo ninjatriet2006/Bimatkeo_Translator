@@ -7,6 +7,7 @@ class GlossaryManager:
 
     def __init__(self, project_base_dir: str, profile_name: str = "None"):
         self.glossary: dict[str, str] = {}
+        self.pre_glossary: dict[str, str] = {}
         self.profile_name = profile_name
         self.project_base_dir = project_base_dir
         self._load_glossary()
@@ -26,6 +27,14 @@ class GlossaryManager:
                 data = yaml.safe_load(f)
                 if data and "profiles" in data and self.profile_name in data["profiles"]:
                     profile_data = data["profiles"][self.profile_name]
+                    
+                    pre_dict_str = profile_data.get("pre_dict", "")
+                    for line in pre_dict_str.splitlines():
+                        line = line.strip()
+                        if line and '|' in line and not line.startswith('#'):
+                            val, key = line.split('|', 1)
+                            self.pre_glossary[key.strip()] = val.strip()
+                            
                     post_dict_str = profile_data.get("post_dict", "")
                     
                     for line in post_dict_str.splitlines():
@@ -38,6 +47,15 @@ class GlossaryManager:
 
     def replace_pre_translation(self, text: str) -> str:
         """Thực hiện đánh dấu hoặc thay thế nhẹ trước khi ném vào máy dịch (dành cho Offline)."""
+        if not self.pre_glossary:
+            return text
+
+        sorted_keys = sorted(self.pre_glossary.keys(), key=len, reverse=True)
+        for key in sorted_keys:
+            val = self.pre_glossary[key]
+            pattern = re.compile(re.escape(key), re.IGNORECASE)
+            text = pattern.sub(val, text)
+            
         return text
 
     def replace_post_translation(self, text: str) -> str:

@@ -1,0 +1,414 @@
+# ==========================================
+# Schema Fallback
+# Sơ đồ cấu hình mặc định (phòng khi không lấy được schema từ core)
+# ==========================================
+
+$defs:
+  Alignment:
+    title: Alignment
+    type: string
+  Colorizer:
+    enum:
+    - none
+    title: Colorizer
+    type: string
+  ColorizerConfig:
+    properties:
+      colorization_size:
+        default: 576
+        title: Colorization Size
+        type: integer
+      denoise_sigma:
+        default: 30
+        title: Denoise Sigma
+        type: integer
+      colorizer:
+        allOf:
+        - $ref: '#/$defs/Colorizer'
+        default: none
+    title: ColorizerConfig
+    type: object
+  Detector:
+    enum:
+    - default
+    - dbconvnext
+    - ctd
+    - craft
+    - paddle
+    - none
+    title: Detector
+    type: string
+  DetectorConfig:
+    properties:
+      detector:
+        allOf:
+        - $ref: '#/$defs/Detector'
+        default: none
+      detection_size:
+        default: 2048
+        title: Detection Size
+        type: integer
+      text_threshold:
+        default: 0.5
+        title: Text Threshold
+        type: number
+      det_rotate:
+        default: false
+        title: Det Rotate
+        type: boolean
+      det_auto_rotate:
+        default: false
+        title: Det Auto Rotate
+        type: boolean
+      det_invert:
+        default: false
+        title: Det Invert
+        type: boolean
+      det_gamma_correct:
+        default: false
+        title: Det Gamma Correct
+        type: boolean
+      box_threshold:
+        default: 0.7
+        title: Box Threshold
+        type: number
+      unclip_ratio:
+        default: 2.3
+        title: Unclip Ratio
+        type: number
+    title: DetectorConfig
+    type: object
+  Direction:
+    title: Direction
+    type: string
+  InpaintPrecision:
+    title: InpaintPrecision
+    type: string
+  Inpainter:
+    enum:
+    - default
+    - lama_large
+    - lama_mpe
+    - sd
+    - none
+    - original
+    title: Inpainter
+    type: string
+  InpainterConfig:
+    properties:
+      inpainter:
+        allOf:
+        - $ref: '#/$defs/Inpainter'
+        default: none
+      inpainting_size:
+        default: 2048
+        title: Inpainting Size
+        type: integer
+      inpainting_precision:
+        allOf:
+        - $ref: '#/$defs/InpaintPrecision'
+        default: bf16
+    title: InpainterConfig
+    type: object
+  Ocr:
+    enum:
+    - 32px
+    - 48px
+    - 48px_ctc
+    - mocr
+    title: Ocr
+    type: string
+  OcrConfig:
+    properties:
+      use_mocr_merge:
+        default: false
+        title: Use Mocr Merge
+        type: boolean
+      ocr:
+        allOf:
+        - $ref: '#/$defs/Ocr'
+        default: none
+      min_text_length:
+        default: 0
+        title: Min Text Length
+        type: integer
+      ignore_bubble:
+        default: 0
+        title: Ignore Bubble
+        type: integer
+      prob:
+        anyOf:
+        - type: number
+        - type: 'null'
+        default:
+        title: Prob
+    title: OcrConfig
+    type: object
+  RenderConfig:
+    properties:
+      renderer:
+        allOf:
+        - $ref: '#/$defs/Renderer'
+        default: none
+      alignment:
+        allOf:
+        - $ref: '#/$defs/Alignment'
+        default: auto
+      disable_font_border:
+        default: false
+        title: Disable Font Border
+        type: boolean
+      outline_color:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: 'FFFFFF'
+        title: Outline Color
+      outline_width:
+        default: 2
+        title: Outline Width
+        type: integer
+      is_bold:
+        default: false
+        title: Is Bold
+        type: boolean
+      font_size_offset:
+        default: 0
+        title: Font Size Offset
+        type: integer
+      font_size_minimum:
+        default: -1
+        title: Font Size Minimum
+        type: integer
+      direction:
+        allOf:
+        - $ref: '#/$defs/Direction'
+        default: auto
+      uppercase:
+        default: false
+        title: Uppercase
+        type: boolean
+      lowercase:
+        default: false
+        title: Lowercase
+        type: boolean
+      gimp_font:
+        default: Sans-serif
+        title: Gimp Font
+        type: string
+      no_hyphenation:
+        default: false
+        title: No Hyphenation
+        type: boolean
+      font_color:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default:
+        title: Font Color
+      line_spacing:
+        anyOf:
+        - type: integer
+        - type: 'null'
+        default:
+        title: Line Spacing
+      font_size:
+        anyOf:
+        - type: integer
+        - type: 'null'
+        default:
+        title: Font Size
+      rtl:
+        default: true
+        title: Rtl
+        type: boolean
+    title: RenderConfig
+    type: object
+  Renderer:
+    title: Renderer
+    type: string
+  Translator:
+    enum:
+    - chatgpt
+    - chatgpt_2stage
+    - none
+    - original
+    - deepseek
+    - groq
+    - gemini
+    - gemini_2stage
+    - custom_openai
+    - offline
+    - nllb
+    - nllb_big
+    - sugoi
+    - jparacrawl
+    - jparacrawl_big
+    - m2m100
+    - m2m100_big
+    - mbart50
+    - qwen2
+    - qwen2_big
+    title: Translator
+    type: string
+  TranslatorConfig:
+    properties:
+      translator:
+        allOf:
+        - $ref: '#/$defs/Translator'
+        default: none
+      target_lang:
+        default: none
+        title: Target Lang
+        type: string
+      no_text_lang_skip:
+        default: false
+        title: No Text Lang Skip
+        type: boolean
+      skip_lang:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default:
+        title: Skip Lang
+      gpt_config:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default:
+        title: Gpt Config
+      translator_chain:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default:
+        title: Translator Chain
+      selective_translation:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default:
+        title: Selective Translation
+      enable_post_translation_check:
+        default: true
+        title: Enable Post Translation Check
+        type: boolean
+      post_check_max_retry_attempts:
+        default: 3
+        title: Post Check Max Retry Attempts
+        type: integer
+      post_check_repetition_threshold:
+        default: 20
+        title: Post Check Repetition Threshold
+        type: integer
+      post_check_target_lang_threshold:
+        default: 0.5
+        title: Post Check Target Lang Threshold
+        type: number
+    title: TranslatorConfig
+    type: object
+  UpscaleConfig:
+    properties:
+      upscaler:
+        allOf:
+        - $ref: '#/$defs/Upscaler'
+        default: none
+      revert_upscaling:
+        default: false
+        title: Revert Upscaling
+        type: boolean
+      upscale_ratio:
+        anyOf:
+        - type: integer
+        - type: 'null'
+        default:
+        title: Upscale Ratio
+    title: UpscaleConfig
+    type: object
+  Upscaler:
+    enum:
+    - waifu2x
+    - esrgan
+    - 4xultrasharp
+    title: Upscaler
+    type: string
+properties:
+  filter_text:
+    anyOf:
+    - type: string
+    - type: 'null'
+    default:
+    title: Filter Text
+  render:
+    allOf:
+    - $ref: '#/$defs/RenderConfig'
+    default:
+      renderer: none
+      alignment: auto
+      disable_font_border: false
+      outline_color: 'FFFFFF'
+      outline_width: 2
+      is_bold: false
+      font_size_offset: 0
+      font_size_minimum: -1
+      direction: auto
+      uppercase: false
+      lowercase: false
+      gimp_font: Sans-serif
+      no_hyphenation: false
+      font_color:
+      line_spacing:
+      font_size:
+      rtl: true
+  upscale:
+    allOf:
+    - $ref: '#/$defs/UpscaleConfig'
+    default:
+      upscaler: none
+      revert_upscaling: false
+      upscale_ratio:
+  translator:
+    allOf:
+    - $ref: '#/$defs/TranslatorConfig'
+    default:
+      translator: none
+      target_lang: none
+      no_text_lang_skip: false
+      skip_lang:
+      gpt_config:
+      translator_chain:
+      selective_translation:
+      enable_post_translation_check: true
+      post_check_max_retry_attempts: 3
+      post_check_repetition_threshold: 20
+      post_check_target_lang_threshold: 0.5
+  detector:
+    allOf:
+    - $ref: '#/$defs/DetectorConfig'
+    default: none
+  colorizer:
+    allOf:
+    - $ref: '#/$defs/ColorizerConfig'
+    default: none
+  inpainter:
+    allOf:
+    - $ref: '#/$defs/InpainterConfig'
+    default: none
+  ocr:
+    allOf:
+    - $ref: '#/$defs/OcrConfig'
+    default: none
+  force_simple_sort:
+    default: false
+    title: Force Simple Sort
+    type: boolean
+  kernel_size:
+    default: 3
+    title: Kernel Size
+    type: integer
+  mask_dilation_offset:
+    default: 20
+    title: Mask Dilation Offset
+    type: integer
+title: Config
+type: object

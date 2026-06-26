@@ -32,6 +32,23 @@ class ConfigLoaderBase(BaseConfigLoader):
         
         # Ensure directories exist and migrate old root files early
         config_dir = os.path.join(self.project_base_dir, ".config")
+        
+        default_configs_dir = os.path.join(self.project_base_dir, "default_configs")
+        if os.path.exists(default_configs_dir):
+            import shutil
+            for root, _, files in os.walk(default_configs_dir):
+                rel_path = os.path.relpath(root, default_configs_dir)
+                dest_dir = os.path.join(config_dir, rel_path) if rel_path != "." else config_dir
+                os.makedirs(dest_dir, exist_ok=True)
+                for f in files:
+                    src_f = os.path.join(root, f)
+                    dst_f = os.path.join(dest_dir, f)
+                    if not os.path.exists(dst_f):
+                        try:
+                            shutil.copy2(src_f, dst_f)
+                        except Exception:
+                            pass
+                            
         configs_dir = os.path.join(config_dir, "configs")
         models_dir = os.path.join(config_dir, "models")
         os.makedirs(configs_dir, exist_ok=True)

@@ -1,0 +1,102 @@
+registry_optimized_for: bimatkeo-LOQ-15IAX9|x86_64|linux
+window_geometry: 
+  01d9d0cb0003000000000000000000000000077f0000040f000000b9000000d0000005b80000039f0000000002000000078000000000000000200000077f0000040f
+last_directory: ''
+current_settings:
+  filter_text:
+  renderer: pillow_renderer
+  alignment: auto
+  disable_font_border: false
+  outline_color: ffffff
+  outline_width: 3
+  is_bold: true
+  font_size_offset: 0
+  font_size_minimum: -1
+  direction: auto
+  uppercase: false
+  lowercase: false
+  gimp_font: Sans-serif
+  no_hyphenation: false
+  font_color: '000000'
+  line_spacing:
+  font_size:
+  rtl: true
+  upscaler: none
+  revert_upscaling: false
+  upscale_ratio:
+  translator: none
+  target_lang: VIN
+  no_text_lang_skip: false
+  skip_lang: skip_languages.yaml
+  gpt_config:
+  translator_chain: ''
+  selective_translation:
+  enable_post_translation_check: true
+  post_check_max_retry_attempts: 3
+  post_check_repetition_threshold: 20
+  post_check_target_lang_threshold: 0.5
+  detector: none
+  colorizer: none
+  inpainter: lama
+  ocr: none
+  force_simple_sort: false
+  kernel_size: 3
+  mask_dilation_offset: 0
+  processing_device: CPU
+  translator_category: AI / Online
+  ai_mode: Standalone API
+  pool_name: ''
+  api_name: Kira AI
+  offline_translator: none
+  ai_translator: custom_openai
+  ai_endpoint: ''
+  ai_model: kira-mini-1.0
+  ai_key: ''
+  max_retries: 1
+  enable_translator_chain: false
+  max_request_length: 1977
+  system_prompt_profile: example
+  ocr_category: Offline
+  offline_detector: paddle_onnx_v6_medium
+  detection_size: 2000
+  offline_ocr: 48px_ctc
+  api_ocr: gemini_ocr
+  ocr_ai_mode: Standalone API
+  ocr_pool_name: ''
+  ocr_api_name: ''
+  ocr_api_endpoint: ''
+  ocr_api_model: ''
+  ocr_api_key: ''
+  ignore_bubble: 0
+  merge_nearby_boxes: true
+  text_threshold: 0.5
+  box_threshold: 0.7
+  unclip_ratio: 2.3
+  det_rotate: false
+  det_auto_rotate: false
+  det_invert: false
+  det_gamma_correct: false
+  min_text_length: 0
+  prob:
+  inpainting_precision: fp32
+  inpainting_size: 2000
+  task_upscale_grid: 2x
+  font_family: Arial-Unicode-Regular.ttf
+  output_format: png
+  export_mode: Create New Folder (Avoid Overwrite)
+  processing_mode: Automatic
+  batch_size: '5'
+  app_language: English
+  enable_verbose_output: false
+  auto_rename: true
+  overwrite_output: false
+  avoid_conflicts: true
+  backup_original: false
+  colorization_size: 576
+  denoise_sigma: 30
+  restore_size_after_colorize: false
+  use_mocr_merge: false
+theme: Default Qt
+task_settings: {}
+job_queue: []
+history_queue: []

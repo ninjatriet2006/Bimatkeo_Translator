@@ -1,0 +1,48 @@
+TokenRouter:
+  type: Standalone
+  service: Translator
+  provider: custom_openai
+  endpoint: ''
+  model: ''
+  key: ''
+B_ai:
+  type: Standalone
+  service: Translator
+  provider: custom_openai
+  endpoint: ''
+  model: ''
+  key: ''
+Test Pool:
+  type: Pool
+  service: Translator
+  fallback_list:
+  - TokenRouter
+Test:
+  type: Standalone
+  service: OCR
+  provider: gemini_ocr
+  endpoint: ''
+  model: ''
+  key: ''
+Felo 1:
+  type: Standalone
+  service: Translator
+  provider: felo
+  endpoint: ''
+  model: ''
+  key: ''
+Main Gemini:
+  type: Standalone
+  service: Translator
+  provider: gemini
+  endpoint: ''
+  model: ''
+  key: ''
+Kira AI:
+  type: Standalone
+  service: Translator
+  provider: custom_openai
+  endpoint: ''
+  model: ''
+  key: ''
+  max_retries: 1

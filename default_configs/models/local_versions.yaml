@@ -1,0 +1,10 @@
+m2m100: latest_direct
+nllb: hf_latest
+lama: hf_latest
+paddle_onnx_v6_tiny: hf_latest
+paddle_onnx_v6_small: hf_latest
+paddle_onnx_v6_medium: hf_latest
+paddle_onnx_rec_v6_tiny: hf_latest
+paddle_onnx_rec_v6_small: hf_latest
+paddle_onnx_rec_v6_medium: hf_latest
+48px_ctc: hf_latest

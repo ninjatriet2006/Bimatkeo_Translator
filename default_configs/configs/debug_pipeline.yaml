@@ -1,0 +1,8 @@
+# Cấu hình ẩn phục vụ Dev Test (Tắt/Bật các khối Pipeline)
+# Các thuộc tính dưới đây sẽ đè lên cấu hình được truyền từ giao diện UI.
+# Thay đổi thành false để bỏ qua (bypass) khối chức năng tương ứng nhằm debug lỗi.
+
+enable_ocr: true
+enable_translator: true
+enable_inpainter: true
+enable_renderer: true

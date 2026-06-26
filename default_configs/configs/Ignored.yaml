@@ -1,0 +1,29 @@
+skip_languages:
+  ENG: false
+  TRK: false
+  JPN: false
+  KOR: false
+  CHS: false
+  CHT: false
+  ESP: false
+  FRA: false
+  DEU: false
+  RUS: false
+  PTB: false
+  ITA: false
+  POL: false
+  NLD: false
+  CSY: false
+  HUN: false
+  ROM: false
+  UKR: false
+  VIN: false
+  ARA: false
+  SRP: false
+  HRV: false
+  THA: false
+  IND: false
+  FIL: false
+filter_texts:
+  - "(SFX)"
+  - "[NOISE]"

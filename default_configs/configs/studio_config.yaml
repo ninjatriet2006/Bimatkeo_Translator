@@ -1,0 +1,1125 @@
+ui_map:
+  __tab_order__:
+  - General & Translator
+  - Detector & OCR
+  - Image & Inpainter
+  - Render & Output
+  - Output & Export
+  - Extra Settings
+  processing_device:
+    widget: segmented_button
+    group: General & Translator
+    order: 120
+    label: 'Processing Device:'
+    default: CPU
+    values:
+    - CPU
+    - NVIDIA GPU
+    tooltip: Use CPU for universal compatibility or NVIDIA GPU for significantly
+      faster processing (requires a compatible card and setup).
+  target_lang:
+    widget: optionmenu_languages
+    group: General & Translator
+    order: 140
+    label: 'Target Language:'
+    default: none
+    tooltip: The language to translate the text into.
+  translator_category:
+    widget: segmented_button
+    group: General & Translator
+    order: 149
+    label: 'Translator Type:'
+    default: Offline
+    values:
+    - Offline
+    - AI / Online
+    tooltip: Choose between offline local translation models or online APIs.
+  ai_mode:
+    widget: segmented_button
+    group: General & Translator
+    order: 149.5
+    label: 'API Mode:'
+    default: Standalone API
+    values:
+    - Standalone API
+    - Pool APIs
+    tooltip: Choose between a single standalone API or an automated fallback 
+      pool of APIs.
+  pool_name:
+    widget: pool_profile_selector
+    group: General & Translator
+    order: 151
+    label: 'Pool APIs Name:'
+    default: ''
+    service: Translator
+    tooltip: Select an existing Pool APIs profile or manage your pools.
+  api_name:
+    widget: api_profile_selector
+    group: General & Translator
+    order: 151
+    label: 'API Name:'
+    default: ''
+    service: Translator
+    tooltip: Select an existing API profile or type a name to create/save a new 
+      one.
+  offline_translator:
+    widget: optionmenu
+    group: General & Translator
+    order: 152
+    label: 'Offline Model:'
+    default: none
+    values:
+    - sugoi
+    - m2m100
+    - m2m100_big
+    - nllb
+    - nllb_big
+    - mbart50
+    - jparacrawl
+    - jparacrawl_big
+    - qwen2
+    - qwen2_big
+    - offline
+    tooltip: Select the offline local model to translate text.
+  ai_translator:
+    widget: optionmenu
+    group: General & Translator
+    order: 153
+    label: 'AI Provider:'
+    default: gemini
+    values:
+    - gemini
+    - openai
+    - deepseek
+    - groq
+    - custom_openai
+    tooltip: Select the AI service/API provider to translate text.
+  ai_endpoint:
+    widget: entry
+    group: General & Translator
+    order: 154
+    label: 'API Endpoint:'
+    default: ''
+    placeholder: e.g., https://api.openai.com/v1
+    tooltip: Base URL/Endpoint of the selected AI service.
+  ai_model:
+    widget: ai_model_selector
+    group: General & Translator
+    order: 155
+    label: 'Model Name:'
+    default: ''
+    button_text: Fetch
+    placeholder: e.g., gemini-2.5-flash
+    tooltip: Model name for the translation service. Click 'Fetch' to query 
+      available models from the endpoint.
+  ai_key:
+    widget: entry
+    group: General & Translator
+    order: 156
+    label: 'API Key:'
+    default: ''
+    placeholder: Enter your API key
+    tooltip: Secret API Key for authenticating with the selected service.
+  max_retries:
+    widget: spinbox
+    group: General & Translator
+    order: 157
+    label: 'Max API Retries:'
+    default: 3
+    min: 0
+    max: 10
+    tooltip: Number of times to retry the API call if it fails or returns malformed JSON.
+  enable_translator_chain:
+    widget: checkbox
+    group: General & Translator
+    order: 155
+    label: 'Enable Translator Chain:'
+    default: false
+    tooltip: Enable this to use multiple translators in a sequence. This will 
+      disable the main translator selection above.
+  translator_chain:
+    widget: translator_chain_builder
+    group: General & Translator
+    order: 160
+    label: 'Translation Steps:'
+    default: ''
+    tooltip: Add translation steps in order. The output of one step becomes the 
+      input for the next.
+  no_text_lang_skip:
+    widget: checkbox
+    group: General & Translator
+    order: 170
+    label: Translate Same Language
+    default: false
+    section: advanced
+    tooltip: If checked, the translator will still run even if the source and 
+      target languages are the same.
+  skip_lang:
+    widget: open_yaml_button
+    group: General & Translator
+    order: 190
+    label: 'Skip Translating from these Languages:'
+    default: Ignored.yaml
+    section: advanced
+    tooltip: Open the Ignored.yaml file to configure which languages 
+      and texts should be skipped.
+  max_request_length:
+    widget: spinbox
+    group: General & Translator
+    order: 175
+    label: 'Max Request Length (chars):'
+    default: 2000
+    min: -1
+    max: 999999
+    tooltip: 'Maximum characters per API request. Set to -1 for unlimited.'
+  system_prompt_profile:
+    widget: optionmenu
+    group: General & Translator
+    order: 180
+    label: 'System Prompt & Dict Profile:'
+    default: jp_vi
+    values:
+    - example
+    tooltip: Select an embedded dictionary and System Prompt profile for 
+      translation corrections and customized AI persona.
+  ocr_category:
+    widget: segmented_button
+    group: Detector & OCR
+    order: 210
+    label: 'OCR Type:'
+    default: Offline
+    values:
+    - Offline
+    - AI / Online
+    tooltip: Choose between offline local OCR models or online Vision APIs.
+  offline_detector:
+    widget: optionmenu
+    group: Detector & OCR
+    order: 220
+    label: 'Detector Model:'
+    default: none
+    tooltip: The AI model used to find text bubbles on the page. 'default' is 
+      recommended for most comics.
+  detection_size:
+    widget: spinbox
+    recommendation: true
+    group: Detector & OCR
+    order: 230
+    label: 'Detection Size:'
+    default: 2048
+    min: 1
+    max: 999999
+    tooltip: The resolution the image is resized to for text detection. Higher 
+      values find smaller text but are slower.
+  offline_ocr:
+    widget: optionmenu
+    group: Detector & OCR
+    order: 240
+    label: 'OCR Model:'
+    default: none
+    tooltip: The AI model used to read/recognize the characters inside the text 
+      bubbles.
+  api_ocr:
+    widget: optionmenu
+    group: Detector & OCR
+    order: 247.5
+    label: 'OCR Provider:'
+    default: gemini_ocr
+    values:
+    - gemini_ocr
+    - google_ocr
+    - custom_ocr
+    tooltip: Select the Cloud Vision service to perform full-page OCR.
+  ocr_ai_mode:
+    widget: segmented_button
+    group: Detector & OCR
+    order: 246
+    label: 'API Mode:'
+    default: Standalone API
+    values:
+    - Standalone API
+    - Pool APIs
+    tooltip: Choose between a single standalone API or an automated fallback 
+      pool of APIs for OCR.
+  ocr_pool_name:
+    widget: pool_profile_selector
+    group: Detector & OCR
+    order: 247
+    label: 'Pool APIs Name:'
+    default: ''
+    service: OCR
+    tooltip: Select an existing OCR Pool profile or manage your pools.
+  ocr_api_name:
+    widget: api_profile_selector
+    group: Detector & OCR
+    order: 247
+    label: 'API Name:'
+    default: ''
+    service: OCR
+    tooltip: Select an existing OCR API profile or type a name to create/save a 
+      new one.
+  ocr_api_endpoint:
+    widget: entry
+    group: Detector & OCR
+    order: 248
+    label: 'Endpoint URL:'
+    default: ''
+    placeholder: e.g., https://api.openai.com/v1
+    tooltip: Leave blank to use the official endpoint for the Vision Provider.
+  ocr_api_model:
+    widget: ai_model_selector
+    group: Detector & OCR
+    order: 249
+    label: 'Model Name:'
+    default: ''
+    button_text: Fetch
+    placeholder: e.g., gemini-2.5-flash
+    tooltip: Model name for the vision service. Click 'Fetch' to query available
+      models.
+  ocr_api_key:
+    widget: entry
+    group: Detector & OCR
+    order: 250
+    label: 'API Key:'
+    default: ''
+    placeholder: Enter your API key
+    tooltip: Secret API Key for authenticating with the selected vision service.
+  ignore_bubble:
+    widget: slider
+    group: Detector & OCR
+    order: 250
+    label: 'Ignore Small Bubbles:'
+    default: 0
+    options:
+      from_: 0
+      to: 500
+      number_of_steps: 50
+    value_format: '{:.0f}'
+    tooltip: Ignores any detected text bubbles smaller than this pixel area. 
+      Useful for filtering out noise or tiny sound effects.
+  merge_nearby_boxes:
+    widget: checkbox
+    group: General & Translator
+    order: 165
+    label: Merge Nearby Text (Context & Render)
+    default: false
+    tooltip: Merge text bubbles that are very close to each other. Can improve accuracy on fragmented text.
+    section: advanced
+  text_threshold:
+    widget: slider
+    group: Detector & OCR
+    order: 280
+    label: 'Text Threshold:'
+    default: 0.5
+    options:
+      from_: 10
+      to: 90
+    value_multiplier: 0.01
+    value_format: '{:.2f}'
+    section: advanced
+    tooltip: How confident the detector must be to mark an area as 'text'. Lower
+      values find more text but may include noise.
+  box_threshold:
+    widget: slider
+    group: Detector & OCR
+    order: 290
+    label: 'Box Threshold:'
+    default: 0.7
+    options:
+      from_: 10
+      to: 90
+    value_multiplier: 0.01
+    value_format: '{:.2f}'
+    section: advanced
+    tooltip: How confident the detector must be to finalize the bounding box 
+      around the text. Higher values create tighter, more precise boxes.
+  unclip_ratio:
+    widget: slider
+    group: Detector & OCR
+    order: 291
+    label: 'Unclip Ratio:'
+    default: 2.3
+    options:
+      from_: 10
+      to: 50
+    value_multiplier: 0.1
+    value_format: '{:.1f}'
+    section: advanced
+    tooltip: How much to expand the detected text box to capture outlines or 
+      parts of speech bubbles. Too high can cause boxes to merge.
+  det_rotate:
+    widget: checkbox
+    group: Detector & OCR
+    order: 292
+    label: Detect Rotated Text
+    default: false
+    section: advanced
+    tooltip: Enables detection of vertically or rotated text within a bubble.
+  det_auto_rotate:
+    widget: checkbox
+    group: Detector & OCR
+    order: 293
+    label: Auto-Rotate Image
+    default: false
+    section: advanced
+    tooltip: Automatically rotates the entire image if it's detected to be 
+      sideways before processing.
+  det_invert:
+    widget: checkbox
+    group: Detector & OCR
+    order: 294
+    label: Invert Image Colors
+    default: false
+    section: advanced
+    tooltip: Inverts the image colors (black to white and vice-versa) before 
+      detection. Useful for white text on black backgrounds.
+  det_gamma_correct:
+    widget: slider
+    group: Detector & OCR
+    order: 294.5
+    label: Gamma Correction
+    default: 1.0
+    options:
+      from_: 1
+      to: 30
+    value_multiplier: 0.1
+    value_format: '{:.1f}'
+    section: advanced
+    tooltip: Applies gamma correction before detection (1.0 = Disabled). Can improve detection on certain image types.
+  min_text_length:
+    widget: slider
+    group: Detector & OCR
+    order: 295
+    label: 'Min. Text Length:'
+    default: 0
+    section: advanced
+    options:
+      from_: 0
+      to: 10
+      number_of_steps: 10
+    value_format: '{:.0f}'
+    tooltip: 'Ignores any recognized text shorter than this length.
+
+      Useful for filtering out noise or single characters.'
+  prob:
+    widget: entry
+    group: Detector & OCR
+    order: 296
+    label: 'OCR Prob. Threshold:'
+    default:
+    section: advanced
+    placeholder: 'e.g., 0.85 (default: auto)'
+    tooltip: 'Minimum confidence for an OCR result to be accepted.
+
+      Leave blank for automatic backend default.'
+  inpainter:
+    widget: optionmenu
+    group: Image & Inpainter
+    order: 320
+    label: 'Inpainter Model:'
+    default: none
+    tooltip: The AI model used to remove the original text and reconstruct the 
+      background.
+  inpainting_precision:
+    widget: optionmenu
+    group: Image & Inpainter
+    order: 330
+    label: 'Inpainting Precision:'
+    default: bf16
+    tooltip: Calculation precision for inpainting. 'fp32' is most compatible. 
+      'fp16' or 'bf16' are faster on modern GPUs.
+  inpainting_size:
+    widget: spinbox
+    recommendation: true
+    group: Image & Inpainter
+    order: 340
+    label: 'Inpainting Size:'
+    default: 2048
+    min: 1
+    max: 999999
+    tooltip: 'Resolution for the text removal process.
+
+      Higher values improve quality but are MUCH slower and use more VRAM.
+
+      (Recommended: 1024, Default for Backend: 2048)'
+
+  task_upscale_grid:
+    widget: optionmenu
+    label: 'Upscale Ratio:'
+    default: 2x
+    values:
+    - 2x
+    - 3x
+    - 4x
+    - 5x
+    - 6x
+    - 7x
+    - 8x
+    - 9x
+    - 10x
+  renderer:
+    widget: optionmenu
+    group: Render & Output
+    order: 420
+    label: 'Render Engine:'
+    default: none
+    tooltip: The engine used to draw the translated text onto the cleaned image.
+  font_family:
+    widget: combobox_fonts
+    group: Render & Output
+    order: 430
+    label: 'Font:'
+    default: Sans-serif
+    tooltip: The font family to use for the translated text. You can use system 
+      fonts or place fonts in the 'fonts' folder.
+  font_color:
+    widget: entry_with_button
+    group: Render & Output
+    order: 440
+    label: 'Font Color:'
+    default: '000000'
+    button_text: '...'
+    tooltip: The color of the translated text in Hex format (e.g., 000000 for 
+      black).
+  outline_color:
+    widget: entry_with_button
+    group: Render & Output
+    order: 441
+    label: 'Outline Color:'
+    default: 'FFFFFF'
+    button_text: '...'
+    tooltip: The color of the text border/outline in Hex format (e.g., FFFFFF for white).
+  outline_width:
+    widget: slider
+    group: Render & Output
+    order: 442
+    label: 'Outline Width:'
+    default: 2
+    options:
+      from_: 0
+      to: 10
+    value_format: '{:.0f}'
+    tooltip: The thickness of the text border. Set to 0 to disable the border.
+  is_bold:
+    widget: checkbox
+    group: Render & Output
+    order: 443
+    label: 'Bold Text'
+    default: false
+    tooltip: Force the text to be rendered with a bold style.
+  alignment:
+    widget: optionmenu
+    group: Render & Output
+    order: 450
+    label: 'Text Alignment:'
+    default: auto
+    tooltip: How to align the text within the speech bubble (left, center, 
+      right). 'auto' lets the renderer decide.
+  font_size_offset:
+    widget: slider
+    group: Render & Output
+    order: 460
+    label: 'Font Size Offset:'
+    default: 0
+    options:
+      from_: -20
+      to: 20
+    value_format: '{:.0f}'
+    tooltip: Fine-tune the automatically calculated font size. Positive values 
+      make text bigger, negative values make it smaller.
+  output_format:
+    widget: optionmenu
+    group: Output & Export
+    order: 470
+    label: 'Output Format:'
+    default: png
+    values:
+    - png
+    - jpg
+    - webp
+    - pdf
+    - psd
+    - xcf
+    tooltip: Select the final image format. PNG is recommended for quality.
+  export_mode:
+    widget: optionmenu
+    group: Output & Export
+    order: 480
+    label: 'Export Mode:'
+    default: Create New Folder (Avoid Overwrite)
+    values:
+    - Create New Folder (Avoid Overwrite)
+    - Create New Folder (Overwrite Existing)
+    - Translate In-Place (Modify Original)
+    tooltip: 'Choose how to save your translated files.
+
+      - Avoid Overwrite: Creates a new folder. If it exists, appends a number to avoid losing data. (Recommended)
+      - Overwrite Existing: Creates a new folder but deletes any existing folder with the same name.
+      - Translate In-Place: Saves directly into your original folder, modifying it.'
+  filter_text:
+    widget: open_yaml_button
+    group: Detector & OCR
+    order: 295
+    label: 'Filter Text Rules:'
+    default: Ignored.yaml
+    tooltip: "Open the Ignored.yaml file to configure which text patterns should be ignored.\n\
+      Supports wildcards (e.g., *abc), exact match (e.g., \"rain\"), and substring match."
+  font_size:
+    widget: slider
+    group: Render & Output
+    order: 510
+    label: 'Font Size (Override):'
+    default:
+    options:
+      from_: 0
+      to: 150
+    value_format: '{:.0f}'
+    section: advanced
+    tooltip: Manually set a fixed font size for all text. '0' or leaving it 
+      blank means automatic sizing.
+  line_spacing:
+    widget: slider
+    group: Render & Output
+    order: 520
+    label: 'Line Spacing:'
+    default:
+    options:
+      from_: 0
+      to: 30
+    value_format: '{:.0f}'
+    section: advanced
+    tooltip: Manually set the space between lines of text. '0' or leaving it 
+      blank means automatic.
+  direction:
+    widget: optionmenu
+    group: Render & Output
+    order: 530
+    label: 'Text Direction & Reading Order:'
+    default: 'Horizontal: Right-to-Left'
+    values:
+    - 'Horizontal: Right-to-Left'
+    - 'Horizontal: Left-to-Right'
+    - 'Vertical: Right-to-Left'
+    - 'Vertical: Left-to-Right'
+    section: advanced
+    tooltip: Choose the reading direction of the source material to help order text bubbles correctly.
+  disable_font_border:
+    widget: checkbox
+    group: Render & Output
+    order: 560
+    label: Disable Font Border
+    default: false
+    section: advanced
+    tooltip: Removes the automatic black border/outline around the font.
+  uppercase:
+    widget: checkbox
+    group: Render & Output
+    order: 570
+    label: Force Uppercase
+    default: false
+    section: advanced
+    tooltip: Forces all translated text to be UPPERCASE.
+  lowercase:
+    widget: checkbox
+    group: Render & Output
+    order: 580
+    label: Force Lowercase
+    default: false
+    section: advanced
+    tooltip: Forces all translated text to be lowercase.
+
+  font_size_minimum:
+    widget: slider
+    group: Render & Output
+    order: 592
+    label: 'Min. Font Size:'
+    default: -1
+    options:
+      from_: -1
+      to: 40
+      number_of_steps: 41
+    value_format: '{:.0f}'
+    section: advanced
+    tooltip: 'Prevents font size from falling below this value.
+
+      -1 disables this feature.'
+  processing_mode:
+    widget: optionmenu
+    group: Extra Settings
+    order: 710
+    label: 'Processing Mode:'
+    default: Automatic
+    values:
+    - Automatic
+    - High VRAM
+    - Low VRAM
+    tooltip: 'Automatic: Chooses the best mode based on your GPU''s VRAM.
+
+      High VRAM: Processes all images at once. Fastest, for GPUs with >6GB VRAM.
+
+      Low VRAM: Processes images in small groups to prevent errors on GPUs with <=6GB
+      VRAM.'
+  batch_size:
+    widget: entry
+    group: Extra Settings
+    order: 720
+    label: 'Batch Size (Low VRAM Only):'
+    default: '5'
+    tooltip: 'How many images to process at a time in Low VRAM mode.
+
+      Smaller numbers use less VRAM but are slower.'
+  preset_manager:
+    widget: preset_manager
+    group: Extra Settings
+    order: 730
+    label: Preset Manager
+  api_key_manager:
+    widget: api_key_manager
+    group: Extra Settings
+    order: 740
+    label: Manage API Keys
+    tooltip: Manage your translation API keys securely.
+  app_language:
+    widget: optionmenu
+    group: Extra Settings
+    order: 745
+    label: 'App Language:'
+    default: English
+    values:
+    - English
+    - Tiếng Việt
+    tooltip: Choose the language of the application interface (labels and 
+      tooltips).
+  enable_verbose_output:
+    widget: checkbox
+    group: Extra Settings
+    order: 750
+    label: Enable Verbose Output ⚠
+    default: false
+    tooltip: 'WARNING: Saves all intermediate processing steps (masks, OCR boxes,
+      etc.) for debugging. This will consume a very large amount of disk space and
+      slow down processing.'
+    tooltip_color: red
+
+
+schema_cache:
+  $defs:
+    Alignment:
+      title: Alignment
+      type: string
+    Colorizer:
+      enum:
+      - none
+      - mc2
+      title: Colorizer
+      type: string
+    ColorizerConfig:
+      properties:
+        colorization_size:
+          default: 576
+          title: Colorization Size
+          type: integer
+        denoise_sigma:
+          default: 30
+          title: Denoise Sigma
+          type: integer
+        colorizer:
+          allOf:
+          - $ref: '#/$defs/Colorizer'
+          default: none
+      title: ColorizerConfig
+      type: object
+    Detector:
+      enum:
+      - default
+      - dbconvnext
+      - ctd
+      - craft
+      - paddle
+      - none
+      title: Detector
+      type: string
+    DetectorConfig:
+      properties:
+        detector:
+          allOf:
+          - $ref: '#/$defs/Detector'
+          default: none
+        detection_size:
+          default: 2048
+          title: Detection Size
+          type: integer
+        text_threshold:
+          default: 0.5
+          title: Text Threshold
+          type: number
+        det_rotate:
+          default: false
+          title: Det Rotate
+          type: boolean
+        det_auto_rotate:
+          default: false
+          title: Det Auto Rotate
+          type: boolean
+        det_invert:
+          default: false
+          title: Det Invert
+          type: boolean
+        det_gamma_correct:
+          default: false
+          title: Det Gamma Correct
+          type: boolean
+        box_threshold:
+          default: 0.7
+          title: Box Threshold
+          type: number
+        unclip_ratio:
+          default: 2.3
+          title: Unclip Ratio
+          type: number
+      title: DetectorConfig
+      type: object
+    Direction:
+      title: Direction
+      type: string
+    InpaintPrecision:
+      title: InpaintPrecision
+      type: string
+    Inpainter:
+      enum:
+      - default
+      - lama_large
+      - lama_mpe
+      - sd
+      - none
+      - original
+      title: Inpainter
+      type: string
+    InpainterConfig:
+      properties:
+        inpainter:
+          allOf:
+          - $ref: '#/$defs/Inpainter'
+          default: none
+        inpainting_size:
+          default: 2048
+          title: Inpainting Size
+          type: integer
+        inpainting_precision:
+          allOf:
+          - $ref: '#/$defs/InpaintPrecision'
+          default: bf16
+      title: InpainterConfig
+      type: object
+    Ocr:
+      enum:
+      - 32px
+      - 48px
+      - 48px_ctc
+      - mocr
+      title: Ocr
+      type: string
+    OcrConfig:
+      properties:
+        merge_nearby_boxes:
+          default: false
+          title: Merge Nearby Text
+          type: boolean
+        ocr:
+          allOf:
+          - $ref: '#/$defs/Ocr'
+          default: none
+        min_text_length:
+          default: 0
+          title: Min Text Length
+          type: integer
+        ignore_bubble:
+          default: 0
+          title: Ignore Bubble
+          type: integer
+        prob:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default:
+          title: Prob
+      title: OcrConfig
+      type: object
+    RenderConfig:
+      properties:
+        renderer:
+          allOf:
+          - $ref: '#/$defs/Renderer'
+          default: none
+        alignment:
+          allOf:
+          - $ref: '#/$defs/Alignment'
+          default: auto
+        disable_font_border:
+          default: false
+          title: Disable Font Border
+          type: boolean
+        font_size_offset:
+          default: 0
+          title: Font Size Offset
+          type: integer
+        font_size_minimum:
+          default: -1
+          title: Font Size Minimum
+          type: integer
+        direction:
+          allOf:
+          - $ref: '#/$defs/Direction'
+          default: auto
+        uppercase:
+          default: false
+          title: Uppercase
+          type: boolean
+        lowercase:
+          default: false
+          title: Lowercase
+          type: boolean
+        gimp_font:
+          default: Sans-serif
+          title: Gimp Font
+          type: string
+        no_hyphenation:
+          default: false
+          title: No Hyphenation
+          type: boolean
+        font_color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default:
+          title: Font Color
+        line_spacing:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default:
+          title: Line Spacing
+        font_size:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default:
+          title: Font Size
+        rtl:
+          default: true
+          title: Rtl
+          type: boolean
+      title: RenderConfig
+      type: object
+    Renderer:
+      title: Renderer
+      type: string
+    Translator:
+      enum:
+      - youdao
+      - baidu
+      - deepl
+      - papago
+      - caiyun
+      - chatgpt
+      - chatgpt_2stage
+      - none
+      - original
+      - sakura
+      - deepseek
+      - groq
+      - gemini
+      - gemini_2stage
+      - custom_openai
+      - offline
+      - nllb
+      - nllb_big
+      - sugoi
+      - jparacrawl
+      - jparacrawl_big
+      - m2m100
+      - m2m100_big
+      - mbart50
+      - qwen2
+      - qwen2_big
+      title: Translator
+      type: string
+    TranslatorConfig:
+      properties:
+        translator:
+          allOf:
+          - $ref: '#/$defs/Translator'
+          default: none
+        target_lang:
+          default: ENG
+          title: Target Lang
+          type: string
+        no_text_lang_skip:
+          default: false
+          title: No Text Lang Skip
+          type: boolean
+        skip_lang:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default:
+          title: Skip Lang
+        gpt_config:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default:
+          title: Gpt Config
+        translator_chain:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default:
+          title: Translator Chain
+        selective_translation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default:
+          title: Selective Translation
+        enable_post_translation_check:
+          default: true
+          title: Enable Post Translation Check
+          type: boolean
+        post_check_max_retry_attempts:
+          default: 3
+          title: Post Check Max Retry Attempts
+          type: integer
+        post_check_repetition_threshold:
+          default: 20
+          title: Post Check Repetition Threshold
+          type: integer
+        post_check_target_lang_threshold:
+          default: 0.5
+          title: Post Check Target Lang Threshold
+          type: number
+      title: TranslatorConfig
+      type: object
+    UpscaleConfig:
+      properties:
+        upscaler:
+          allOf:
+          - $ref: '#/$defs/Upscaler'
+          default: none
+        revert_upscaling:
+          default: false
+          title: Revert Upscaling
+          type: boolean
+        upscale_ratio:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default:
+          title: Upscale Ratio
+      title: UpscaleConfig
+      type: object
+    Upscaler:
+      enum:
+      - waifu2x
+      - esrgan
+      - 4xultrasharp
+      title: Upscaler
+      type: string
+  properties:
+    filter_text:
+      anyOf:
+      - type: string
+      - type: 'null'
+      default:
+      title: Filter Text
+    render:
+      allOf:
+      - $ref: '#/$defs/RenderConfig'
+      default:
+        renderer: none
+        alignment: auto
+        disable_font_border: false
+        font_size_offset: 0
+        font_size_minimum: -1
+        direction: auto
+        uppercase: false
+        lowercase: false
+        gimp_font: Sans-serif
+        no_hyphenation: false
+        font_color:
+        line_spacing:
+        font_size:
+        rtl: true
+    upscale:
+      allOf:
+      - $ref: '#/$defs/UpscaleConfig'
+      default:
+        upscaler: none
+        revert_upscaling: false
+        upscale_ratio:
+    translator:
+      allOf:
+      - $ref: '#/$defs/TranslatorConfig'
+      default:
+        translator: none
+        target_lang: ENG
+        no_text_lang_skip: false
+        skip_lang:
+        gpt_config:
+        translator_chain:
+        selective_translation:
+        enable_post_translation_check: true
+        post_check_max_retry_attempts: 3
+        post_check_repetition_threshold: 20
+        post_check_target_lang_threshold: 0.5
+    detector:
+      allOf:
+      - $ref: '#/$defs/DetectorConfig'
+      default:
+        detector: none
+        detection_size: 2048
+        text_threshold: 0.5
+        det_rotate: false
+        det_auto_rotate: false
+        det_invert: false
+        det_gamma_correct: false
+        box_threshold: 0.7
+        unclip_ratio: 2.3
+    colorizer:
+      allOf:
+      - $ref: '#/$defs/ColorizerConfig'
+      default:
+        colorization_size: 576
+        denoise_sigma: 30
+        colorizer: none
+    inpainter:
+      allOf:
+      - $ref: '#/$defs/InpainterConfig'
+      default:
+        inpainter: none
+        inpainting_size: 2048
+        inpainting_precision: bf16
+    ocr:
+      allOf:
+      - $ref: '#/$defs/OcrConfig'
+      default:
+        merge_nearby_boxes: false
+        ocr: none
+        min_text_length: 0
+        ignore_bubble: 0
+        prob:
+    force_simple_sort:
+      default: false
+      title: Force Simple Sort
+      type: boolean
+    kernel_size:
+      default: 3
+      title: Kernel Size
+      type: integer
+    mask_dilation_offset:
+      default: 20
+      title: Mask Dilation Offset
+      type: integer
+  title: Config
+  type: object
+

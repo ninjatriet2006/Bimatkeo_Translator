@@ -260,7 +260,7 @@ class OCRWorker(threading.Thread):
 
 
 class TranslatorWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, translator_or_chain, src_lang: str, tgt_lang: str, log_callback=None, hitl_callback=None, skip_languages=None, filter_texts=None, no_text_lang_skip=False):
+    def __init__(self, in_q: queue.Queue, translator_or_chain, src_lang: str, tgt_lang: str, log_callback=None, hitl_callback=None, skip_languages=None, filter_texts=None, no_text_lang_skip=False, max_request_length=-1):
         super().__init__()
         self.in_q = in_q
         
@@ -276,6 +276,7 @@ class TranslatorWorker(threading.Thread):
         self.skip_languages = skip_languages or {}
         self.filter_texts = filter_texts or []
         self.no_text_lang_skip = no_text_lang_skip
+        self.max_request_length = max_request_length
         self.daemon = True
 
     def _should_skip_text(self, text, current_tgt_lang):
@@ -359,11 +360,35 @@ class TranslatorWorker(threading.Thread):
                             self.log_callback("TRANSLATE", f"Translating batch of {len(batch)} pages ({len(texts_to_translate)} valid lines) at step {i+1} to {step_tgt_lang}...")
                         
                         try:
-                            translated_part = step_translator.translate(texts_to_translate, self.src_lang, step_tgt_lang)
-                            # Reconstruct current_texts
-                            for j, idx in enumerate(indices_to_translate):
-                                if j < len(translated_part) and translated_part[j]:
-                                    current_texts[idx] = translated_part[j]
+                            # Chunking logic based on max_request_length
+                            chunks = []
+                            if self.max_request_length > 0:
+                                current_chunk = []
+                                current_indices = []
+                                current_len = 0
+                                for idx, text in zip(indices_to_translate, texts_to_translate):
+                                    text_len = len(text)
+                                    if current_len + text_len > self.max_request_length and current_chunk:
+                                        chunks.append((current_indices, current_chunk))
+                                        current_chunk = []
+                                        current_indices = []
+                                        current_len = 0
+                                    current_chunk.append(text)
+                                    current_indices.append(idx)
+                                    current_len += text_len
+                                if current_chunk:
+                                    chunks.append((current_indices, current_chunk))
+                            else:
+                                chunks = [(indices_to_translate, texts_to_translate)]
+                                
+                            for chunk_idx, (chunk_indices, chunk_texts) in enumerate(chunks):
+                                if len(chunks) > 1 and self.log_callback:
+                                    self.log_callback("TRANSLATE", f" -> Processing sub-batch {chunk_idx+1}/{len(chunks)} ({len(chunk_texts)} lines)...")
+                                translated_part = step_translator.translate(chunk_texts, self.src_lang, step_tgt_lang)
+                                # Reconstruct current_texts
+                                for j, idx in enumerate(chunk_indices):
+                                    if j < len(translated_part) and translated_part[j]:
+                                        current_texts[idx] = translated_part[j]
                         except Exception as e:
                             if self.log_callback:
                                 self.log_callback("ERROR", f"Translation Batch Error at step {i+1}: {e}")

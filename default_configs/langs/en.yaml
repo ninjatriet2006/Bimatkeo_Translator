@@ -1,0 +1,295 @@
+language_name: English
+tabs:
+  General & Translator: General & Translator
+  Detector & OCR: Detector & OCR
+  Image & Inpainter: Image & Inpainter
+  Render & Output: Render & Output
+  Extra Settings: Extra Settings
+tasks:
+  raw_output:
+    label: RAW Output
+    description: Removes text from the images, leaving blank speech bubbles. 
+      This task does not perform any translation.
+  upscale:
+    label: Image Upscaling
+    description: Increases the resolution of images using a selected AI model, 
+      without any other modifications.
+  colorize:
+    label: Image Colorization
+    description: Colorizes black & white images, while attempting to preserve 
+      text areas by detecting them first.
+  extract_translate:
+    label: Extract & Translate
+    description: Extracts and translates text from images without rendering it 
+      back onto the image. Outputs translated text files.
+  inpaint_only:
+    label: Clean/Inpaint Only
+    description: Detects and removes text from images, leaving clean speech 
+      bubbles without any translation or rendering.
+  text_only_translation:
+    label: Pure Text Translation (.txt)
+    description: Translates text files (.txt) line by line from one language to 
+      another. No image processing is involved.
+settings:
+  processing_device:
+    label: 'Processing Device:'
+    tooltip: Use CPU for universal compatibility or NVIDIA GPU for significantly
+      faster processing (requires a compatible card and setup).
+  target_lang:
+    label: 'Target Language:'
+    tooltip: The language to translate the text into.
+  translator_category:
+    label: 'Translator Type:'
+    tooltip: Choose between offline local translation models or online APIs.
+  api_name:
+    label: 'API Name:'
+    tooltip: Select an existing API profile or type a name to create/save a new 
+      one.
+  offline_translator:
+    label: 'Offline Model:'
+    tooltip: Select the offline local model to translate text.
+  ai_translator:
+    label: 'AI Provider:'
+    tooltip: Select the AI service/API provider to translate text.
+  ai_endpoint:
+    label: 'API Endpoint:'
+    tooltip: Base URL/Endpoint of the selected AI service.
+  ai_model:
+    label: 'Model Name:'
+    tooltip: Model name for the translation service. Click 'Fetch' to query 
+      available models from the endpoint.
+  ai_key:
+    label: 'API Key:'
+    tooltip: Secret API Key for authenticating with the selected service.
+  enable_translator_chain:
+    label: 'Enable Translator Chain:'
+    tooltip: Enable this to use multiple translators in a sequence. This will 
+      disable the main translator selection above.
+  translator_chain:
+    label: 'Translation Steps:'
+    tooltip: Add translation steps in order. The output of one step becomes the 
+      input for the next.
+  no_text_lang_skip:
+    label: Translate Same Language
+    tooltip: If checked, the translator will still run even if the source and 
+      target languages are the same.
+  skip_lang:
+    label: 'Skip Translating from these Languages:'
+    tooltip: Open the skip_languages.yaml configuration file to select which 
+      languages should be skipped during translation.
+  dict_profile:
+    label: 'Dict & GPT Profile:'
+    tooltip: Select an embedded dictionary and GPT profile containing 
+      pre/post-translation rules and customized prompt parameters.
+  detector:
+    label: 'Detector Model:'
+    tooltip: The AI model used to find text bubbles on the page. 'default' is 
+      recommended for most comics.
+  detection_size:
+    label: 'Detection Size:'
+    tooltip: The resolution the image is resized to for text detection. Higher 
+      values find smaller text but are slower.
+  ocr:
+    label: 'OCR Model:'
+    tooltip: The AI model used to read/recognize the characters inside the text 
+      bubbles.
+  ignore_bubble:
+    label: 'Ignore Small Bubbles:'
+    tooltip: Ignores any detected text bubbles smaller than this pixel area. 
+      Useful for filtering out noise or tiny sound effects.
+  use_mocr_merge:
+    label: Use mOCR Merge
+    tooltip: A special mode for the 'mocr' model that can improve accuracy on 
+      difficult fonts, but is slightly slower.
+  text_threshold:
+    label: 'Text Threshold:'
+    tooltip: How confident the detector must be to mark an area as 'text'. Lower
+      values find more text but may include noise.
+  box_threshold:
+    label: 'Box Threshold:'
+    tooltip: How confident the detector must be to finalize the bounding box 
+      around the text. Higher values create tighter, more precise boxes.
+  unclip_ratio:
+    label: 'Unclip Ratio:'
+    tooltip: How much to expand the detected text box to capture outlines or 
+      parts of speech bubbles. Too high can cause boxes to merge.
+  det_rotate:
+    label: Detect Rotated Text
+    tooltip: Enables detection of vertically or rotated text within a bubble.
+  det_auto_rotate:
+    label: Auto-Rotate Image
+    tooltip: Automatically rotates the entire image if it's detected to be 
+      sideways before processing.
+  det_invert:
+    label: Invert Image Colors
+    tooltip: Inverts the image colors (black to white and vice-versa) before 
+      detection. Useful for white text on black backgrounds.
+  det_gamma_correct:
+    label: Gamma Correction
+    tooltip: Applies gamma correction before detection. Can improve detection on
+      certain image types.
+  min_text_length:
+    label: 'Min. Text Length:'
+    tooltip: Ignores any recognized text shorter than this length. Useful for 
+      filtering out noise or single characters.
+  prob:
+    label: 'OCR Prob. Threshold:'
+    tooltip: Minimum confidence for an OCR result to be accepted. Leave blank 
+      for automatic backend default.
+  inpainter:
+    label: 'Inpainter Model:'
+    tooltip: The AI model used to remove the original text and reconstruct the 
+      background.
+  inpainting_precision:
+    label: 'Inpainting Precision:'
+    tooltip: Calculation precision for inpainting. 'fp32' is most compatible. 
+      'fp16' or 'bf16' are faster on modern GPUs.
+  inpainting_size:
+    label: 'Inpainting Size:'
+    tooltip: Resolution for the text removal process. Higher values improve 
+      quality but are much slower and use more VRAM.
+  upscaler:
+    label: 'Upscaler Model:'
+    tooltip: The AI model used to increase the image resolution (upscale).
+  upscale_ratio:
+    label: 'Upscale Ratio:'
+    tooltip: How many times to multiply the image resolution. 'Disabled' will 
+      not perform upscaling.
+  revert_upscaling:
+    label: Revert Upscaling After
+    tooltip: If checked, the image is upscaled for better processing, then 
+      scaled back down to its original size for the final output.
+  colorizer:
+    label: 'Colorizer Model:'
+    tooltip: The AI model to colorize black and white manga pages.
+  colorization_size:
+    label: 'Colorization Size:'
+    tooltip: The base resolution for the colorization process. Higher values can
+      improve detail but are slower.
+  denoise_sigma:
+    label: 'Denoise Sigma:'
+    tooltip: Strength of the denoising filter applied during colorization. 
+      Higher values remove more noise but can soften details.
+  restore_size_after_colorize:
+    label: Restore Original Size After Colorize
+    tooltip: 'EXPERIMENTAL: After colorizing, automatically calculate the required
+      upscale ratio to restore the image to its original dimensions.'
+  renderer:
+    label: 'Render Engine:'
+    tooltip: The engine used to draw the translated text onto the cleaned image.
+  font_family:
+    label: 'Font:'
+    tooltip: The font family to use for the translated text. You can use system 
+      fonts or custom font files.
+  font_color:
+    label: 'Font Color:'
+    tooltip: The color of the translated text in Hex format (e.g., 000000 for 
+      black).
+  alignment:
+    label: 'Text Alignment:'
+    tooltip: How to align the text within the speech bubble (left, center, 
+      right). 'auto' lets the renderer decide.
+  font_size_offset:
+    label: 'Font Size Offset:'
+    tooltip: Fine-tune the automatically calculated font size. Positive values 
+      make text bigger, negative values make it smaller.
+  auto_rename:
+    label: Auto-rename output folder
+    tooltip: Automatically renames the output folder with a language suffix 
+      (e.g., 'manga-ENG').
+  output_format:
+    label: 'Output Format:'
+    tooltip: Select the final image format. PNG is recommended for quality.
+  overwrite_output:
+    label: Overwrite existing output folder
+    tooltip: If checked, any existing output folder with the same name will be 
+      deleted before processing.
+  avoid_conflicts:
+    label: "Avoid Overwriting \n(Create New Folder for each Run)"
+    tooltip: RECOMMENDED. If checked, the app will create a new numbered folder 
+      (e.g., 'Manga-ENG (1)') if an output folder with the same name already 
+      exists.
+  backup_original:
+    label: Create backup of original folder
+    tooltip: Saves a copy of the original, untouched folder with a timestamp 
+      before processing.
+  filter_text:
+    label: 'Filter Text (comma-sep):'
+    tooltip: Enter patterns (comma-separated) for text you want the OCR to 
+      ignore. This is useful for filtering out watermarks or sound effects. Any 
+      matching text will not be translated.
+  font_size:
+    label: 'Font Size (Override):'
+    tooltip: Manually set a fixed font size for all text. '0' or leaving it 
+      blank means automatic sizing.
+  line_spacing:
+    label: 'Line Spacing:'
+    tooltip: Manually set the space between lines of text. '0' or leaving it 
+      blank means automatic.
+  direction:
+    label: 'Text Direction:'
+    tooltip: Set the text direction. 'auto' tries to guess from the text, but 
+      you can force horizontal/vertical.
+  mask_dilation_offset:
+    label: 'Mask Dilation Offset:'
+    tooltip: 'Advanced: Expands (+) or shrinks (-) the mask around the text before
+      inpainting. Can help clean text outlines.'
+  kernel_size:
+    label: 'Mask Kernel Size:'
+    tooltip: 'Advanced: Size of the kernel used in mask processing. Must be an odd
+      number. Affects how the mask is blurred.'
+  disable_font_border:
+    label: Disable Font Border
+    tooltip: Removes the automatic black border/outline around the font.
+  uppercase:
+    label: Force Uppercase
+    tooltip: Forces all translated text to be UPPERCASE.
+  lowercase:
+    label: Force Lowercase
+    tooltip: Forces all translated text to be lowercase.
+  no_hyphenation:
+    label: No Hyphenation
+    tooltip: Prevents the renderer from automatically splitting words with a 
+      hyphen (-).
+  rtl:
+    label: Right-to-Left Reading Order
+    tooltip: Enable for content that is read right-to-left, like manga. This 
+      ensures speech bubbles are processed in the correct order.
+  font_size_minimum:
+    label: 'Min. Font Size:'
+    tooltip: Prevents font size from falling below this value. -1 disables this 
+      feature.
+  processing_mode:
+    label: 'Processing Mode:'
+    tooltip: 'Automatic: Chooses the best mode based on your GPU''s VRAM. High VRAM:
+      Processes all images at once. Low VRAM: Processes images in small groups.'
+  batch_size:
+    label: 'Batch Size (Low VRAM Only):'
+    tooltip: How many images to process at a time in Low VRAM mode. Smaller 
+      numbers use less VRAM but are slower.
+  api_key_manager:
+    label: Manage API Keys
+    tooltip: Manage your translation API keys securely.
+  enable_verbose_output:
+    label: Enable Verbose Output ⚠
+    tooltip: 'WARNING: Saves all intermediate processing steps (masks, OCR boxes,
+      etc.) for debugging. This will consume a very large amount of disk space and
+      slow down processing.'
+  app_language:
+    label: 'App Language:'
+    tooltip: Choose the language of the application interface (labels and 
+      tooltips).
+flow_steps:
+  detection: 📝 Detection
+  ocr: 🔍 OCR
+  translation: 🧠 Translation
+  inpainting: 🧼 Inpainting
+  rendering: ✒️ Rendering
+  read_text: 📄 Read Text
+  save_text: 💾 Save Text
+  save_raw: 💾 Save RAW Output
+  upscale: ✨ Upscale
+  save_image: 💾 Save Image
+  colorize: 🎨 Colorize
+  hardsub: 🔤 Hardsub
+  reletter: ✒️ Reletter
