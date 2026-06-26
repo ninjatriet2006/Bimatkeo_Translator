@@ -1260,6 +1260,9 @@ class WidgetBuildersMixin:
         # Detector Tab
         self.tab_detector = QWidget()
         det_layout = QVBoxLayout(self.tab_detector)
+        self.btn_export_detector = QPushButton("💾 Export Image with BBox")
+        self.btn_export_detector.clicked.connect(self._export_detector_image)
+        det_layout.addWidget(self.btn_export_detector, alignment=Qt.AlignmentFlag.AlignRight)
         self.view_detector = QGraphicsView()
         self.scene_detector = QGraphicsScene()
         self.view_detector.setScene(self.scene_detector)
@@ -1270,6 +1273,9 @@ class WidgetBuildersMixin:
         # OCR Tab
         self.tab_ocr = QWidget()
         ocr_layout = QVBoxLayout(self.tab_ocr)
+        self.btn_export_ocr = QPushButton("💾 Export OCR Data (CSV)")
+        self.btn_export_ocr.clicked.connect(self._export_ocr_data)
+        ocr_layout.addWidget(self.btn_export_ocr, alignment=Qt.AlignmentFlag.AlignRight)
         self.table_ocr = QTableWidget()
         self.table_ocr.setColumnCount(2)
         self.table_ocr.setHorizontalHeaderLabels(["BBox", "Original Text"])
@@ -1280,6 +1286,9 @@ class WidgetBuildersMixin:
         # Translator Tab
         self.tab_translator = QWidget()
         trans_layout = QVBoxLayout(self.tab_translator)
+        self.btn_export_translator = QPushButton("💾 Export Translated Text (CSV)")
+        self.btn_export_translator.clicked.connect(self._export_translator_data)
+        trans_layout.addWidget(self.btn_export_translator, alignment=Qt.AlignmentFlag.AlignRight)
         self.table_translator = QTableWidget()
         self.table_translator.setColumnCount(2)
         self.table_translator.setHorizontalHeaderLabels(["Original Text", "Translated Text"])
@@ -1290,6 +1299,9 @@ class WidgetBuildersMixin:
         # Inpainter Tab
         self.tab_inpainter = QWidget()
         inp_layout = QVBoxLayout(self.tab_inpainter)
+        self.btn_export_inpainter = QPushButton("💾 Export Inpainted Image")
+        self.btn_export_inpainter.clicked.connect(self._export_inpainter_image)
+        inp_layout.addWidget(self.btn_export_inpainter, alignment=Qt.AlignmentFlag.AlignRight)
         self.view_inpainter = QGraphicsView()
         self.scene_inpainter = QGraphicsScene()
         self.view_inpainter.setScene(self.scene_inpainter)
@@ -1300,6 +1312,9 @@ class WidgetBuildersMixin:
         # Render Output Tab
         self.tab_render = QWidget()
         ren_layout = QVBoxLayout(self.tab_render)
+        self.btn_export_render = QPushButton("💾 Export Rendered Image")
+        self.btn_export_render.clicked.connect(self._export_render_image)
+        ren_layout.addWidget(self.btn_export_render, alignment=Qt.AlignmentFlag.AlignRight)
         self.view_render = QGraphicsView()
         self.scene_render = QGraphicsScene()
         self.view_render.setScene(self.scene_render)

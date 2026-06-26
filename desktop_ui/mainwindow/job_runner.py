@@ -529,6 +529,7 @@ class JobRunnerMixin:
         from PySide6.QtWidgets import QTableWidgetItem
         from PySide6.QtCore import Qt
         
+        self.current_test_output_dir = output_dir
         self.log("INFO", f"Đang hiển thị kết quả từ: {output_dir}")
         try:
             # 1. Detector

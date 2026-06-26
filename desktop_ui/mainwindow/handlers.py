@@ -2669,6 +2669,162 @@ class HandlersMixin:
         current_val = self.current_settings.get(key)
         self._set_widget_value(key, current_val, combo)
         combo.blockSignals(False)
+    def _export_detector_image(self):
+        """Exports the detector image."""
+        if not hasattr(self, 'current_test_output_dir') or not self.current_test_output_dir:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "No test results available to export. Please run a test first.")
+            return
+            
+        import os, shutil
+        source_file = os.path.join(self.current_test_output_dir, "test_detector.png")
+        if not os.path.exists(source_file):
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "Detector result image not found.")
+            return
+            
+        from PySide6.QtWidgets import QFileDialog
+        save_path, _ = QFileDialog.getSaveFileName(self, "Export Detector Image", "detector_result.png", "Images (*.png)")
+        if save_path:
+            try:
+                shutil.copy2(source_file, save_path)
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(self, "Success", "Detector image exported successfully.")
+            except Exception as e:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.critical(self, "Error", f"Failed to export image: {str(e)}")
+
+    def _export_ocr_data(self):
+        """Exports the OCR data to a CSV file."""
+        if not hasattr(self, 'current_test_output_dir') or not self.current_test_output_dir:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "No test results available to export. Please run a test first.")
+            return
+            
+        import os, json, csv
+        source_file = os.path.join(self.current_test_output_dir, "test_data.json")
+        if not os.path.exists(source_file):
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "OCR data not found.")
+            return
+            
+        from PySide6.QtWidgets import QFileDialog
+        save_path, _ = QFileDialog.getSaveFileName(self, "Export OCR Data", "ocr_data.csv", "CSV Files (*.csv)")
+        if save_path:
+            try:
+                with open(source_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    
+                bboxes = data.get("bboxes", [])
+                original_texts = data.get("original_texts", [])
+                
+                with open(save_path, 'w', newline='', encoding='utf-8-sig') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["BBox", "Original Text"])
+                    for i in range(max(len(bboxes), len(original_texts))):
+                        box = str(bboxes[i]) if i < len(bboxes) else ""
+                        text = original_texts[i] if i < len(original_texts) else ""
+                        writer.writerow([box, text])
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(self, "Success", "OCR data exported successfully.")
+            except Exception as e:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.critical(self, "Error", f"Failed to export OCR data: {str(e)}")
+
+    def _export_translator_data(self):
+        """Exports the translated text data to a CSV file."""
+        if not hasattr(self, 'current_test_output_dir') or not self.current_test_output_dir:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "No test results available to export. Please run a test first.")
+            return
+            
+        import os, json, csv
+        source_file = os.path.join(self.current_test_output_dir, "test_data.json")
+        if not os.path.exists(source_file):
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "Translation data not found.")
+            return
+            
+        from PySide6.QtWidgets import QFileDialog
+        save_path, _ = QFileDialog.getSaveFileName(self, "Export Translated Text", "translated_text.csv", "CSV Files (*.csv)")
+        if save_path:
+            try:
+                with open(source_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    
+                original_texts = data.get("original_texts", [])
+                translated_texts = data.get("translated_texts", [])
+                
+                with open(save_path, 'w', newline='', encoding='utf-8-sig') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Original Text", "Translated Text"])
+                    for i in range(max(len(original_texts), len(translated_texts))):
+                        orig = original_texts[i] if i < len(original_texts) else ""
+                        trans = translated_texts[i] if i < len(translated_texts) else ""
+                        writer.writerow([orig, trans])
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(self, "Success", "Translated text exported successfully.")
+            except Exception as e:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.critical(self, "Error", f"Failed to export translated text: {str(e)}")
+
+    def _export_inpainter_image(self):
+        """Exports the inpainted image."""
+        if not hasattr(self, 'current_test_output_dir') or not self.current_test_output_dir:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "No test results available to export. Please run a test first.")
+            return
+            
+        import os, shutil
+        source_file = os.path.join(self.current_test_output_dir, "test_inpainter.png")
+        if not os.path.exists(source_file):
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "Inpainter result image not found.")
+            return
+            
+        from PySide6.QtWidgets import QFileDialog
+        save_path, _ = QFileDialog.getSaveFileName(self, "Export Inpainted Image", "inpainter_result.png", "Images (*.png)")
+        if save_path:
+            try:
+                shutil.copy2(source_file, save_path)
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(self, "Success", "Inpainted image exported successfully.")
+            except Exception as e:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.critical(self, "Error", f"Failed to export image: {str(e)}")
+
+    def _export_render_image(self):
+        """Exports the final rendered image."""
+        if not hasattr(self, 'current_test_output_dir') or not self.current_test_output_dir:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "No test results available to export. Please run a test first.")
+            return
+            
+        import os, shutil
+        if not hasattr(self, 'test_image_path') or not self.test_image_path:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "No test image path found.")
+            return
+            
+        original_filename = os.path.basename(self.test_image_path)
+        output_filename = os.path.splitext(original_filename)[0] + ".png"
+        source_file = os.path.join(self.current_test_output_dir, output_filename)
+        
+        if not os.path.exists(source_file):
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Export Error", "Render result image not found.")
+            return
+            
+        from PySide6.QtWidgets import QFileDialog
+        save_path, _ = QFileDialog.getSaveFileName(self, "Export Rendered Image", f"{output_filename}", "Images (*.png)")
+        if save_path:
+            try:
+                shutil.copy2(source_file, save_path)
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.information(self, "Success", "Rendered image exported successfully.")
+            except Exception as e:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.critical(self, "Error", f"Failed to export image: {str(e)}")
 
 
 
