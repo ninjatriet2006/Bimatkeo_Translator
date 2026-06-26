@@ -224,6 +224,8 @@ class Pipeline:
             renderer_name = config_dict.get("render", {}).get("renderer", "pillow_renderer")
             try:
                 renderer = RendererFactory.create(renderer_name, log_callback=log_callback) if enable_renderer and renderer_name != "none" else None
+                if renderer and "font_path" in config_dict:
+                    renderer.load_fonts(config_dict["font_path"], **config_dict.get("render", {}))
             except ValueError:
                 log_callback("WARNING", f"Renderer '{renderer_name}' not found, falling back to None.")
                 renderer = None

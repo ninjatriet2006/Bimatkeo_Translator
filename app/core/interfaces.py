@@ -119,7 +119,7 @@ class BaseRenderer(ABC):
     DISPLAY_NAME: Union[str, Dict[str, str]] = ""
 
     @abstractmethod
-    def load_fonts(self, font_path: str) -> None:
+    def load_fonts(self, font_path: str, **kwargs) -> None:
         """Cấu hình và nạp font chữ."""
         pass
 

@@ -886,10 +886,11 @@ class WidgetBuildersMixin:
 
     def _handle_widget_button_click(self, key: str, associated_widget: QWidget):
         """Handles clicks for buttons that are part of a widget row."""
-        if key == "font_color":
+        if key in ["font_color", "outline_color"]:
             current_color = associated_widget.text()
-            if not current_color: current_color = "000000"
-            color = QColorDialog.getColor(initial=f"#{current_color}", title="Choose Font Color")
+            if not current_color: current_color = "000000" if key == "font_color" else "FFFFFF"
+            title = "Choose Font Color" if key == "font_color" else "Choose Outline Color"
+            color = QColorDialog.getColor(initial=f"#{current_color}", title=title)
             if color.isValid():
                 new_color_hex = color.name()[1:]
                 associated_widget.setText(new_color_hex)

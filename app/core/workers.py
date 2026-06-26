@@ -98,6 +98,7 @@ class OCRWorker(threading.Thread):
                 from app.core.vision_utils import merge_nearby_boxes_and_texts
                 merged_bboxes, merged_texts = merge_nearby_boxes_and_texts(bboxes, texts, w, h)
                 
+                ctx.raw_bboxes = bboxes
                 ctx.bboxes = merged_bboxes
                 ctx.original_texts = merged_texts
                 ctx.translated_texts = [""] * len(merged_texts)
@@ -197,9 +198,10 @@ class InpaintWorker(threading.Thread):
             if self.log_callback:
                 self.log_callback("INPAINT", f"Inpainting {ctx.page_id}...")
 
-            if self.inpainter and ctx.bboxes and ctx.original_image is not None:
+            if self.inpainter and (ctx.raw_bboxes or ctx.bboxes) and ctx.original_image is not None:
                 try:
-                    inpainted = self.inpainter.inpaint(ctx.original_image, ctx.bboxes)
+                    boxes_to_inpaint = ctx.raw_bboxes if ctx.raw_bboxes is not None else ctx.bboxes
+                    inpainted = self.inpainter.inpaint(ctx.original_image, boxes_to_inpaint)
                     ctx.inpainted_image = inpainted
                 except Exception as e:
                     if self.log_callback:
