@@ -17,7 +17,7 @@ def release_gpu_memory():
     gc.collect()
 
 class OCRWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None, cloud_ocr: BaseCloudOCR | None = None, ocr_config: dict | None = None):
+    def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None, cloud_ocr: BaseCloudOCR | None = None, ocr_config: dict | None = None, render_config: dict | None = None):
         super().__init__()
         self.in_q = in_q
         self.out_q_trans = out_q_trans
@@ -27,6 +27,7 @@ class OCRWorker(threading.Thread):
         self.recognizer = recognizer
         self.cloud_ocr = cloud_ocr
         self.ocr_config = ocr_config or {}
+        self.render_config = render_config or {}
         self.log_callback = log_callback
         self.corrector = VisionOCRCorrector(use_llm=True, log_callback=log_callback)
         self.daemon = True
@@ -99,7 +100,16 @@ class OCRWorker(threading.Thread):
                 
                 filtered_bboxes, filtered_texts = self._apply_filters(raw_bboxes, raw_texts)
                 
-                sorted_bboxes = sort_comic_text_boxes(filtered_bboxes, direction="rtl_ttb", image_width=w, image_height=h)
+                ui_direction = self.render_config.get("direction", "Horizontal: Right-to-Left")
+                dir_map = {
+                    "Horizontal: Right-to-Left": "rtl_ttb",
+                    "Horizontal: Left-to-Right": "ltr_ttb",
+                    "Vertical: Right-to-Left": "ttb_rtl",
+                    "Vertical: Left-to-Right": "ttb_ltr"
+                }
+                direction = dir_map.get(ui_direction, "rtl_ttb")
+                
+                sorted_bboxes = sort_comic_text_boxes(filtered_bboxes, direction=direction, image_width=w, image_height=h)
                 
                 # Map sorted boxes to text
                 box_to_text = {tuple(b): t for b, t in zip(filtered_bboxes, filtered_texts)}
@@ -162,9 +172,17 @@ class OCRWorker(threading.Thread):
                     raw_polygons = [[] for _ in raw_bboxes]
                 bundled_boxes = [box + [poly] for box, poly in zip(raw_bboxes, raw_polygons)]
                 
-                # Sắp xếp lại box theo chuẩn đọc truyện. 
-                # (TODO: Đọc direction từ config_dict, tạm thời gán cứng rtl_ttb)
-                bundled_boxes = sort_comic_text_boxes(bundled_boxes, direction="rtl_ttb", image_width=w, image_height=h) # type: ignore
+                # Sắp xếp lại box theo chuẩn đọc truyện.
+                ui_direction = self.render_config.get("direction", "Horizontal: Right-to-Left")
+                dir_map = {
+                    "Horizontal: Right-to-Left": "rtl_ttb",
+                    "Horizontal: Left-to-Right": "ltr_ttb",
+                    "Vertical: Right-to-Left": "ttb_rtl",
+                    "Vertical: Left-to-Right": "ttb_ltr"
+                }
+                direction = dir_map.get(ui_direction, "rtl_ttb")
+                
+                bundled_boxes = sort_comic_text_boxes(bundled_boxes, direction=direction, image_width=w, image_height=h) # type: ignore
                 
                 bboxes = [b[:4] for b in bundled_boxes]
                 polygons = [b[4] for b in bundled_boxes]

@@ -230,7 +230,7 @@ class Pipeline:
                 renderer = None
 
             # Initialize Workers for Fork-Join Pipeline
-            ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback, cloud_ocr=cloud_ocr, ocr_config=config_dict.get("ocr", {}))
+            ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback, cloud_ocr=cloud_ocr, ocr_config=config_dict.get("ocr", {}), render_config=config_dict.get("render", {}))
             trans_worker = TranslatorWorker(q_trans, translator, "auto", target_lang, log_callback)
             inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback)
             render_worker = RenderWorker(q_render, q_out, renderer, log_callback)

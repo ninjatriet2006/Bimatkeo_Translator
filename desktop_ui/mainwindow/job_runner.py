@@ -705,15 +705,12 @@ class JobRunnerMixin:
             translator_keys = ["processing_device", "translator_category", "api_name", "offline_translator", "ai_translator", "ai_endpoint", "ai_model", "ai_key", "max_retries", "enable_translator_chain", "translator_chain", "target_lang", "no_text_lang_skip", "skip_lang", "system_prompt_profile"]
             if key in translator_keys:
                 target_dict = final_config.setdefault("translator", {})
-            elif key in ["ocr", "merge_nearby_boxes", "min_text_length", "ignore_bubble", "prob"]:
+            elif key in ["ocr", "merge_nearby_boxes", "min_text_length", "ignore_bubble", "prob", "filter_text"]:
                 target_dict = final_config.setdefault("ocr", {})
             elif key in ["detector", "detection_size", "text_threshold", "det_rotate", 
                          "det_auto_rotate", "det_invert", "det_gamma_correct", "box_threshold", "unclip_ratio"]:
                 target_dict = final_config.setdefault("detector", {})
-            elif key in ["upscaler", "revert_upscaling", "upscale_ratio"]:
-                target_dict = final_config.setdefault("upscale", {})
-            elif key in ["colorizer", "colorization_size", "denoise_sigma", "restore_size_after_colorize"]:
-                target_dict = final_config.setdefault("colorizer", {})
+
             elif key in ["inpainter", "inpainting_precision", "inpainting_size"] or "Image & Inpainter" in group:
                 target_dict = final_config.setdefault("inpainter", {})
             elif "Render & Output" in group:
@@ -920,14 +917,29 @@ class JobRunnerMixin:
                     all_source_files = [os.path.basename(source_path)]
                     files_to_process = all_source_files
                 else:
-                    if settings.get('avoid_conflicts', True):
-                        counter = 1
-                        while os.path.exists(os.path.join(output_dir, final_output_folder_name)):
-                            final_output_folder_name = f"{base_output_folder_name} ({counter})"
-                            counter += 1
+                    export_mode = settings.get('export_mode', 'Create New Folder (Avoid Overwrite)')
                     
-                    final_output_path = os.path.join(output_dir, final_output_folder_name)
-                    os.makedirs(final_output_path, exist_ok=True)
+                    if export_mode == 'Translate In-Place (Modify Original)':
+                        final_output_path = source_path
+                    else:
+                        if export_mode == 'Create New Folder (Avoid Overwrite)':
+                            counter = 1
+                            while os.path.exists(os.path.join(output_dir, final_output_folder_name)):
+                                final_output_folder_name = f"{base_output_folder_name} ({counter})"
+                                counter += 1
+                        elif export_mode == 'Create New Folder (Overwrite Existing)':
+                            target_path = os.path.join(output_dir, final_output_folder_name)
+                            if os.path.exists(target_path):
+                                import shutil
+                                try:
+                                    shutil.rmtree(target_path)
+                                    self.log("INFO", f"Deleted existing output folder for overwrite: {target_path}")
+                                except Exception as e:
+                                    self.log("ERROR", f"Failed to delete existing output folder: {e}")
+                        
+                        final_output_path = os.path.join(output_dir, final_output_folder_name)
+                        os.makedirs(final_output_path, exist_ok=True)
+                        
                     all_source_files = sorted([f for f in os.listdir(source_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp', '.txt'))])
 
                     try:
