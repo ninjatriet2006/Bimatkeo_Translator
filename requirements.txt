@@ -7,3 +7,4 @@ torch
 PySide6
 pyyaml
 ruamel.yaml
+langdetect==1.0.9

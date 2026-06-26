@@ -1,10 +1,18 @@
 import threading
 import queue
 import gc
+import fnmatch
+import re
 from app.core.dto import PageContext
 from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer, BaseCloudOCR
 from app.core.vision_utils import sort_comic_text_boxes
 from app.core.ocr_corrector import VisionOCRCorrector
+
+try:
+    from langdetect import detect
+    import langdetect
+except ImportError:
+    detect = None
 
 try:
     import torch # type: ignore
@@ -252,14 +260,66 @@ class OCRWorker(threading.Thread):
 
 
 class TranslatorWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, translator: BaseTranslator | None, src_lang: str, tgt_lang: str, log_callback=None, hitl_callback=None):
+    def __init__(self, in_q: queue.Queue, translator_or_chain, src_lang: str, tgt_lang: str, log_callback=None, hitl_callback=None, skip_languages=None, filter_texts=None, no_text_lang_skip=False):
         super().__init__()
         self.in_q = in_q
-        self.translator = translator
+        
+        # Determine if we have a single translator or a chain
+        if isinstance(translator_or_chain, list):
+            self.chained_translators = translator_or_chain
+        else:
+            self.chained_translators = [(translator_or_chain, tgt_lang)] if translator_or_chain else []
+            
         self.src_lang = src_lang
         self.tgt_lang = tgt_lang
         self.log_callback = log_callback
+        self.skip_languages = skip_languages or {}
+        self.filter_texts = filter_texts or []
+        self.no_text_lang_skip = no_text_lang_skip
         self.daemon = True
+
+    def _should_skip_text(self, text, current_tgt_lang):
+        if not text or not text.strip():
+            return True
+            
+        # 1. Filter texts check
+        for pattern in self.filter_texts:
+            pattern = str(pattern).strip()
+            if not pattern: continue
+            # Regex match
+            if pattern.startswith('/') and pattern.endswith('/'):
+                regex = pattern[1:-1]
+                try:
+                    if re.search(regex, text):
+                        return True
+                except re.error:
+                    pass
+            # Exact match
+            elif pattern.startswith('"') and pattern.endswith('"'):
+                if text == pattern[1:-1]:
+                    return True
+            # Wildcard / Substring match
+            else:
+                if fnmatch.fnmatch(text, pattern) or pattern in text:
+                    return True
+
+        # 2. Language detect check
+        if detect and (self.skip_languages or not self.no_text_lang_skip):
+            try:
+                detected_lang = detect(text).upper()
+                
+                # Check skip languages
+                # Some codes from langdetect need to be mapped if needed, but we'll do direct match
+                if self.skip_languages.get(detected_lang, False):
+                    return True
+                
+                # Check translate same language
+                if not self.no_text_lang_skip and detected_lang == current_tgt_lang.upper()[:2]:
+                    return True
+            except Exception:
+                pass # langdetect might throw LangDetectException if no features
+
+        return False
 
     def run(self):
         batch = []
@@ -268,31 +328,63 @@ class TranslatorWorker(threading.Thread):
         def flush_batch():
             if not batch: return
             
-            if self.translator:
+            if self.chained_translators:
+                # Prepare initial texts
                 all_texts = []
                 for ctx in batch:
                     if ctx.original_texts:
                         all_texts.extend(ctx.original_texts)
                 
                 if all_texts:
-                    if self.log_callback:
-                        self.log_callback("TRANSLATE", f"Translating batch of {len(batch)} pages ({len(all_texts)} lines)...")
-                    try:
-                        all_translated = self.translator.translate(all_texts, self.src_lang, self.tgt_lang)
-                    except Exception as e:
-                        if self.log_callback:
-                            self.log_callback("ERROR", f"Translation Batch Error: {e}")
-                        all_translated = [""] * len(all_texts)
+                    current_texts = list(all_texts)
+                    
+                    # Run through the chain
+                    for i, (step_translator, step_tgt_lang) in enumerate(self.chained_translators):
+                        if not step_translator:
+                            continue
+                            
+                        # Build indices of texts that need translation in this step
+                        indices_to_translate = []
+                        texts_to_translate = []
                         
-                    # Split translated text back to each context
-                    cursor = 0
-                    for ctx in batch:
-                        if ctx.original_texts:
-                            ctx_len = len(ctx.original_texts)
-                            ctx.translated_texts = all_translated[cursor:cursor+ctx_len]
-                            cursor += ctx_len
-                        else:
-                            ctx.translated_texts = []
+                        for idx, text in enumerate(current_texts):
+                            if not self._should_skip_text(text, step_tgt_lang):
+                                indices_to_translate.append(idx)
+                                texts_to_translate.append(text)
+                                
+                        if not texts_to_translate:
+                            continue # Nothing to translate in this step
+                            
+                        if self.log_callback:
+                            self.log_callback("TRANSLATE", f"Translating batch of {len(batch)} pages ({len(texts_to_translate)} valid lines) at step {i+1} to {step_tgt_lang}...")
+                        
+                        try:
+                            translated_part = step_translator.translate(texts_to_translate, self.src_lang, step_tgt_lang)
+                            # Reconstruct current_texts
+                            for j, idx in enumerate(indices_to_translate):
+                                if j < len(translated_part) and translated_part[j]:
+                                    current_texts[idx] = translated_part[j]
+                        except Exception as e:
+                            if self.log_callback:
+                                self.log_callback("ERROR", f"Translation Batch Error at step {i+1}: {e}")
+                            
+                    all_translated = current_texts
+                else:
+                    all_translated = []
+                    
+                # Split translated text back to each context
+                cursor = 0
+                for ctx in batch:
+                    if ctx.original_texts:
+                        ctx_len = len(ctx.original_texts)
+                        ctx.translated_texts = all_translated[cursor:cursor+ctx_len]
+                        cursor += ctx_len
+                    else:
+                        ctx.translated_texts = []
+            else:
+                # Fallback if no translator is available
+                for ctx in batch:
+                    ctx.translated_texts = ctx.original_texts if ctx.original_texts else []
                             
             for ctx in batch:
                 ctx.trans_done.set()

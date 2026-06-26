@@ -327,7 +327,7 @@ class WidgetBuildersMixin:
         from PySide6.QtCore import QUrl
         
         button = QPushButton("Open Configuration (YAML) 📂")
-        file_name = info.get("default") or "skip_languages.yaml"
+        file_name = info.get("default") or "Ignored.yaml"
         
         def on_click():
             file_path = os.path.join(self.project_base_dir, ".config", "configs", file_name)

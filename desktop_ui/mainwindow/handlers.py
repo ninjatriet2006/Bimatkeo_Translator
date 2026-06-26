@@ -1177,7 +1177,7 @@ class HandlersMixin:
                 return val if val is not None else combo.currentText()
             return combo.currentText()
         elif widget_type == "open_yaml_button":
-            return info.get("default", "skip_languages.yaml")
+            return info.get("default", "Ignored.yaml")
         elif widget_type == "slider":
             slider = widget.findChild(QSlider)
             if slider:

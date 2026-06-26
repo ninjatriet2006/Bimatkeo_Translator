@@ -108,6 +108,31 @@ class Pipeline:
 
         # Hidden Debug Config (Dành cho Dev Test - Bỏ qua UI)
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        # Load Ignored.yaml
+        ignored_yaml_path = os.path.join(project_root, ".config", "configs", "Ignored.yaml")
+        skip_languages = {}
+        filter_texts = []
+        if os.path.exists(ignored_yaml_path):
+            try:
+                import yaml
+                with open(ignored_yaml_path, 'r', encoding='utf-8') as f:
+                    ignored_data = yaml.safe_load(f) or {}
+                skip_languages = ignored_data.get("skip_languages", {})
+                filter_texts = ignored_data.get("filter_texts", [])
+            except Exception as e:
+                log_callback("ERROR", f"Failed to load Ignored.yaml: {e}")
+        
+        # Load API profiles for chain
+        api_profiles_path = os.path.join(project_root, ".config", "configs", "api_profiles.yaml")
+        api_profiles = {}
+        if os.path.exists(api_profiles_path):
+            try:
+                import yaml
+                with open(api_profiles_path, 'r', encoding='utf-8') as f:
+                    api_profiles = yaml.safe_load(f) or {}
+            except Exception:
+                pass
         debug_file = os.path.join(project_root, ".config", "configs", "debug_pipeline.yaml")
         if os.path.exists(debug_file):
             try:
@@ -231,7 +256,62 @@ class Pipeline:
 
             # Initialize Workers for Fork-Join Pipeline
             ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback, cloud_ocr=cloud_ocr, ocr_config=config_dict.get("ocr", {}), render_config=config_dict.get("render", {}))
-            trans_worker = TranslatorWorker(q_trans, translator, "auto", target_lang, log_callback)
+            
+            # --- Translator Chain / Translator setup ---
+            enable_translator_chain = config_dict.get("translator", {}).get("enable_translator_chain", False)
+            translator_chain_str = config_dict.get("translator", {}).get("translator_chain", "")
+            
+            chained_translators = []
+            if enable_translator and enable_translator_chain and translator_chain_str:
+                steps = [s for s in translator_chain_str.split(';') if s]
+                for step in steps:
+                    if ':' in step:
+                        t_name, t_lang = step.split(':', 1)
+                        step_translator = None
+                        if t_name in api_profiles:
+                            prof = api_profiles[t_name]
+                            provider_name = prof.get('provider', 'openai')
+                            try:
+                                step_translator = TranslatorFactory.create(provider_name)
+                                step_translator.log_callback = log_callback
+                                step_translator.load_weights({
+                                    "endpoint": prof.get('endpoint'),
+                                    "model": prof.get('model'),
+                                    "key": prof.get('key'),
+                                    "max_retries": prof.get('max_retries', 3),
+                                    "system_prompt_profile": config_dict.get("translator", {}).get("system_prompt_profile", "None"),
+                                    "project_base_dir": project_root
+                                })
+                            except Exception as e:
+                                log_callback("ERROR", f"Failed to load chain translator '{t_name}': {e}")
+                        else:
+                            try:
+                                step_translator = TranslatorFactory.create(t_name)
+                                step_translator.log_callback = log_callback
+                                step_translator.load_weights({
+                                    "system_prompt_profile": config_dict.get("translator", {}).get("system_prompt_profile", "None"),
+                                    "project_base_dir": project_root
+                                })
+                            except Exception as e:
+                                log_callback("ERROR", f"Failed to load chain translator '{t_name}': {e}")
+                        
+                        if step_translator:
+                            chained_translators.append((step_translator, t_lang))
+            elif enable_translator and translator:
+                chained_translators.append((translator, target_lang))
+            
+            no_text_lang_skip = config_dict.get("translator", {}).get("no_text_lang_skip", False)
+
+            trans_worker = TranslatorWorker(
+                q_trans, 
+                chained_translators, 
+                "auto", 
+                target_lang, # Fallback overall target_lang
+                log_callback,
+                skip_languages=skip_languages,
+                filter_texts=filter_texts,
+                no_text_lang_skip=no_text_lang_skip
+            )
             inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback)
             render_worker = RenderWorker(q_render, q_out, renderer, log_callback)
 
