@@ -71,7 +71,7 @@ class JobRunnerMixin:
             "id": job_id,
             "source_path": path,
             "name": os.path.basename(path),
-            "settings": self.config_loader.get_factory_defaults().copy(),
+            "settings": copy.deepcopy(self.current_settings),
             "status": "Ready",
             "job_type": "T"
         }
@@ -111,8 +111,7 @@ class JobRunnerMixin:
 
     def _duplicate_selected_jobs(self):
         """
-        Creates a new, clean job using the same source path as the selected job(s).
-        The new job will have factory default settings and no assigned job type.
+        Creates a new job using the same source path and settings as the selected job(s).
         """
         selected_items = self.queue_list_widget.selectedItems()
         if not selected_items:
@@ -128,15 +127,15 @@ class JobRunnerMixin:
                     "id": f"job_{int(time.time() * 1000)}_{len(self.job_queue) + len(jobs_to_add)}",
                     "source_path": original_job['source_path'],
                     "name": original_job['name'],
-                    "settings": self.config_loader.get_factory_defaults().copy(),
-                    "status": "Awaiting Config",
-                    "job_type": None
+                    "settings": copy.deepcopy(original_job.get('settings', self.current_settings)),
+                    "status": "Ready",
+                    "job_type": "T"
                 }
                 jobs_to_add.append(new_job)
 
         self.job_queue.extend(jobs_to_add)
         self._update_job_list_ui()
-        self.log("INFO", f"Duplicated {len(jobs_to_add)} job(s) as new, unconfigured tasks.")
+        self.log("INFO", f"Duplicated {len(jobs_to_add)} job(s).")
 
     def _clear_list_data(self, data_list, name: str, update_ui_func):
         if not data_list:
@@ -268,14 +267,14 @@ class JobRunnerMixin:
     def _populate_settings_panel(self):
         """
         Updates all setting widgets to reflect the settings of the currently selected job
-        OR the application'''s default settings if no job is selected.
+        OR the application's default settings if no job is selected.
         This function is now smart enough to handle special compound widgets.
         """
         job_index = self._get_selected_job_index()
         if job_index is not None:
             settings_source = self.job_queue[job_index]['settings']
         else:
-            settings_source = self.config_loader.get_factory_defaults()
+            settings_source = self.current_settings
             if hasattr(self.config_loader, 'app_language'):
                 settings_source['app_language'] = self.config_loader.app_language
 

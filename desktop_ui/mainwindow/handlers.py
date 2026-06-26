@@ -813,7 +813,18 @@ class HandlersMixin:
                     return
 
             self.current_settings[key] = new_value
-            print(f"[Settings] Updated '''{key}''' to: {new_value}")
+            print(f"[Settings] Updated '{key}' to: {new_value}")
+
+            # Also apply this change to ALL currently selected jobs in the queue
+            if hasattr(self, 'queue_list_widget') and hasattr(self, 'job_queue'):
+                selected_items = self.queue_list_widget.selectedItems()
+                if selected_items:
+                    selected_ids = {item.data(Qt.ItemDataRole.UserRole) for item in selected_items}
+                    for job in self.job_queue:
+                        if job.get('id') in selected_ids:
+                            if 'settings' not in job:
+                                job['settings'] = {}
+                            job['settings'][key] = new_value
 
             # Auto-save changes to provider, endpoint, model, key into the currently active profile
             if key in ['ai_translator', 'ai_endpoint', 'ai_model', 'ai_key', 'max_retries', 'api_ocr', 'ocr_api_endpoint', 'ocr_api_model', 'ocr_api_key']:
