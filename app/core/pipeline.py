@@ -23,6 +23,8 @@ try:
     import app.plugins.recognizer.pixel_48px_impl
     import app.plugins.recognizer.pixel_48px_ctc_impl
     import app.plugins.recognizer.paddle_onnx_rec_impl
+    import app.plugins.recognizer.tesseract_impl
+    import app.plugins.recognizer.manga_ocr_impl
     import app.plugins.cloud_ocr.gemini_vision_impl
     import app.plugins.cloud_ocr.google_vision_impl
     import app.plugins.translator
