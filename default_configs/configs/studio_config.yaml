@@ -412,6 +412,13 @@ ui_map:
     tooltip: 'Minimum confidence for an OCR result to be accepted.
 
       Leave blank for automatic backend default.'
+  sd_base_model:
+    widget: optionmenu
+    group: Image & Inpainter
+    order: 315
+    label: 'SD Base Model (Addon):'
+    default: sd_1_5
+    tooltip: "Download and select a Base Model Addon for PowerPaint."
   inpainter:
     widget: optionmenu
     group: Image & Inpainter

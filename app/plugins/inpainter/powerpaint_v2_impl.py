@@ -78,7 +78,11 @@ class PowerPaintV2_Impl(BaseInpainter):
             
             # Base model cho diffusers (chủ yếu là runwayml/stable-diffusion-v1-5)
             # Hệ thống sẽ tự tải về ~/.cache/huggingface nếu chưa có
-            base_model_name = "runwayml/stable-diffusion-v1-5"
+            base_model_key = self.config.get("sd_base_model", "sd_1_5")
+            if base_model_key == "sd_nsfw":
+                base_model_name = "Kernel/sd-nsfw"
+            else:
+                base_model_name = "runwayml/stable-diffusion-v1-5"
             
             self.pipe = StableDiffusionPowerPaintBrushNetPipeline.from_pretrained(
                 base_model_name,

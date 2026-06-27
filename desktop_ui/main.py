@@ -11,6 +11,21 @@ sys.path.insert(0, BASE_DIR)
 # Set HF_HOME so all huggingface cache goes to the app's models folder
 os.environ["HF_HOME"] = os.path.join(BASE_DIR, "models", "huggingface_cache")
 
+# Load network configurations for HF Mirror
+network_cfg_path = os.path.join(BASE_DIR, ".config", "configs", "network.yaml")
+if os.path.exists(network_cfg_path):
+    try:
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        with open(network_cfg_path, "r", encoding="utf-8") as f:
+            net_cfg = yaml.load(f)
+            if net_cfg and net_cfg.get("enable_hf_mirror"):
+                hf_endpoint = net_cfg.get("hf_endpoint")
+                if hf_endpoint:
+                    os.environ["HF_ENDPOINT"] = hf_endpoint
+    except Exception as e:
+        print(f"Warning: Failed to load network config: {e}")
+
 try:
     from desktop_ui.main_window import TranslatorStudioApp
 except ImportError as e:

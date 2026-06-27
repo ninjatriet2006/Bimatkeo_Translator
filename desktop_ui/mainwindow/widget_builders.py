@@ -234,7 +234,7 @@ class WidgetBuildersMixin:
             
             right_layout.addWidget(widget, stretch=1)
 
-            if not context_key and info.get('key') in ['offline_translator', 'offline_detector', 'offline_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer', 'font_family']:
+            if not context_key and info.get('key') in ['offline_translator', 'offline_detector', 'offline_ocr', 'api_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer', 'font_family', 'sd_base_model']:
                 self._setup_dynamic_action_buttons(info.get('key'), widget, right_layout)
             elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
                 if info.get('recommendation'):

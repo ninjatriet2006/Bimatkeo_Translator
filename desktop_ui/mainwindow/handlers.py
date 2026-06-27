@@ -2275,6 +2275,44 @@ class HandlersMixin:
                     registry_file = os.path.join(config_dir, "model_registry.yaml")
                     local_versions_file = os.path.join(config_dir, "local_versions.yaml")
                     
+                    if model_name in ["sd_1_5", "sd_nsfw"]:
+                        try:
+                            from huggingface_hub import snapshot_download
+                            repo_id = "runwayml/stable-diffusion-v1-5" if model_name == "sd_1_5" else "Kernel/sd-nsfw"
+                            self.progress.emit(30, f"Đang đồng bộ Base Model từ {repo_id}...")
+                            
+                            snapshot_download(
+                                repo_id=repo_id, 
+                                allow_patterns=[
+                                    "*.json", 
+                                    "*.txt", 
+                                    "unet/*.safetensors", 
+                                    "vae/*.safetensors", 
+                                    "text_encoder/*.safetensors", 
+                                    "tokenizer/*", 
+                                    "scheduler/*", 
+                                    "feature_extractor/*", 
+                                    "safety_checker/*.safetensors"
+                                ],
+                                resume_download=True
+                            )
+                            
+                            # Mark as completed
+                            local_versions = {}
+                            if os.path.exists(local_versions_file):
+                                with open(local_versions_file, "r", encoding="utf-8") as lf:
+                                    local_versions = yaml.load(lf) or {}
+                            
+                            local_versions[model_name] = "hf_latest"
+                            with open(local_versions_file, "w", encoding="utf-8") as lf:
+                                yaml.dump(local_versions, lf)
+                                
+                            self.finished.emit(True, f"Đã tải xong Base Model: {model_name}.")
+                            return
+                        except Exception as e:
+                            self.finished.emit(False, f"Lỗi khi tải Base Model: {e}")
+                            return
+                    
                     if not os.path.exists(registry_file):
                         self.finished.emit(False, "Không tìm thấy file cấu hình model_registry.yaml.")
                         return
@@ -2367,7 +2405,8 @@ class HandlersMixin:
                                 model_dir = os.path.join(base_dir, "models", "Offline Translator", model_name)
                             os.makedirs(model_dir, exist_ok=True)
                             
-                            tree_url = f"https://huggingface.co/api/models/{repo_id}/tree/main?recursive=True"
+                            hf_endpoint = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
+                            tree_url = f"{hf_endpoint}/api/models/{repo_id}/tree/main?recursive=True"
                             req = urllib.request.Request(tree_url, headers={'User-Agent': 'Mozilla/5.0'})
                             
                             with urllib.request.urlopen(req, timeout=15) as response:
@@ -2400,7 +2439,8 @@ class HandlersMixin:
                                 path = item.get("path")
                                 size = item.get("size", 0)
                                 import urllib.parse
-                                file_url = f"https://huggingface.co/{repo_id}/resolve/main/{urllib.parse.quote(path)}"
+                                hf_endpoint = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
+                                file_url = f"{hf_endpoint}/{repo_id}/resolve/main/{urllib.parse.quote(path)}"
                                 local_path = os.path.join(model_dir, path)
                                 
                                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
@@ -2525,18 +2565,6 @@ class HandlersMixin:
                         self.finished.emit(False, "Không tìm thấy đường dẫn tải zipball_url.")
                         return
                     
-                    # Inject base model download if model is powerpaint_v2
-                    if model_name == "powerpaint_v2":
-                        self.progress.emit(95, "Đang tải Base Model (Stable Diffusion v1.5)... Quá trình này có thể mất thời gian do dung lượng lớn (~4GB).")
-                        try:
-                            from huggingface_hub import snapshot_download
-                            snapshot_download(
-                                repo_id="runwayml/stable-diffusion-v1-5", 
-                                allow_patterns=["*.safetensors", "*.json", "*.txt"]
-                            )
-                        except Exception as e:
-                            self.finished.emit(False, f"Lỗi khi tải Base Model Stable Diffusion: {e}")
-                            return
 
                     # Update local version
                     local_versions[model_name] = latest_version
