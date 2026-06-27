@@ -30,6 +30,8 @@ try:
     import app.plugins.translator
     
     import app.plugins.inpainter.lama_impl
+    import app.plugins.inpainter.powerpaint_impl
+    import app.plugins.inpainter.powerpaint_v2_impl
     import app.plugins.upscaler.esrgan_impl
     import app.plugins.renderer.pillow_impl
 except ImportError as e:

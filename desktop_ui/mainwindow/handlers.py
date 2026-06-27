@@ -2367,21 +2367,29 @@ class HandlersMixin:
                                 model_dir = os.path.join(base_dir, "models", "Offline Translator", model_name)
                             os.makedirs(model_dir, exist_ok=True)
                             
-                            tree_url = f"https://huggingface.co/api/models/{repo_id}/tree/main"
+                            tree_url = f"https://huggingface.co/api/models/{repo_id}/tree/main?recursive=True"
                             req = urllib.request.Request(tree_url, headers={'User-Agent': 'Mozilla/5.0'})
                             
                             with urllib.request.urlopen(req, timeout=15) as response:
                                 files_data = json.loads(response.read().decode('utf-8'))
                                 
                             target_files = []
+                            # Pre-calculate safetensors paths to avoid downloading .bin when safetensors exist
+                            safetensors_paths = {item.get("path", "") for item in files_data if item.get("path", "").endswith(".safetensors")}
+                            
                             for item in files_data:
                                 if item.get("type") == "file":
                                     path = item.get("path", "")
                                     if hf_specific_file and path != hf_specific_file:
                                         continue
                                     ext = os.path.splitext(path)[1].lower()
-                                    if ext not in [".msgpack", ".h5", ".ot", ".md"] and not path.startswith("."):
-                                        target_files.append(item)
+                                    if ext in [".msgpack", ".h5", ".ot", ".md"] or path.startswith("."):
+                                        continue
+                                    if ext == ".bin":
+                                        safetensors_equivalent = path[:-4] + ".safetensors"
+                                        if safetensors_equivalent in safetensors_paths:
+                                            continue # skip .bin if .safetensors exists
+                                    target_files.append(item)
                                         
                             total_files = len(target_files)
                             if total_files == 0:
