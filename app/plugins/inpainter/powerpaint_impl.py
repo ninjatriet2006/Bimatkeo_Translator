@@ -43,7 +43,16 @@ class PowerPaintV1_Impl(BaseInpainter):
 
         try:
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            dtype = torch.float16 if device == "cuda" else torch.float32
+            precision_str = self.config.get("inpainting_precision", "fp16")
+            if device == "cpu":
+                dtype = torch.float32
+            else:
+                if precision_str == "fp32":
+                    dtype = torch.float32
+                elif precision_str == "bf16":
+                    dtype = torch.bfloat16
+                else:
+                    dtype = torch.float16
             
             print(f"[PowerPaint] Loading diffusers pipeline from {model_dir} to {device}...")
             assert AutoPipelineForInpainting is not None

@@ -41,6 +41,18 @@ class PowerPaintV2_Impl(BaseInpainter):
             raise RuntimeError("Missing required dependencies (torch, diffusers, PIL).")
             
         try:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            precision_str = self.config.get("inpainting_precision", "fp16")
+            if device == "cpu":
+                dtype = torch.float32
+            else:
+                if precision_str == "fp32":
+                    dtype = torch.float32
+                elif precision_str == "bf16":
+                    dtype = torch.bfloat16
+                else:
+                    dtype = torch.float16
+                    
             powerpaint_code_dir = os.path.join(self.model_path, "powerpaint_v2")
             if powerpaint_code_dir not in sys.path:
                 sys.path.insert(0, powerpaint_code_dir)
@@ -52,14 +64,14 @@ class PowerPaintV2_Impl(BaseInpainter):
             text_encoder_brushnet_path = os.path.join(self.model_path, "text_encoder_brushnet")
             text_encoder_brushnet = CLIPTextModel.from_pretrained(
                 text_encoder_brushnet_path,
-                torch_dtype=torch.float16,
+                torch_dtype=dtype,
             )
             
             # Khởi tạo BrushNet
             brushnet_path = os.path.join(self.model_path, "PowerPaint_Brushnet")
             brushnet = BrushNetModel.from_pretrained(
                 brushnet_path,
-                torch_dtype=torch.float16,
+                torch_dtype=dtype,
             )
             
             # Base model cho diffusers (chủ yếu là runwayml/stable-diffusion-v1-5)
@@ -70,14 +82,13 @@ class PowerPaintV2_Impl(BaseInpainter):
                 base_model_name,
                 brushnet=brushnet,
                 text_encoder_brushnet=text_encoder_brushnet,
-                torch_dtype=torch.float16,
+                torch_dtype=dtype,
                 low_cpu_mem_usage=True,
                 safety_checker=None,
             )
             
             self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
             
-            device = "cuda" if torch.cuda.is_available() else "cpu"
             self.pipe = self.pipe.to(device)
             
             self.is_loaded = True
