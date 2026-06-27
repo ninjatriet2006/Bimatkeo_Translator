@@ -8,6 +8,9 @@ from PySide6.QtGui import QIcon
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
+# Set HF_HOME so all huggingface cache goes to the app's models folder
+os.environ["HF_HOME"] = os.path.join(BASE_DIR, "models", "huggingface_cache")
+
 try:
     from desktop_ui.main_window import TranslatorStudioApp
 except ImportError as e:

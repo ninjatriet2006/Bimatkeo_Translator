@@ -1,7 +1,8 @@
 import os
 import sys
+import cv2
 
-from typing import Any
+from typing import Any, List
 from app.core.interfaces import BaseInpainter
 from app.core.factories import InpainterFactory
 
@@ -27,11 +28,12 @@ class PowerPaintV2_Impl(BaseInpainter):
         self.pipe = None
         self.config = {}
 
-    def setup(self, model_path: str, **kwargs):
+    def load_model(self, model_path: str, **kwargs) -> None:
         # model_path points to check_file: .../models/Inpainter/PowerPaint_v2/PowerPaint_Brushnet/diffusion_pytorch_model.safetensors
         # The base dir is 2 levels up
         self.model_path = os.path.dirname(os.path.dirname(model_path))
         self.config = kwargs
+        self.load()
         
     def load(self):
         if self.is_loaded:
@@ -54,11 +56,11 @@ class PowerPaintV2_Impl(BaseInpainter):
                     dtype = torch.float16
                     
             powerpaint_code_dir = os.path.join(self.model_path, "powerpaint_v2")
-            if powerpaint_code_dir not in sys.path:
-                sys.path.insert(0, powerpaint_code_dir)
+            if self.model_path not in sys.path:
+                sys.path.insert(0, self.model_path)
                 
-            from BrushNet_CA import BrushNetModel  # type: ignore
-            from pipeline_PowerPaint_Brushnet_CA import StableDiffusionPowerPaintBrushNetPipeline  # type: ignore
+            from powerpaint_v2.BrushNet_CA import BrushNetModel  # type: ignore
+            from powerpaint_v2.pipeline_PowerPaint_Brushnet_CA import StableDiffusionPowerPaintBrushNetPipeline  # type: ignore
             
             # Khởi tạo Text Encoder tùy chỉnh
             text_encoder_brushnet_path = os.path.join(self.model_path, "text_encoder_brushnet")
@@ -128,7 +130,51 @@ class PowerPaintV2_Impl(BaseInpainter):
     
         return promptA, promptB, negative_promptA, negative_promptB
             
-    def process(self, image: Any, mask: Any, prompt: str = "", **kwargs) -> Any:
+    def inpaint(self, image: np.ndarray, bboxes: List[List[int]]) -> np.ndarray:
+        if not bboxes:
+            return image
+
+        mask = np.zeros(image.shape[:2], dtype=np.uint8)
+        for box in bboxes:
+            x_min, y_min, x_max, y_max = box
+            pad = 5
+            x1 = max(0, x_min - pad)
+            y1 = max(0, y_min - pad)
+            x2 = min(image.shape[1], x_max + pad)
+            y2 = min(image.shape[0], y_max + pad)
+            cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
+            
+        if not self.is_loaded or self.pipe is None:
+            print("[PowerPaint V2] Not loaded. Executing OpenCV INPAINT_TELEA fallback...")
+            return cv2.inpaint(image, mask, 5, cv2.INPAINT_TELEA)
+
+        try:
+            if Image is None:
+                raise RuntimeError("PIL is not installed.")
+                
+            img_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            pil_img = Image.fromarray(img_rgb)
+            pil_mask = Image.fromarray(mask)
+
+            print("[PowerPaint V2] Running diffusion inference...")
+            output = self._process(
+                image=pil_img,
+                mask=pil_mask,
+                prompt="empty, object removal",
+                negative_prompt="text",
+                steps=25,
+                guidance_scale=7.5
+            )
+
+            out_bgr = cv2.cvtColor(np.array(output), cv2.COLOR_RGB2BGR)
+            mask_bool = (mask > 0)[:, :, np.newaxis]
+            result = image * (~mask_bool) + out_bgr * mask_bool
+            return result.astype(np.uint8)
+        except Exception as e:
+            print(f"[PowerPaint V2] Inference failed: {e}. Executing OpenCV INPAINT_TELEA fallback...")
+            return cv2.inpaint(image, mask, 5, cv2.INPAINT_TELEA)
+
+    def _process(self, image: Any, mask: Any, prompt: str = "", **kwargs) -> Any:
         if not self.is_loaded or self.pipe is None:
             if not self.load():
                 raise RuntimeError("Failed to load PowerPaint V2 model")

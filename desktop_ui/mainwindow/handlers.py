@@ -2525,6 +2525,19 @@ class HandlersMixin:
                         self.finished.emit(False, "Không tìm thấy đường dẫn tải zipball_url.")
                         return
                     
+                    # Inject base model download if model is powerpaint_v2
+                    if model_name == "powerpaint_v2":
+                        self.progress.emit(95, "Đang tải Base Model (Stable Diffusion v1.5)... Quá trình này có thể mất thời gian do dung lượng lớn (~4GB).")
+                        try:
+                            from huggingface_hub import snapshot_download
+                            snapshot_download(
+                                repo_id="runwayml/stable-diffusion-v1-5", 
+                                allow_patterns=["*.safetensors", "*.json", "*.txt"]
+                            )
+                        except Exception as e:
+                            self.finished.emit(False, f"Lỗi khi tải Base Model Stable Diffusion: {e}")
+                            return
+
                     # Update local version
                     local_versions[model_name] = latest_version
                     with open(local_versions_file, "w", encoding="utf-8") as lf:
