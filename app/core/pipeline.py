@@ -240,6 +240,40 @@ class Pipeline:
                 except Exception as e:
                     log_callback("ERROR", f"Failed to load translator: {e}")
                     translator = None
+                    
+            editor_translator = None
+            if enable_translator and config_dict.get("enable_double_check", "Yes") == "Yes":
+                try:
+                    if 'pool_apis' in translator_dict and translator_dict['pool_apis']:
+                        api_info = translator_dict['pool_apis'][0]
+                        provider_name = api_info.get('translator', 'openai')
+                        editor_translator = TranslatorFactory.create(provider_name)
+                        editor_translator.log_callback = log_callback
+                        editor_translator.load_weights({
+                            "endpoint": api_info.get('endpoint'),
+                            "model": api_info.get('model'),
+                            "key": api_info.get('api_key', api_info.get('key', '')),
+                            "max_retries": translator_dict.get('max_retries', 3),
+                            "glossary_path": translator_dict.get('glossary_path', ''),
+                            "system_prompt_profile": "editor",
+                            "project_base_dir": project_root
+                        })
+                    else:
+                        provider_name = translator_dict.get('translator', 'openai')
+                        editor_translator = TranslatorFactory.create(provider_name)
+                        editor_translator.log_callback = log_callback
+                        editor_translator.load_weights({
+                            "endpoint": translator_dict.get('ai_endpoint'),
+                            "model": translator_dict.get('ai_model'),
+                            "key": translator_dict.get('ai_api_key', translator_dict.get('ai_key', '')),
+                            "max_retries": translator_dict.get('max_retries', 3),
+                            "glossary_path": translator_dict.get('glossary_path', ''),
+                            "system_prompt_profile": "editor",
+                            "project_base_dir": project_root
+                        })
+                except Exception as e:
+                    log_callback("ERROR", f"Failed to load editor translator: {e}")
+                    editor_translator = None
             inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "lama")
             try:
                 from app.core.downloader import ModelDownloader
@@ -316,7 +350,10 @@ class Pipeline:
                 skip_languages=skip_languages,
                 filter_texts=filter_texts,
                 no_text_lang_skip=no_text_lang_skip,
-                max_request_length=max_request_length
+                max_request_length=max_request_length,
+                editor_translator=editor_translator,
+                context_window=int(config_dict.get("translator", {}).get("context_window", 10)),
+                stride_window=int(config_dict.get("translator", {}).get("stride_window", 5))
             )
             inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback)
             render_worker = RenderWorker(q_render, q_out, renderer, log_callback)
@@ -353,13 +390,19 @@ class Pipeline:
                     ctx = PageContext(page_id=filename, original_image=None, original_texts=lines)
                     q_in.put(ctx)
                 else:
-                    log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp ảnh lên RAM: {filename}")
-                    img_array = cv2.imread(img_path)
-                    if img_array is None:
-                        log_callback("WARNING", f"Không thể đọc ảnh: {filename}")
-                        continue
-                    ctx = PageContext(page_id=filename, original_image=img_array)
-                    q_in.put(ctx)
+                    memory_mode = config_dict.get("memory_mode", "RAM")
+                    if memory_mode == "DISK":
+                        log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp ảnh (DISK Mode): {filename}")
+                        ctx = PageContext(page_id=filename, original_image=None, original_image_path=img_path)
+                        q_in.put(ctx)
+                    else:
+                        log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp ảnh lên RAM: {filename}")
+                        img_array = cv2.imread(img_path)
+                        if img_array is None:
+                            log_callback("WARNING", f"Không thể đọc ảnh: {filename}")
+                            continue
+                        ctx = PageContext(page_id=filename, original_image=img_array, original_image_path=img_path)
+                        q_in.put(ctx)
 
             # Send stop signals
             q_in.put(None)

@@ -74,7 +74,7 @@ class BaseAPITranslator(BaseTranslator):
                 self.log_callback("ERROR", f"API Request Error: {e}")
             return {}
 
-    def translate(self, texts: List[str], src_lang: str, tgt_lang: str) -> List[str]:
+    def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] = None) -> List[str]:
         if not texts:
             return texts
             
@@ -82,6 +82,7 @@ class BaseAPITranslator(BaseTranslator):
         
         # Build single chunk of texts without splitting limit
         current_chunk = []
+            
         for i, t in enumerate(texts):
             current_chunk.append(f"Line {i+1}: {t}")
             
@@ -153,7 +154,7 @@ class BaseAPITranslator(BaseTranslator):
                 # Append original texts
                 for line_str in chunk:
                     original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
-                    all_translated_list.append(original_line)
+                    all_translated_list.append({"text": original_line, "score": 0.0})
                 continue
                 
             try:
@@ -176,28 +177,31 @@ class BaseAPITranslator(BaseTranslator):
                             break
                     
                     if matching_item:
-                        all_translated_list.append(matching_item.get("translated_text", ""))
+                        all_translated_list.append({
+                            "text": matching_item.get("translated_text", ""),
+                            "score": float(matching_item.get("confidence_score", 0.5))
+                        })
                     else:
                         if self.log_callback:
                             self.log_callback("WARNING", f"AI missed line {line_idx}, using original text.")
                         original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
-                        all_translated_list.append(original_line)
+                        all_translated_list.append({"text": original_line, "score": 0.0})
                         
             except json.JSONDecodeError as e:
                 if self.log_callback:
                     self.log_callback("ERROR", f"Failed to parse JSON response for chunk: {e}\nRaw: {raw_response[:200]}...")
                 for line_str in chunk:
                     original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
-                    all_translated_list.append(original_line)
+                    all_translated_list.append({"text": original_line, "score": 0.0})
             except Exception as e:
                 if self.log_callback:
                     self.log_callback("ERROR", f"Unexpected error during translation chunk: {e}")
                 for line_str in chunk:
                     original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
-                    all_translated_list.append(original_line)
+                    all_translated_list.append({"text": original_line, "score": 0.0})
                     
         # Apply glossary replacement post-translation just in case
-        translated_list = [self.glossary_manager.replace_post_translation(t) for t in all_translated_list]
+        translated_list = [{"text": self.glossary_manager.replace_post_translation(t["text"]), "score": t["score"]} for t in all_translated_list]
         return translated_list
 
     def _call_api(self, system_prompt: str, user_text: str) -> str:

@@ -99,9 +99,14 @@ class OCRWorker(threading.Thread):
             if self.log_callback:
                 self.log_callback("OCR", f"Processing {ctx.page_id}...")
 
-            if self.cloud_ocr and ctx.original_image is not None:
-                h, w = ctx.original_image.shape[:2]
-                results = self.cloud_ocr.recognize_full_page(ctx.original_image)
+            image = ctx.original_image
+            if image is None and getattr(ctx, 'original_image_path', None):
+                import cv2
+                image = cv2.imread(ctx.original_image_path)
+
+            if self.cloud_ocr and image is not None:
+                h, w = image.shape[:2]
+                results = self.cloud_ocr.recognize_full_page(image)
                 
                 raw_bboxes = [r["box"] for r in results]
                 raw_texts = [r["text"] for r in results]
@@ -260,7 +265,7 @@ class OCRWorker(threading.Thread):
 
 
 class TranslatorWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, translator_or_chain, src_lang: str, tgt_lang: str, log_callback=None, hitl_callback=None, skip_languages=None, filter_texts=None, no_text_lang_skip=False, max_request_length=-1):
+    def __init__(self, in_q: queue.Queue, translator_or_chain, src_lang: str, tgt_lang: str, log_callback=None, hitl_callback=None, skip_languages=None, filter_texts=None, no_text_lang_skip=False, max_request_length=-1, editor_translator=None, context_window=10, stride_window=5):
         super().__init__()
         self.in_q = in_q
         
@@ -277,6 +282,10 @@ class TranslatorWorker(threading.Thread):
         self.filter_texts = filter_texts or []
         self.no_text_lang_skip = no_text_lang_skip
         self.max_request_length = max_request_length
+        
+        self.editor_translator = editor_translator
+        self.context_window = max(1, context_window)
+        self.stride_window = max(1, stride_window)
         self.daemon = True
 
     def _should_skip_text(self, text, current_tgt_lang):
@@ -323,114 +332,180 @@ class TranslatorWorker(threading.Thread):
         return False
 
     def run(self):
-        batch = []
         import queue
+        from app.core.dto import PageContext
         
-        def flush_batch():
-            if not batch: return
+        stage1_buffer = []
+        stage2_buffer = []
+        
+        window_size1 = self.context_window
+        stride1 = self.stride_window
+        
+        window_size2 = window_size1 * 2
+        stride2 = stride1 * 2
+        
+        def process_stage1_window(window: list[PageContext]):
+            if not self.chained_translators:
+                for ctx in window:
+                    if not hasattr(ctx, "stage1_candidates"):
+                        ctx.stage1_candidates = []
+                return
+                
+            step_translator, step_tgt_lang = self.chained_translators[0]
+            texts_to_translate = []
+            page_line_map = []
             
-            if self.chained_translators:
-                # Prepare initial texts
-                all_texts = []
-                for ctx in batch:
-                    if ctx.original_texts:
-                        all_texts.extend(ctx.original_texts)
-                
-                if all_texts:
-                    current_texts = list(all_texts)
+            for ctx in window:
+                if not hasattr(ctx, "stage1_candidates"):
+                    ctx.stage1_candidates = [[] for _ in range(len(ctx.original_texts or []))]
                     
-                    # Run through the chain
-                    for i, (step_translator, step_tgt_lang) in enumerate(self.chained_translators):
-                        if not step_translator:
-                            continue
-                            
-                        # Build indices of texts that need translation in this step
-                        indices_to_translate = []
-                        texts_to_translate = []
-                        
-                        for idx, text in enumerate(current_texts):
-                            if not self._should_skip_text(text, step_tgt_lang):
-                                indices_to_translate.append(idx)
-                                texts_to_translate.append(text)
-                                
-                        if not texts_to_translate:
-                            continue # Nothing to translate in this step
-                            
-                        if self.log_callback:
-                            self.log_callback("TRANSLATE", f"Translating batch of {len(batch)} pages ({len(texts_to_translate)} valid lines) at step {i+1} to {step_tgt_lang}...")
-                        
-                        try:
-                            # Chunking logic based on max_request_length
-                            chunks = []
-                            if self.max_request_length > 0:
-                                current_chunk = []
-                                current_indices = []
-                                current_len = 0
-                                for idx, text in zip(indices_to_translate, texts_to_translate):
-                                    text_len = len(text)
-                                    if current_len + text_len > self.max_request_length and current_chunk:
-                                        chunks.append((current_indices, current_chunk))
-                                        current_chunk = []
-                                        current_indices = []
-                                        current_len = 0
-                                    current_chunk.append(text)
-                                    current_indices.append(idx)
-                                    current_len += text_len
-                                if current_chunk:
-                                    chunks.append((current_indices, current_chunk))
-                            else:
-                                chunks = [(indices_to_translate, texts_to_translate)]
-                                
-                            for chunk_idx, (chunk_indices, chunk_texts) in enumerate(chunks):
-                                if len(chunks) > 1 and self.log_callback:
-                                    self.log_callback("TRANSLATE", f" -> Processing sub-batch {chunk_idx+1}/{len(chunks)} ({len(chunk_texts)} lines)...")
-                                translated_part = step_translator.translate(chunk_texts, self.src_lang, step_tgt_lang)
-                                # Reconstruct current_texts
-                                for j, idx in enumerate(chunk_indices):
-                                    if j < len(translated_part) and translated_part[j]:
-                                        current_texts[idx] = translated_part[j]
-                        except Exception as e:
-                            if self.log_callback:
-                                self.log_callback("ERROR", f"Translation Batch Error at step {i+1}: {e}")
-                            
-                    all_translated = current_texts
+                if not ctx.original_texts:
+                    texts_to_translate.append(f"[Trang {ctx.page_id}: Silent Panel / Không có thoại]")
+                    page_line_map.append((ctx, -1))
                 else:
-                    all_translated = []
-                    
-                # Split translated text back to each context
-                cursor = 0
-                for ctx in batch:
-                    if ctx.original_texts:
-                        ctx_len = len(ctx.original_texts)
-                        ctx.translated_texts = all_translated[cursor:cursor+ctx_len]
-                        cursor += ctx_len
-                    else:
-                        ctx.translated_texts = []
-            else:
-                # Fallback if no translator is available
-                for ctx in batch:
-                    ctx.translated_texts = ctx.original_texts if ctx.original_texts else []
-                            
-            for ctx in batch:
-                ctx.trans_done.set()
-                self.in_q.task_done()
+                    for i, t in enumerate(ctx.original_texts):
+                        if self._should_skip_text(t, step_tgt_lang):
+                            ctx.stage1_candidates[i].append({"text": t, "score": 1.0})
+                        else:
+                            texts_to_translate.append(t)
+                            page_line_map.append((ctx, i))
+                        
+            if not texts_to_translate:
+                return
                 
-            batch.clear()
+            try:
+                if self.log_callback:
+                    self.log_callback("TRANSLATE", f"Stage 1: Processing window of {len(window)} pages ({len(texts_to_translate)} lines).")
+                
+                translated_part = step_translator.translate(texts_to_translate, self.src_lang, step_tgt_lang, [])
+                
+                for j, (ctx, line_idx) in enumerate(page_line_map):
+                    if j < len(translated_part):
+                        res = translated_part[j]
+                        text = res if isinstance(res, str) else res.get("text", "")
+                        score = 0.5 if isinstance(res, str) else res.get("score", 0.5)
+                        if line_idx != -1:
+                            ctx.stage1_candidates[line_idx].append({"text": text, "score": score})
+            except Exception as e:
+                if self.log_callback:
+                    self.log_callback("ERROR", f"Stage 1 Error: {e}")
+
+        def commit_stage1_page(ctx: PageContext):
+            if not hasattr(ctx, "stage1_candidates"):
+                ctx.translated_texts = list(ctx.original_texts or [])
+                return
+                
+            best_translations = []
+            for line_cands in ctx.stage1_candidates:
+                if not line_cands:
+                    best_translations.append("")
+                else:
+                    best_cands = sorted(line_cands, key=lambda x: x["score"], reverse=True)
+                    best_translations.append(best_cands[0]["text"])
+            ctx.translated_texts = best_translations
+
+        def process_stage2_window(window: list[PageContext]):
+            if not self.editor_translator:
+                return
+                
+            texts_to_translate = []
+            page_line_map = []
+            
+            for ctx in window:
+                if not hasattr(ctx, "stage2_candidates"):
+                    ctx.stage2_candidates = [[] for _ in range(len(ctx.translated_texts or []))]
+                    
+                if not ctx.translated_texts:
+                    texts_to_translate.append(f"[Trang {ctx.page_id}: Silent Panel / Không có thoại]")
+                    page_line_map.append((ctx, -1))
+                else:
+                    for i, t in enumerate(ctx.translated_texts):
+                        texts_to_translate.append(t)
+                        page_line_map.append((ctx, i))
+                        
+            if not texts_to_translate:
+                return
+                
+            try:
+                if self.log_callback:
+                    self.log_callback("TRANSLATE", f"Stage 2 (Double Check): Editing window of {len(window)} pages ({len(texts_to_translate)} lines).")
+                
+                translated_part = self.editor_translator.translate(texts_to_translate, "vi", "vi", [])
+                
+                for j, (ctx, line_idx) in enumerate(page_line_map):
+                    if j < len(translated_part):
+                        res = translated_part[j]
+                        text = res if isinstance(res, str) else res.get("text", "")
+                        score = 0.5 if isinstance(res, str) else res.get("score", 0.5)
+                        if line_idx != -1:
+                            ctx.stage2_candidates[line_idx].append({"text": text, "score": score})
+            except Exception as e:
+                if self.log_callback:
+                    self.log_callback("ERROR", f"Stage 2 Error: {e}")
+
+        def commit_stage2_page(ctx: PageContext):
+            if hasattr(ctx, "stage2_candidates"):
+                best_translations = []
+                for i, line_cands in enumerate(ctx.stage2_candidates):
+                    if not line_cands:
+                        best_translations.append(ctx.translated_texts[i] if i < len(ctx.translated_texts) else "")
+                    else:
+                        best_cands = sorted(line_cands, key=lambda x: x["score"], reverse=True)
+                        best_translations.append(best_cands[0]["text"])
+                ctx.translated_texts = best_translations
+            ctx.trans_done.set()
+            self.in_q.task_done()
 
         while True:
             try:
                 ctx = self.in_q.get(timeout=0.5)
-                if ctx is None:
-                    flush_batch()
-                    self.in_q.task_done()
-                    break
-                    
-                batch.append(ctx)
-                if len(batch) >= 15:
-                    flush_batch()
             except queue.Empty:
-                if batch:
-                    flush_batch()
+                continue
+                
+            if ctx is None:
+                # Flush Stage 1
+                while stage1_buffer:
+                    process_stage1_window(stage1_buffer)
+                    popped = stage1_buffer[:stride1]
+                    stage1_buffer = stage1_buffer[stride1:]
+                    for p in popped:
+                        commit_stage1_page(p)
+                        if self.editor_translator:
+                            stage2_buffer.append(p)
+                        else:
+                            p.trans_done.set()
+                            self.in_q.task_done()
+                            
+                # Flush Stage 2
+                if self.editor_translator:
+                    while stage2_buffer:
+                        process_stage2_window(stage2_buffer)
+                        popped = stage2_buffer[:stride2]
+                        stage2_buffer = stage2_buffer[stride2:]
+                        for p in popped:
+                            commit_stage2_page(p)
+                            
+                self.in_q.task_done() # For the None token
+                break
+                
+            stage1_buffer.append(ctx)
+            if len(stage1_buffer) >= window_size1:
+                process_stage1_window(stage1_buffer)
+                popped = stage1_buffer[:stride1]
+                stage1_buffer = stage1_buffer[stride1:]
+                for p in popped:
+                    commit_stage1_page(p)
+                    if self.editor_translator:
+                        stage2_buffer.append(p)
+                        if len(stage2_buffer) >= window_size2:
+                            process_stage2_window(stage2_buffer)
+                            popped2 = stage2_buffer[:stride2]
+                            stage2_buffer = stage2_buffer[stride2:]
+                            for p2 in popped2:
+                                commit_stage2_page(p2)
+                    else:
+                        p.trans_done.set()
+                        self.in_q.task_done()
 
 
 class InpaintWorker(threading.Thread):
@@ -451,18 +526,33 @@ class InpaintWorker(threading.Thread):
             if self.log_callback:
                 self.log_callback("INPAINT", f"Inpainting {ctx.page_id}...")
 
-            if self.inpainter and (ctx.raw_bboxes or ctx.bboxes) and ctx.original_image is not None:
-                try:
-                    boxes_to_inpaint = ctx.raw_bboxes if ctx.raw_bboxes is not None else ctx.bboxes
-                    if boxes_to_inpaint is not None:
-                        inpainted = self.inpainter.inpaint(ctx.original_image, boxes_to_inpaint)
-                        ctx.inpainted_image = inpainted
-                    else:
-                        ctx.inpainted_image = ctx.original_image.copy()
-                except Exception as e:
-                    if self.log_callback:
-                        self.log_callback("ERROR", f"Inpaint Error on {ctx.page_id}: {e}")
-                    ctx.inpainted_image = ctx.original_image.copy()
+            if self.inpainter and (ctx.raw_bboxes or ctx.bboxes):
+                image = ctx.original_image
+                if image is None and getattr(ctx, 'original_image_path', None):
+                    import cv2
+                    image = cv2.imread(ctx.original_image_path)
+                    
+                if image is not None:
+                    try:
+                        boxes_to_inpaint = ctx.raw_bboxes if ctx.raw_bboxes is not None else ctx.bboxes
+                        if boxes_to_inpaint is not None:
+                            inpainted = self.inpainter.inpaint(image, boxes_to_inpaint)
+                            
+                            if ctx.original_image is None and getattr(ctx, 'original_image_path', None):
+                                import os, cv2
+                                temp_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "temp")
+                                os.makedirs(temp_dir, exist_ok=True)
+                                temp_path = os.path.join(temp_dir, f"inpaint_{os.path.basename(ctx.page_id)}.png")
+                                cv2.imwrite(temp_path, inpainted)
+                                ctx.inpainted_image_path = temp_path
+                            else:
+                                ctx.inpainted_image = inpainted
+                        else:
+                            ctx.inpainted_image = image.copy()
+                    except Exception as e:
+                        if self.log_callback:
+                            self.log_callback("ERROR", f"Inpaint Error on {ctx.page_id}: {e}")
+                        ctx.inpainted_image = image.copy()
 
             ctx.inpaint_done.set()  # Signal completion of this fork
             self.in_q.task_done()
@@ -494,7 +584,17 @@ class RenderWorker(threading.Thread):
                 self.log_callback("RENDER", f"Rendering {ctx.page_id}...")
 
             if self.renderer:
-                bg_image = ctx.inpainted_image if ctx.inpainted_image is not None else ctx.original_image
+                bg_image = ctx.inpainted_image
+                if bg_image is None and getattr(ctx, 'inpainted_image_path', None):
+                    import cv2
+                    bg_image = cv2.imread(ctx.inpainted_image_path)
+                    
+                if bg_image is None:
+                    bg_image = ctx.original_image
+                    if bg_image is None and getattr(ctx, 'original_image_path', None):
+                        import cv2
+                        bg_image = cv2.imread(ctx.original_image_path)
+                        
                 texts = ctx.translated_texts if ctx.translated_texts else ctx.original_texts
                 
                 if bg_image is not None and texts and ctx.bboxes:

@@ -34,14 +34,6 @@ class GlossaryManager:
                         if line and '|' in line and not line.startswith('#'):
                             val, key = line.split('|', 1)
                             self.pre_glossary[key.strip()] = val.strip()
-                            
-                    post_dict_str = profile_data.get("post_dict", "")
-                    
-                    for line in post_dict_str.splitlines():
-                        line = line.strip()
-                        if line and '|' in line and not line.startswith('#'):
-                            val, key = line.split('|', 1) # Format: CorrectedText | OCR_Error
-                            self.glossary[key.strip()] = val.strip()
         except (FileNotFoundError, yaml.YAMLError, OSError) as e:
             print(f"[GlossaryManager] Lỗi tải từ điển: {e}")
 
@@ -110,12 +102,13 @@ class PromptBuilder:
             "      \"original_text\": \"Original line 1\",\n"
             "      \"translated_text\": \"Translated line 1\",\n"
             "      \"context_notes\": \"Notes on puns, slang, or context (if any)\",\n"
-            "      \"confidence_score\": 0.95\n"
+            "      \"confidence_score\": 0.85\n"
             "    }}\n"
             "  ],\n"
             "  \"global_notes\": \"Any general notes\"\n"
             "}}\n"
-            "Ensure the `content` array has the EXACT SAME number of items as the input lines."
+            "Ensure the `content` array has the EXACT SAME number of items as the input lines.\n"
+            "\"confidence_score\" should be a float from 0.0 to 1.0 representing your certainty."
         )
 
         prompt_file = os.path.join(self.project_base_dir, ".config", "configs", "system_prompt.yaml")

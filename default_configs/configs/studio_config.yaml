@@ -666,6 +666,41 @@ ui_map:
 
       Low VRAM: Processes images in small groups to prevent errors on GPUs with <=6GB
       VRAM.'
+  memory_mode:
+    widget: optionmenu
+    group: Extra Settings
+    order: 715
+    label: 'Memory Mode:'
+    default: RAM
+    values:
+    - RAM
+    - DISK
+    tooltip: 'RAM: Keeps image contexts in memory (fast but uses more RAM).
+      DISK: Saves contexts to disk temporarily (prevents Out of Memory crashes when batching/sliding context).'
+  context_window:
+    widget: entry
+    group: Extra Settings
+    order: 716
+    label: 'Translation Window Size:'
+    default: '10'
+    tooltip: 'Number of pages evaluated in a single translation batch.'
+  stride_window:
+    widget: entry
+    group: Extra Settings
+    order: 717
+    label: 'Translation Stride:'
+    default: '5'
+    tooltip: 'Number of pages to slide forward. Smaller stride increases multi-pass evaluation and quality but is slower.'
+  enable_double_check:
+    widget: optionmenu
+    group: Extra Settings
+    order: 718
+    label: 'Enable Double Check:'
+    default: 'Yes'
+    values:
+    - 'Yes'
+    - 'No'
+    tooltip: 'If Yes, enables a Stage 2 proofreading pass to smooth out the Vietnamese translation.'
   batch_size:
     widget: entry
     group: Extra Settings
