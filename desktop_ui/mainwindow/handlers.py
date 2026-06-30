@@ -240,17 +240,43 @@ class HandlersMixin:
 
     def _update_inpainter_visibility(self):
         """Toggles the visibility of SD Base Model based on the selected Inpainter."""
-        from app.core.factories import InpainterFactory
-        inpainter = self._get_value_from_widget('inpainter', self.setting_widgets.get('inpainter'))
+        from app.core.factories import InpainterFactory, DiffusionFactory
+        from PySide6.QtCore import QTimer
         
+        enable_advanced_diffusion = self._get_value_from_widget('enable_advanced_diffusion', self.setting_widgets.get('enable_advanced_diffusion'))
+        
+        # Toggle visibility of the option menus themselves
+        if 'inpainter' in self.setting_rows:
+            QTimer.singleShot(50, lambda v=not enable_advanced_diffusion: self.setting_rows['inpainter'].setVisible(v))
+        if 'diffusion_model' in self.setting_rows:
+            QTimer.singleShot(50, lambda v=enable_advanced_diffusion: self.setting_rows['diffusion_model'].setVisible(v))
+            
         show_sd_base = False
-        if inpainter:
-            impl_class = InpainterFactory.get_class(inpainter)
-            if impl_class and getattr(impl_class, 'REQUIRES_SD_BASE_MODEL', False):
-                show_sd_base = True
+        
+        if enable_advanced_diffusion:
+            diffusion_model = self._get_value_from_widget('diffusion_model', self.setting_widgets.get('diffusion_model'))
+            if diffusion_model:
+                impl_class = DiffusionFactory.get_class(diffusion_model)
+                if impl_class:
+                    if getattr(impl_class, 'REQUIRES_SD_BASE_MODEL', False):
+                        show_sd_base = True
+                else:
+                    if 'powerpaint' in str(diffusion_model).lower():
+                        show_sd_base = True
+        else:
+            inpainter = self._get_value_from_widget('inpainter', self.setting_widgets.get('inpainter'))
+            if inpainter:
+                impl_class = InpainterFactory.get_class(inpainter)
+                if impl_class:
+                    if getattr(impl_class, 'REQUIRES_SD_BASE_MODEL', False):
+                        show_sd_base = True
+                else:
+                    if 'powerpaint' in str(inpainter).lower():
+                        show_sd_base = True
         
         if 'sd_base_model' in self.setting_rows:
-            self.setting_rows['sd_base_model'].setVisible(show_sd_base)
+            widget = self.setting_rows['sd_base_model']
+            QTimer.singleShot(50, lambda v=show_sd_base: widget.setVisible(v))
 
     def _on_ocr_category_changed(self):
         """Handles changes in OCR category (Offline vs AI/Online)."""
@@ -868,7 +894,7 @@ class HandlersMixin:
             if key in ['ocr_category', 'ocr_ai_mode', 'api_ocr']:
                 self._update_ocr_visibility()
                 
-            if key == 'inpainter':
+            if key in ['inpainter', 'enable_advanced_diffusion', 'diffusion_model']:
                 self._update_inpainter_visibility()
 
             if key == 'app_language':

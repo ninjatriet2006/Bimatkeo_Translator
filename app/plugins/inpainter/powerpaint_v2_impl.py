@@ -3,8 +3,8 @@ import sys
 import cv2
 
 from typing import Any, List
-from app.core.interfaces import BaseInpainter
-from app.core.factories import InpainterFactory
+from app.core.interfaces import BaseDiffusionModel
+from app.core.factories import DiffusionFactory
 
 try:
     import torch
@@ -16,10 +16,10 @@ except ImportError:
     torch = None
     Image = None
 
-@InpainterFactory.register("powerpaint_v2")
-class PowerPaintV2_Impl(BaseInpainter):
+@DiffusionFactory.register("powerpaint_v2")
+class PowerPaintV2_Impl(BaseDiffusionModel):
     DISPLAY_NAME = {
-        "powerpaint_v2": "Sanster/PowerPaint-v2 (BrushNet)"
+        "powerpaint_v2": "Sanster/PowerPaint-v2 (BrushNet) (Max 512px)"
     }
     REQUIRES_SD_BASE_MODEL = True
 
@@ -160,11 +160,36 @@ class PowerPaintV2_Impl(BaseInpainter):
             if Image is None:
                 raise RuntimeError("PIL is not installed.")
                 
-            img_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            pil_img = Image.fromarray(img_rgb)
-            pil_mask = Image.fromarray(mask)
+            # Resize logic for 512px limit
+            h, w = image.shape[:2]
+            max_dim = 512
+            resize_ratio = 1.0
+            work_img = image
+            work_mask = mask
+            
+            if max(h, w) > max_dim:
+                resize_ratio = float(max_dim) / max(h, w)
+                new_w = int(w * resize_ratio)
+                new_h = int(h * resize_ratio)
+                # Multiples of 8
+                new_w = max(8, (new_w // 8) * 8)
+                new_h = max(8, (new_h // 8) * 8)
+                work_img = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+                work_mask = cv2.resize(mask, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+            else:
+                new_w = max(8, (w // 8) * 8)
+                new_h = max(8, (h // 8) * 8)
+                if new_w != w or new_h != h:
+                    work_img = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+                    work_mask = cv2.resize(mask, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+                else:
+                    new_w, new_h = w, h
 
-            print("[PowerPaint V2] Running diffusion inference...")
+            img_rgb = cv2.cvtColor(work_img, cv2.COLOR_BGR2RGB)
+            pil_img = Image.fromarray(img_rgb)
+            pil_mask = Image.fromarray(work_mask)
+
+            print(f"[PowerPaint V2] Running diffusion inference at {new_w}x{new_h}...")
             output = self._process(
                 image=pil_img,
                 mask=pil_mask,
@@ -174,7 +199,13 @@ class PowerPaintV2_Impl(BaseInpainter):
                 guidance_scale=7.5
             )
 
-            out_bgr = cv2.cvtColor(np.array(output), cv2.COLOR_RGB2BGR)
+            out_bgr_resized = cv2.cvtColor(np.array(output), cv2.COLOR_RGB2BGR)
+            
+            if out_bgr_resized.shape[:2] != (h, w):
+                out_bgr = cv2.resize(out_bgr_resized, (w, h), interpolation=cv2.INTER_CUBIC)
+            else:
+                out_bgr = out_bgr_resized
+
             mask_bool = (mask > 0)[:, :, np.newaxis]
             result = image * (~mask_bool) + out_bgr * mask_bool
             return result.astype(np.uint8)

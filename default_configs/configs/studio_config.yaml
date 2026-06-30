@@ -412,13 +412,6 @@ ui_map:
     tooltip: 'Minimum confidence for an OCR result to be accepted.
 
       Leave blank for automatic backend default.'
-  sd_base_model:
-    widget: optionmenu
-    group: Image & Inpainter
-    order: 315
-    label: 'SD Base Model (Addon):'
-    default: sd_1_5
-    tooltip: "Download and select a Base Model Addon for PowerPaint."
   inpainter:
     widget: optionmenu
     group: Image & Inpainter
@@ -427,6 +420,30 @@ ui_map:
     default: none
     tooltip: The AI model used to remove the original text and reconstruct the 
       background.
+  enable_advanced_diffusion:
+    widget: checkbox
+    group: Image & Inpainter
+    order: 321
+    label: Enable Advanced Diffusion
+    default: false
+    section: advanced
+    tooltip: Use an advanced Diffusion model for complex inpainting and rendering instead of the basic inpainter.
+  diffusion_model:
+    widget: optionmenu
+    group: Image & Inpainter
+    order: 322
+    label: 'Diffusion Model:'
+    default: none
+    section: advanced
+    tooltip: The Diffusion model to use when Advanced Diffusion is enabled.
+  sd_base_model:
+    widget: optionmenu
+    group: Image & Inpainter
+    order: 325
+    label: 'SD Base Model (Addon):'
+    default: sd_1_5
+    section: advanced
+    tooltip: "Download and select a Base Model Addon for Diffusion models."
   inpainting_precision:
     widget: optionmenu
     group: Image & Inpainter

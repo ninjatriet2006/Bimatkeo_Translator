@@ -179,6 +179,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
         self._apply_theme(saved_theme)
         self._on_translator_category_changed()
         self._on_ocr_category_changed()
+        self._update_inpainter_visibility()
 
     def _initialize_app(self):
         """

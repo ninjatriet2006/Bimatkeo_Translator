@@ -74,6 +74,9 @@ class RegistryMixin(_RegistryMixinBase):
                 {"key": "default", "check_file": "models/Inpainter/Lama_Large/lama_large_512px.ckpt"},
                 {"key": "none"},
             ],
+            "diffusion_model": [
+                {"key": "none"},
+            ],
             "upscaler": [
                 {"key": "waifu2x", "check_file": "models/Upscaler/Waifu2x/waifu2x-{os}/waifu2x-ncnn-vulkan{exe}"},
             ],

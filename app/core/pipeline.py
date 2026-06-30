@@ -275,14 +275,26 @@ class Pipeline:
                 except Exception as e:
                     log_callback("ERROR", f"Failed to load editor translator: {e}")
                     editor_translator = None
-            inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "lama")
-            try:
-                from app.core.downloader import ModelDownloader
-                inp_path = ModelDownloader.get_model_path_from_registry("inpainter", inpainter_name)
-                inpainter = InpainterFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback, **config_dict.get("inpainter", {})) if enable_inpainter and inpainter_name != "none" else None
-            except ValueError:
-                log_callback("WARNING", f"Inpainter '{inpainter_name}' not found, falling back to None.")
-                inpainter = None
+            enable_advanced_diffusion = config_dict.get("inpainter", {}).get("enable_advanced_diffusion", False)
+            if enable_advanced_diffusion:
+                inpainter_name = config_dict.get("inpainter", {}).get("diffusion_model", "powerpaint_v1")
+                try:
+                    from app.core.downloader import ModelDownloader
+                    from app.core.factories import DiffusionFactory
+                    inp_path = ModelDownloader.get_model_path_from_registry("diffusion_model", inpainter_name)
+                    inpainter = DiffusionFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback, **config_dict.get("inpainter", {})) if enable_inpainter and inpainter_name != "none" else None
+                except ValueError:
+                    log_callback("WARNING", f"Diffusion Model '{inpainter_name}' not found, falling back to None.")
+                    inpainter = None
+            else:
+                inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "lama")
+                try:
+                    from app.core.downloader import ModelDownloader
+                    inp_path = ModelDownloader.get_model_path_from_registry("inpainter", inpainter_name)
+                    inpainter = InpainterFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback, **config_dict.get("inpainter", {})) if enable_inpainter and inpainter_name != "none" else None
+                except ValueError:
+                    log_callback("WARNING", f"Inpainter '{inpainter_name}' not found, falling back to None.")
+                    inpainter = None
 
             renderer_name = config_dict.get("render", {}).get("renderer", "pillow_renderer")
             try:

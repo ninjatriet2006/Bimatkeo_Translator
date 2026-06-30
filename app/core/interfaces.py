@@ -130,3 +130,18 @@ class BaseRenderer(ABC):
     def render(self, image: np.ndarray, bboxes: List[List[int]], texts: List[str]) -> np.ndarray:
         """Vẽ văn bản tiếng đích (texts) lên ảnh nền đã làm sạch (image) tại đúng vị trí bboxes."""
         pass
+
+class BaseDiffusionModel(ABC):
+    DISPLAY_NAME: Union[str, Dict[str, str]] = ""
+
+    @abstractmethod
+    def load_model(self, model_path: str, **kwargs) -> None:
+        """Tải mô hình diffusion lên bộ nhớ."""
+        pass
+
+    @abstractmethod
+    def inpaint(self, image: np.ndarray, bboxes: List[List[int]]) -> np.ndarray:
+        """Xóa chữ hoặc tái tạo bối cảnh dựa trên mask và prompt."""
+        pass
+
+    # Có thể mở rộng thêm hàm render_text_with_diffusion(self, ...) sau này.

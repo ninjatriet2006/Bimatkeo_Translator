@@ -114,3 +114,6 @@ class ColorizerFactory(BaseFactory):
 
 class CloudOCRFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}
+
+class DiffusionFactory(BaseFactory):
+    _registry: Dict[str, Type[Any]] = {}
