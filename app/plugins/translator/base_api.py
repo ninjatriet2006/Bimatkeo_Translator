@@ -74,7 +74,7 @@ class BaseAPITranslator(BaseTranslator):
                 self.log_callback("ERROR", f"API Request Error: {e}")
             return {}
 
-    def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] = None) -> List[str]:
+    def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None) -> List[Union[str, dict]]:
         if not texts:
             return texts
             

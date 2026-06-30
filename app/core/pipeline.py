@@ -32,6 +32,7 @@ try:
     import app.plugins.inpainter.lama_impl
     import app.plugins.inpainter.powerpaint_impl
     import app.plugins.inpainter.powerpaint_v2_impl
+    import app.plugins.inpainter.opencv_impl
     import app.plugins.upscaler.esrgan_impl
     import app.plugins.renderer.pillow_impl
 except ImportError as e:
@@ -58,7 +59,7 @@ class DummyRecognizer(BaseTextRecognizer):
 class DummyTranslator(BaseTranslator):
     def load_weights(self, model_path: str, **kwargs) -> None:
         pass
-    def translate(self, texts: list, src_lang: str, tgt_lang: str) -> list:
+    def translate(self, texts: list, src_lang: str, tgt_lang: str, context_texts: list | None = None) -> list:
         return [f"[Translated to {tgt_lang}] {t}" for t in texts]
 
 

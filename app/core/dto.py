@@ -17,6 +17,10 @@ class PageContext:
     inpainted_image_path: Optional[str] = None   # Đường dẫn ảnh đã xóa nền trên đĩa (dành cho DISK mode)
     rendered_image: Optional[np.ndarray] = None  # Ảnh phẳng cuối cùng đã vẽ chữ (để xuất PNG/JPG)
     
+    # Multipass Translation Candidates
+    stage1_candidates: Optional[List[List[dict]]] = None
+    stage2_candidates: Optional[List[List[dict]]] = None
+    
     # Fork-Join Synchronization Flags
     trans_done: threading.Event = field(default_factory=threading.Event)
     inpaint_done: threading.Event = field(default_factory=threading.Event)

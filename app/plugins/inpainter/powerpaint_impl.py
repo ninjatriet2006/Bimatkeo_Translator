@@ -20,6 +20,7 @@ class PowerPaintV1_Impl(BaseInpainter):
     DISPLAY_NAME = {
         "powerpaint_v1": "Sanster/PowerPaint-v1 (Diffusers)"
     }
+    REQUIRES_SD_BASE_MODEL = True
     
     def __init__(self):
         self.model_path = None
@@ -120,5 +121,8 @@ class PowerPaintV1_Impl(BaseInpainter):
             return result.astype(np.uint8)
             
         except Exception as e:
-            print(f"[PowerPaint] Inference failed: {e}. Executing OpenCV INPAINT_TELEA fallback...")
+            msg = f"[PowerPaint] Inference failed: {e}. Executing OpenCV INPAINT_TELEA fallback..."
+            print(msg)
+            if self.config.get('log_callback'):
+                self.config['log_callback']("WARNING", msg)
             return cv2.inpaint(image, mask, 5, cv2.INPAINT_TELEA)

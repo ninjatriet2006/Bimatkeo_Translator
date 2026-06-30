@@ -238,6 +238,20 @@ class HandlersMixin:
                             # Force auto-save to profile
                             self._on_setting_changed('ocr_api_endpoint')
 
+    def _update_inpainter_visibility(self):
+        """Toggles the visibility of SD Base Model based on the selected Inpainter."""
+        from app.core.factories import InpainterFactory
+        inpainter = self._get_value_from_widget('inpainter', self.setting_widgets.get('inpainter'))
+        
+        show_sd_base = False
+        if inpainter:
+            impl_class = InpainterFactory.get_class(inpainter)
+            if impl_class and getattr(impl_class, 'REQUIRES_SD_BASE_MODEL', False):
+                show_sd_base = True
+        
+        if 'sd_base_model' in self.setting_rows:
+            self.setting_rows['sd_base_model'].setVisible(show_sd_base)
+
     def _on_ocr_category_changed(self):
         """Handles changes in OCR category (Offline vs AI/Online)."""
         self._update_ocr_visibility()
@@ -853,6 +867,9 @@ class HandlersMixin:
                 
             if key in ['ocr_category', 'ocr_ai_mode', 'api_ocr']:
                 self._update_ocr_visibility()
+                
+            if key == 'inpainter':
+                self._update_inpainter_visibility()
 
             if key == 'app_language':
                 self.config_loader.oldsession_config["app_language"] = new_value
@@ -1052,6 +1069,7 @@ class HandlersMixin:
 
         self._update_translator_visibility()
         self._update_ocr_visibility()
+        self._update_inpainter_visibility()
         active_translator = self._get_active_translator_name()
         self._update_translator_tooltip(active_translator)
 

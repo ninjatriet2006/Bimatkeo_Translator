@@ -21,7 +21,8 @@ class PowerPaintV2_Impl(BaseInpainter):
     DISPLAY_NAME = {
         "powerpaint_v2": "Sanster/PowerPaint-v2 (BrushNet)"
     }
-    
+    REQUIRES_SD_BASE_MODEL = True
+
     def __init__(self):
         self.model_path: str = ""
         self.is_loaded = False
@@ -149,7 +150,10 @@ class PowerPaintV2_Impl(BaseInpainter):
             cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
             
         if not self.is_loaded or self.pipe is None:
-            print("[PowerPaint V2] Not loaded. Executing OpenCV INPAINT_TELEA fallback...")
+            msg = "[PowerPaint V2] Not loaded. Executing OpenCV INPAINT_TELEA fallback..."
+            print(msg)
+            if hasattr(self, 'config') and self.config.get('log_callback'):
+                self.config['log_callback']("WARNING", msg)
             return cv2.inpaint(image, mask, 5, cv2.INPAINT_TELEA)
 
         try:
@@ -175,7 +179,10 @@ class PowerPaintV2_Impl(BaseInpainter):
             result = image * (~mask_bool) + out_bgr * mask_bool
             return result.astype(np.uint8)
         except Exception as e:
-            print(f"[PowerPaint V2] Inference failed: {e}. Executing OpenCV INPAINT_TELEA fallback...")
+            msg = f"[PowerPaint V2] Inference failed: {e}. Executing OpenCV INPAINT_TELEA fallback..."
+            print(msg)
+            if hasattr(self, 'config') and self.config.get('log_callback'):
+                self.config['log_callback']("WARNING", msg)
             return cv2.inpaint(image, mask, 5, cv2.INPAINT_TELEA)
 
     def _process(self, image: Any, mask: Any, prompt: str = "", **kwargs) -> Any:

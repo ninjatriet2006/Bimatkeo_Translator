@@ -99,7 +99,7 @@ class BaseTranslator(ABC):
         pass
 
     @abstractmethod
-    def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] = None) -> List[Union[str, dict]]:
+    def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None) -> List[Union[str, dict]]:
         """Dịch danh sách các đoạn text tiếng nguồn sang tiếng đích."""
         pass
 

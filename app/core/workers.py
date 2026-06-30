@@ -444,11 +444,12 @@ class TranslatorWorker(threading.Thread):
                     self.log_callback("ERROR", f"Stage 2 Error: {e}")
 
         def commit_stage2_page(ctx: PageContext):
-            if hasattr(ctx, "stage2_candidates"):
+            if hasattr(ctx, "stage2_candidates") and ctx.stage2_candidates:
                 best_translations = []
+                translated_texts = ctx.translated_texts or []
                 for i, line_cands in enumerate(ctx.stage2_candidates):
                     if not line_cands:
-                        best_translations.append(ctx.translated_texts[i] if i < len(ctx.translated_texts) else "")
+                        best_translations.append(translated_texts[i] if i < len(translated_texts) else "")
                     else:
                         best_cands = sorted(line_cands, key=lambda x: x["score"], reverse=True)
                         best_translations.append(best_cands[0]["text"])

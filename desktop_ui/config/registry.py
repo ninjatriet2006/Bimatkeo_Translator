@@ -70,6 +70,7 @@ class RegistryMixin(_RegistryMixinBase):
                 {"key": "none"},
             ],
             "inpainter": [
+                {"key": "opencv", "check_file": "none"},
                 {"key": "default", "check_file": "models/Inpainter/Lama_Large/lama_large_512px.ckpt"},
                 {"key": "none"},
             ],
