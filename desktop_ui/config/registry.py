@@ -72,6 +72,7 @@ class RegistryMixin(_RegistryMixinBase):
             "inpainter": [
                 {"key": "opencv", "check_file": "none"},
                 {"key": "default", "check_file": "models/Inpainter/Lama_Large/lama_large_512px.ckpt"},
+                {"key": "manga", "check_file": "models/Inpainter/Manga_ONNX/erika.onnx"},
                 {"key": "none"},
             ],
             "diffusion_model": [

@@ -30,6 +30,7 @@ try:
     import app.plugins.translator
     
     import app.plugins.inpainter.lama_impl
+    import app.plugins.inpainter.manga_inpaint_impl
     import app.plugins.inpainter.powerpaint_impl
     import app.plugins.inpainter.powerpaint_v2_impl
     import app.plugins.inpainter.opencv_impl
