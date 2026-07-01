@@ -962,43 +962,15 @@ class JobRunnerMixin:
 
                 success = True
                 if mode_to_use == 'Low VRAM':
-                    try:
-                        batch_size = int(settings.get('batch_size', 5))
-                        if batch_size <= 0: batch_size = 1
-                    except ValueError:
-                        batch_size = 5
-
-                    self.log("PIPELINE", f"Resuming job '''{job['name']}''' in Low VRAM Mode (Batch Size: {batch_size}).")
-                    num_batches = (len(files_to_process) + batch_size - 1) // batch_size
-
-                    for i in range(num_batches):
-                        if not self.is_running_pipeline:
-                            success = False
-                            break
-
-                        batch_files = files_to_process[i * batch_size: (i + 1) * batch_size]
-                        self.log("INFO", f"Processing batch {i + 1}/{num_batches} ({len(batch_files)} images)...")
-
-                        temp_batch_dir = os.path.join(self.temp_dir, f"batch_{job['id']}")
-                        if os.path.exists(temp_batch_dir): shutil.rmtree(temp_batch_dir)
-                        os.makedirs(temp_batch_dir)
-                        for f in batch_files:
-                            src_file = source_path if os.path.isfile(source_path) else os.path.join(source_path, f)
-                            shutil.copy(src_file, temp_batch_dir)
-
-                        job_for_batch = copy.deepcopy(job)
-                        job_for_batch['source_path'] = temp_batch_dir
-
-                        final_config = self._build_final_config_for_job(job_for_batch)
-                        final_config['is_single_file'] = os.path.isfile(source_path)
-                        is_verbose = settings.get("enable_verbose_output", False)
-                        
-                        batch_success = self._run_pipeline_in_process(job_for_batch, final_output_path, final_config, is_verbose, output_format, is_single_test=False)
-                        shutil.rmtree(temp_batch_dir)
-
-                        if not batch_success:
-                            success = False
-                            break
+                    # Legacy: Low VRAM Mode used to artificially batch images.
+                    # Since the pipeline is concurrent and processes sequentially, VRAM peak is constant.
+                    # We now run it identically to Fast Mode to preserve translation context windows.
+                    self.log("PIPELINE", f"Resuming job '''{job['name']}''' in Low VRAM Mode (Sequential Stream).")
+                    
+                    final_config = self._build_final_config_for_job(job)
+                    final_config['is_single_file'] = os.path.isfile(source_path)
+                    is_verbose = settings.get("enable_verbose_output", False)
+                    success = self._run_pipeline_in_process(job, final_output_path, final_config, is_verbose, output_format, is_single_test=False)
                 else:
                     self.log("PIPELINE", f"Resuming job '''{job['name']}''' in High VRAM Mode.")
 
