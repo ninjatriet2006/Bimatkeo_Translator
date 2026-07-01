@@ -405,9 +405,24 @@ class HandlersMixin:
         button.setText("...")
 
         def thread_target():
-            from app.core.api_utils import test_remote_ai_model
-            success, msg = test_remote_ai_model(endpoint, key, ai_provider, model_name)
-            self.test_finished_signal.emit(success, msg, button)
+            from app.core.factories import TranslatorFactory
+            try:
+                # Import API plugins so they register into the Factory
+                import app.plugins.translator.openai_impl
+                import app.plugins.translator.gemini_impl
+                import app.plugins.translator.felo_impl
+                
+                translator = TranslatorFactory.create(ai_provider)
+                # Load configuration dictionary mimicking model_path behavior for API translators
+                translator.load_weights({
+                    "endpoint": endpoint,
+                    "key": key,
+                    "model": model_name
+                })
+                success, msg = translator.test_connection()
+                self.test_finished_signal.emit(success, msg, button)
+            except Exception as e:
+                self.test_finished_signal.emit(False, str(e), button)
 
         threading.Thread(target=thread_target, daemon=True).start()
 

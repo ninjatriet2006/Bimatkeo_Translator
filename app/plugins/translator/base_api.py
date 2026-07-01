@@ -2,7 +2,7 @@ import os
 import json
 import urllib.request
 import urllib.error
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union, cast
 
 from app.core.interfaces import BaseTranslator
 from app.core.factories import TranslatorFactory
@@ -66,17 +66,44 @@ class BaseAPITranslator(BaseTranslator):
                 return result
         except urllib.error.HTTPError as e:
             err_body = e.read().decode('utf-8', errors='ignore')
+            if getattr(self, '_test_mode', False):
+                try:
+                    err_json = json.loads(err_body)
+                    if 'error' in err_json:
+                        err_msg = err_json['error'].get('message', str(err_json['error']))
+                        raise RuntimeError(f"HTTP Error {e.code}: {e.reason}\nMessage: {err_msg}")
+                except Exception:
+                    pass
+                raise RuntimeError(f"HTTP Error {e.code}: {e.reason}\n{err_body[:500]}")
             if self.log_callback:
                 self.log_callback("ERROR", f"API Request Error: {e}\nResponse: {err_body}")
             return {}
-        except urllib.error.URLError as e:
+        except Exception as e:
+            if getattr(self, '_test_mode', False):
+                raise RuntimeError(f"Connection Failed: {e}")
             if self.log_callback:
                 self.log_callback("ERROR", f"API Request Error: {e}")
             return {}
 
+    def test_connection(self) -> tuple[bool, str]:
+        """Tests the API connection by sending a minimal prompt using the actual translation endpoint logic."""
+        if not self.endpoint:
+            return False, "No endpoint configured."
+        
+        self._test_mode = True
+        try:
+            # We call the normal API call. If it succeeds without HTTP errors, it works!
+            # The API might complain about JSON format since we just send "Hi" but we don't care about the response content.
+            self._call_api("Test Connection. Respond with exactly the word 'Hi'.", "Hi")
+            return True, "Connection successful!"
+        except Exception as e:
+            return False, str(e)
+        finally:
+            self._test_mode = False
+
     def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None) -> List[Union[str, dict]]:
         if not texts:
-            return texts
+            return cast(List[Union[str, dict]], texts)
             
         system_prompt = self.prompt_builder.build_prompt(src_lang, tgt_lang, self.glossary_manager.glossary)
         
@@ -202,7 +229,7 @@ class BaseAPITranslator(BaseTranslator):
                     
         # Apply glossary replacement post-translation just in case
         translated_list = [{"text": self.glossary_manager.replace_post_translation(t["text"]), "score": t["score"]} for t in all_translated_list]
-        return translated_list
+        return cast(List[Union[str, dict]], translated_list)
 
     def _call_api(self, system_prompt: str, user_text: str) -> str:
         raise NotImplementedError
