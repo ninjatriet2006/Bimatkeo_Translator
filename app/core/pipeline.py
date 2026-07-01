@@ -245,7 +245,7 @@ class Pipeline:
                     translator = None
                     
             editor_translator = None
-            if enable_translator and config_dict.get("enable_double_check", "Yes") == "Yes":
+            if enable_translator and str(config_dict.get("enable_double_check", "Yes")).lower() in ["yes", "true", "1"]:
                 try:
                     if 'pool_apis' in translator_dict and translator_dict['pool_apis']:
                         api_info = translator_dict['pool_apis'][0]

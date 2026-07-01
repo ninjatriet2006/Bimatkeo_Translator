@@ -16,8 +16,9 @@ class FeloTranslator(BaseAPITranslator):
         }
         
         # Felo API uses a single "query" field for web search augmented chat
-        query = f"{system_prompt}\n\nPlease strictly follow the instruction and translate the following lines:\n{user_text}"
+        query = f"{system_prompt}\n\nPlease strictly follow the instruction and translate the following lines. YOU MUST RETURN ONLY A VALID JSON OBJECT WITH THE 'content' KEY:\n{user_text}"
         data = {
+            "model": self.model,
             "query": query
         }
         
