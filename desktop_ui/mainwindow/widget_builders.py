@@ -1017,6 +1017,12 @@ class WidgetBuildersMixin:
         fetch_btn.clicked.connect(lambda: self._fetch_ai_models(fetch_btn))
         layout.addWidget(fetch_btn)
         
+        test_btn = QPushButton("Test")
+        test_btn.setFixedWidth(50)
+        test_btn.setToolTip("Test API Endpoint & Key with this model")
+        test_btn.clicked.connect(lambda: self._test_ai_model(test_btn, combo))
+        layout.addWidget(test_btn)
+        
         self.widget_references[info['key']] = combo
         return container
 

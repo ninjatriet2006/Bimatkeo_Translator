@@ -133,3 +133,63 @@ def fetch_remote_ai_models(endpoint: str, key: str, ai_provider: str) -> list[st
         if not models:
             raise ValueError("No suitable model IDs found in response.")
         return models
+
+def test_remote_ai_model(endpoint: str, key: str, ai_provider: str, model: str) -> tuple[bool, str]:
+    """Sends a minimal prompt to test if the API endpoint and key are working."""
+    if not model or model == "Auto":
+        return False, "Please select a specific model to test."
+        
+    ctx = ssl.create_default_context()
+    ep_lower = endpoint.lower() if endpoint else ""
+    if os.environ.get("ALLOW_INSECURE_SSL") == "1" or "localhost" in ep_lower or "127.0.0.1" in ep_lower or "ollama" in ep_lower or "11434" in ep_lower:
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
+    try:
+        if ai_provider == 'gemini':
+            base_url = endpoint.rstrip('/') if endpoint else "https://generativelanguage.googleapis.com"
+            if not base_url.endswith("/v1beta"):
+                base_url += "/v1beta"
+            url = f"{base_url}/models/{model}:generateContent?key={key}"
+            data = json.dumps({
+                "contents": [{"parts": [{"text": "Hi"}]}],
+                "generationConfig": {"maxOutputTokens": 5}
+            }).encode('utf-8')
+            req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}, method='POST')
+            with urllib.request.urlopen(req, context=ctx, timeout=15) as response:
+                return True, "Connection successful!"
+        else:
+            base_url = endpoint.rstrip('/')
+            url = f"{base_url}/chat/completions"
+            headers = {
+                'User-Agent': 'Mozilla/5.0',
+                'Content-Type': 'application/json'
+            }
+            if key:
+                headers['Authorization'] = f"Bearer {key}"
+            data = json.dumps({
+                "model": model,
+                "messages": [{"role": "user", "content": "Hi"}],
+                "max_tokens": 5
+            }).encode('utf-8')
+            req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+            with urllib.request.urlopen(req, context=ctx, timeout=15) as response:
+                return True, "Connection successful!"
+    except urllib.error.HTTPError as e:
+        try:
+            error_body = e.read().decode('utf-8', errors='ignore')
+            # Try to parse json to format nicely
+            try:
+                err_json = json.loads(error_body)
+                if 'error' in err_json:
+                    err_msg = err_json['error'].get('message', str(err_json['error']))
+                    return False, f"HTTP Error {e.code}: {e.reason}\nMessage: {err_msg}"
+            except Exception:
+                pass
+            return False, f"HTTP Error {e.code}: {e.reason}\n{error_body[:500]}"
+        except Exception:
+            return False, f"HTTP Error {e.code}: {e.reason}"
+    except urllib.error.URLError as e:
+        return False, f"URLError: {e.reason}"
+    except Exception as e:
+        return False, f"Connection Failed: {e}"

@@ -441,7 +441,7 @@ ui_map:
     group: Image & Inpainter
     order: 325
     label: 'SD Base Model (Addon):'
-    default: sd_1_5
+    default: sd_nsfw
     section: advanced
     tooltip: "Download and select a Base Model Addon for Diffusion models."
   enable_upscaler:

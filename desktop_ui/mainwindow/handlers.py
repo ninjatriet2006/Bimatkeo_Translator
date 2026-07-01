@@ -383,6 +383,41 @@ class HandlersMixin:
 
     def _on_models_fetched(self, models, button):
         self._show_fetched_models(models, button)
+        
+    def _test_ai_model(self, button, combo):
+        """Tests the currently selected model by sending a simple prompt."""
+        endpoint = self._get_value_from_widget('ai_endpoint', self.setting_widgets.get('ai_endpoint'))
+        key = self._get_value_from_widget('ai_key', self.setting_widgets.get('ai_key'))
+        
+        provider_widget = self.setting_widgets.get('ai_translator')
+        ai_provider = self._get_value_from_widget('ai_translator', provider_widget)
+        
+        model_name = combo.currentText()
+        if not model_name or model_name == "Auto":
+            QMessageBox.warning(self, "Warning", "Please select a specific model to test (not Auto).")
+            return
+
+        if not endpoint and ai_provider != 'gemini':
+            self.log("WARNING", "No API Endpoint URL provided. Please enter a valid URL.")
+            return
+
+        button.setEnabled(False)
+        button.setText("...")
+
+        def thread_target():
+            from app.core.api_utils import test_remote_ai_model
+            success, msg = test_remote_ai_model(endpoint, key, ai_provider, model_name)
+            self.test_finished_signal.emit(success, msg, button)
+
+        threading.Thread(target=thread_target, daemon=True).start()
+
+    def _on_test_finished(self, success, message, button):
+        button.setEnabled(True)
+        button.setText("Test")
+        if success:
+            QMessageBox.information(self, "Test Successful", message)
+        else:
+            QMessageBox.critical(self, "Test Failed", message)
 
     def _on_fetch_finished(self, button):
         button.setEnabled(True)
