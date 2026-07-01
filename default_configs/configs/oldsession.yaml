@@ -80,7 +80,7 @@ current_settings:
   prob:
   inpainting_precision: fp32
   inpainting_size: 2000
-  task_upscale_grid: 2x
+
   font_family: Arial-Unicode-Regular.ttf
   output_format: png
   export_mode: Create New Folder (Avoid Overwrite)

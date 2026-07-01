@@ -16,6 +16,7 @@ class PageContext:
     inpainted_image: Optional[np.ndarray] = None # Mảng ảnh đã xóa nền bong bóng thoại
     inpainted_image_path: Optional[str] = None   # Đường dẫn ảnh đã xóa nền trên đĩa (dành cho DISK mode)
     rendered_image: Optional[np.ndarray] = None  # Ảnh phẳng cuối cùng đã vẽ chữ (để xuất PNG/JPG)
+    upscale_ratio: int = 1                       # Tỷ lệ upscale của ảnh nền
     
     # Multipass Translation Candidates
     stage1_candidates: Optional[List[List[dict]]] = None

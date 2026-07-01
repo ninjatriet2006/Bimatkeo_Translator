@@ -8,9 +8,9 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from app.core.dto import PageContext
-from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer, BaseCloudOCR
-from app.core.workers import OCRWorker, TranslatorWorker, InpaintWorker, RenderWorker
-from app.core.factories import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, RendererFactory, CloudOCRFactory
+from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer, BaseCloudOCR, BaseUpscaler
+from app.core.workers import OCRWorker, TranslatorWorker, InpaintWorker, RenderWorker, UpscalerWorker
+from app.core.factories import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, RendererFactory, CloudOCRFactory, UpscalerFactory
 
 # Nạp các Plugin (để trigger @Factory.register)
 try:
@@ -163,10 +163,11 @@ class Pipeline:
             os.makedirs(output_path, exist_ok=True)
             
             # Initialize Queues for Fork-Join
-            q_in = queue.Queue(maxsize=10)
-            q_trans = queue.Queue(maxsize=10)
-            q_inpaint = queue.Queue(maxsize=10)
-            q_render = queue.Queue(maxsize=10)
+            q_in = queue.Queue()
+            q_trans = queue.Queue()
+            q_inpaint = queue.Queue()
+            q_upscale = queue.Queue()
+            q_render = queue.Queue()
             q_out = queue.Queue()
 
             # Lấy cấu hình OCR/Detector mới
@@ -305,6 +306,20 @@ class Pipeline:
             except ValueError:
                 log_callback("WARNING", f"Renderer '{renderer_name}' not found, falling back to None.")
                 renderer = None
+                
+            enable_upscaler = config_dict.get("inpainter", {}).get("enable_upscaler", False)
+            upscaler = None
+            upscale_ratio = int(config_dict.get("inpainter", {}).get("upscale_ratio", 2))
+            if enable_upscaler:
+                upscaler_name = config_dict.get("inpainter", {}).get("upscaler", "esrgan")
+                try:
+                    from app.core.downloader import ModelDownloader
+                    ups_path = ModelDownloader.get_model_path_from_registry("upscaler", upscaler_name)
+                    upscaler = UpscalerFactory.create(upscaler_name)
+                    upscaler.load_model(ups_path)
+                except Exception as e:
+                    log_callback("WARNING", f"Upscaler '{upscaler_name}' could not be loaded: {e}. Falling back to None.")
+                    upscaler = None
 
             # Initialize Workers for Fork-Join Pipeline
             ocr_worker = OCRWorker(q_in, q_trans, q_inpaint, q_render, detector, recognizer, log_callback, cloud_ocr=cloud_ocr, ocr_config=config_dict.get("ocr", {}), render_config=config_dict.get("render", {}))
@@ -369,11 +384,16 @@ class Pipeline:
                 context_window=int(config_dict.get("translator", {}).get("context_window", 10)),
                 stride_window=int(config_dict.get("translator", {}).get("stride_window", 5))
             )
-            inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback)
+            inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback, out_q=q_upscale if enable_upscaler else None)
+            upscale_worker = UpscalerWorker(q_upscale, upscaler, upscale_ratio, log_callback) if enable_upscaler else None
             render_worker = RenderWorker(q_render, q_out, renderer, log_callback)
 
             # Start Workers
-            for w in [ocr_worker, trans_worker, inpaint_worker, render_worker]:
+            import threading
+            workers: list[threading.Thread] = [ocr_worker, trans_worker, inpaint_worker, render_worker]
+            if upscale_worker:
+                workers.append(upscale_worker)
+            for w in workers:
                 w.start()
 
             # Producer: Load files into memory (with Resume feature)

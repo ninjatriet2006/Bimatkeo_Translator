@@ -80,6 +80,8 @@ class RegistryMixin(_RegistryMixinBase):
             ],
             "upscaler": [
                 {"key": "waifu2x", "check_file": "models/Upscaler/Waifu2x/waifu2x-{os}/waifu2x-ncnn-vulkan{exe}"},
+                {"key": "esrgan", "check_file": "models/Upscaler/ESRGAN/esrgan-{os}/realesrgan-ncnn-vulkan{exe}"},
+                {"key": "4xultrasharp", "check_file": "models/Upscaler/ESRGAN/esrgan-{os}/models/4x-UltraSharp.bin"},
             ],
             "colorizer": [
                 {"key": "none"},

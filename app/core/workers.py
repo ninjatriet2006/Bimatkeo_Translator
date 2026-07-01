@@ -4,7 +4,7 @@ import gc
 import fnmatch
 import re
 from app.core.dto import PageContext
-from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer, BaseCloudOCR
+from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer, BaseCloudOCR, BaseUpscaler
 from app.core.vision_utils import sort_comic_text_boxes
 from app.core.ocr_corrector import VisionOCRCorrector
 
@@ -365,7 +365,8 @@ class TranslatorWorker(threading.Thread):
                 else:
                     for i, t in enumerate(ctx.original_texts):
                         if self._should_skip_text(t, step_tgt_lang):
-                            ctx.stage1_candidates[i].append({"text": t, "score": 1.0})
+                            if ctx.stage1_candidates is not None:
+                                ctx.stage1_candidates[i].append({"text": t, "score": 1.0})
                         else:
                             texts_to_translate.append(t)
                             page_line_map.append((ctx, i))
@@ -384,7 +385,7 @@ class TranslatorWorker(threading.Thread):
                         res = translated_part[j]
                         text = res if isinstance(res, str) else res.get("text", "")
                         score = 0.5 if isinstance(res, str) else res.get("score", 0.5)
-                        if line_idx != -1:
+                        if line_idx != -1 and ctx.stage1_candidates is not None:
                             ctx.stage1_candidates[line_idx].append({"text": text, "score": score})
             except Exception as e:
                 if self.log_callback:
@@ -396,12 +397,13 @@ class TranslatorWorker(threading.Thread):
                 return
                 
             best_translations = []
-            for line_cands in ctx.stage1_candidates:
-                if not line_cands:
-                    best_translations.append("")
-                else:
-                    best_cands = sorted(line_cands, key=lambda x: x["score"], reverse=True)
-                    best_translations.append(best_cands[0]["text"])
+            if ctx.stage1_candidates is not None:
+                for line_cands in ctx.stage1_candidates:
+                    if not line_cands:
+                        best_translations.append("")
+                    else:
+                        best_cands = sorted(line_cands, key=lambda x: x["score"], reverse=True)
+                        best_translations.append(best_cands[0]["text"])
             ctx.translated_texts = best_translations
 
         def process_stage2_window(window: list[PageContext]):
@@ -510,9 +512,10 @@ class TranslatorWorker(threading.Thread):
 
 
 class InpaintWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, inpainter: BaseInpainter | None, log_callback=None):
+    def __init__(self, in_q: queue.Queue, inpainter: BaseInpainter | None, log_callback=None, out_q: queue.Queue | None = None):
         super().__init__()
         self.in_q = in_q
+        self.out_q = out_q
         self.inpainter = inpainter
         self.log_callback = log_callback
         self.daemon = True
@@ -555,7 +558,62 @@ class InpaintWorker(threading.Thread):
                             self.log_callback("ERROR", f"Inpaint Error on {ctx.page_id}: {e}")
                         ctx.inpainted_image = image.copy()
 
-            ctx.inpaint_done.set()  # Signal completion of this fork
+            if self.out_q:
+                self.out_q.put(ctx)
+            else:
+                ctx.inpaint_done.set()  # Signal completion of this fork
+                
+            self.in_q.task_done()
+            release_gpu_memory()
+
+
+class UpscalerWorker(threading.Thread):
+    def __init__(self, in_q: queue.Queue, upscaler: BaseUpscaler | None, ratio: int, log_callback=None):
+        super().__init__()
+        self.in_q = in_q
+        self.upscaler = upscaler
+        self.ratio = ratio
+        self.log_callback = log_callback
+        self.daemon = True
+
+    def run(self):
+        while True:
+            ctx: PageContext = self.in_q.get()
+            if ctx is None:
+                self.in_q.task_done()
+                break
+                
+            if self.log_callback:
+                self.log_callback("UPSCALE", f"Upscaling {ctx.page_id} by {self.ratio}x...")
+
+            if self.upscaler and self.ratio > 1:
+                try:
+                    # Resolve background image (either inpainted or original)
+                    bg_image = ctx.inpainted_image
+                    if bg_image is None and getattr(ctx, 'inpainted_image_path', None):
+                        import cv2
+                        bg_image = cv2.imread(ctx.inpainted_image_path)
+                    if bg_image is None:
+                        bg_image = ctx.original_image
+                        if bg_image is None and getattr(ctx, 'original_image_path', None):
+                            import cv2
+                            bg_image = cv2.imread(ctx.original_image_path)
+                            
+                    if bg_image is not None:
+                        upscaled = self.upscaler.upscale(bg_image, self.ratio)
+                        ctx.inpainted_image = upscaled
+                        # Update bounding boxes
+                        if ctx.bboxes:
+                            ctx.bboxes = [[coord * self.ratio for coord in box] for box in ctx.bboxes]
+                        if ctx.raw_bboxes:
+                            ctx.raw_bboxes = [[coord * self.ratio for coord in box] for box in ctx.raw_bboxes]
+                        # Set upscale ratio for downstream logic if needed
+                        ctx.upscale_ratio = getattr(ctx, 'upscale_ratio', 1) * self.ratio
+                except Exception as e:
+                    if self.log_callback:
+                        self.log_callback("ERROR", f"Upscale Error on {ctx.page_id}: {e}")
+
+            ctx.inpaint_done.set()  # Signal completion of the fork for the RenderWorker to join
             self.in_q.task_done()
             release_gpu_memory()
 

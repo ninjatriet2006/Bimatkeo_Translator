@@ -444,6 +444,32 @@ ui_map:
     default: sd_1_5
     section: advanced
     tooltip: "Download and select a Base Model Addon for Diffusion models."
+  enable_upscaler:
+    widget: checkbox
+    group: Image & Inpainter
+    order: 326
+    label: Enable Upscaler (After Inpaint)
+    default: false
+    tooltip: Enhance image resolution and details using AI before rendering text. High VRAM usage.
+  upscaler:
+    widget: optionmenu
+    group: Image & Inpainter
+    order: 327
+    label: 'Upscaler Model:'
+    default: esrgan
+    tooltip: The AI model used to upscale the image.
+  upscale_ratio:
+    widget: optionmenu
+    group: Image & Inpainter
+    order: 328
+    label: 'Upscale Ratio:'
+    default: "2"
+    values:
+    - "1"
+    - "2"
+    - "3"
+    - "4"
+    tooltip: The multiplier for upscaling the original image size. 1x only enhances the image without increasing resolution.
   inpainting_precision:
     widget: optionmenu
     group: Image & Inpainter
@@ -467,20 +493,7 @@ ui_map:
 
       (Recommended: 1024, Default for Backend: 2048)'
 
-  task_upscale_grid:
-    widget: optionmenu
-    label: 'Upscale Ratio:'
-    default: 2x
-    values:
-    - 2x
-    - 3x
-    - 4x
-    - 5x
-    - 6x
-    - 7x
-    - 8x
-    - 9x
-    - 10x
+
   renderer:
     widget: optionmenu
     group: Render & Output
