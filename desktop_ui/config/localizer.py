@@ -38,39 +38,44 @@ class LocalizerMixin(LocalizerMixinBase):
 
         # 1. Localize settings
         settings_translations = lang_data.get("settings", {})
-        for key, info in self.ui_map.items():
-            if key.startswith("__"):
-                continue
-            trans = settings_translations.get(key)
-            if trans:
-                if "label" in trans:
-                    info["label"] = trans["label"]
-                if "tooltip" in trans:
-                    info["tooltip"] = trans["tooltip"]
-
-        # 2. Localize tab names in ui_map keys or tab order
+        
+        # We must build a new dict to rename keys (translate tab names)
+        new_ui_map = {}
         tab_translations = lang_data.get("tabs", {})
-        for key, info in self.ui_map.items():
-            if key.startswith("__"):
+        
+        for tab_name, widgets in self.ui_map.items():
+            if tab_name.startswith("__"):
                 continue
-            group = info.get("group")
-            if group in tab_translations:
-                info["group"] = tab_translations[group]
+                
+            # Translate the tab name
+            translated_tab_name = tab_translations.get(tab_name, tab_name)
+            new_ui_map[translated_tab_name] = widgets
+            
+            # Translate settings within the tab
+            for key, info in widgets.items():
+                trans = settings_translations.get(key)
+                if trans:
+                    if "label" in trans:
+                        info["label"] = trans["label"]
+                    if "tooltip" in trans:
+                        info["tooltip"] = trans["tooltip"]
 
-        # Translate __tab_order__ list
-        if "__tab_order__" in self.ui_map:
-            translated_order = []
-            for tab in self.ui_map["__tab_order__"]:
-                translated_order.append(tab_translations.get(tab, tab))
-            self.ui_map["__tab_order__"] = translated_order
+        # Restore any dunder keys
+        for k, v in self.ui_map.items():
+            if k.startswith("__"):
+                new_ui_map[k] = v
+                
+        self.ui_map = new_ui_map
 
 
 
         # Dynamically update the app_language dropdown options in the localized ui_map
-        if "app_language" in self.ui_map:
-            languages_list = []
-            for l_code, l_data in self.localization.items():
-                disp_name = l_data.get("language_name", l_code.capitalize())
-                languages_list.append(disp_name)
-            if languages_list:
-                self.ui_map["app_language"]["values"] = sorted(list(set(languages_list)))
+        for tab_name, widgets in self.ui_map.items():
+            if not isinstance(widgets, dict): continue
+            if "app_language" in widgets:
+                languages_list = []
+                for l_code, l_data in self.localization.items():
+                    disp_name = l_data.get("language_name", l_code.capitalize())
+                    languages_list.append(disp_name)
+                if languages_list:
+                    widgets["app_language"]["values"] = sorted(list(set(languages_list)))

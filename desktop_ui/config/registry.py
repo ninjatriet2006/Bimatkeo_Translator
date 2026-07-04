@@ -131,11 +131,22 @@ class RegistryMixin(_RegistryMixinBase):
         import typing
         self.full_registry = raw
         fields = typing.cast(dict, raw.get("fields", {}))
-        self.all_model_fields = list(fields.keys())
+        
+        # Flatten nested fields
+        flattened_fields = {}
+        for k, v in fields.items():
+            if isinstance(v, dict) and not isinstance(v, list) and all(isinstance(val, list) for val in v.values()):
+                # We assume this is a nested tab, e.g., "General & Translator"
+                for inner_k, inner_v in v.items():
+                    flattened_fields[inner_k] = inner_v
+            else:
+                flattened_fields[k] = v
+                
+        self.all_model_fields = list(flattened_fields.keys())
         self.required_model_fields = typing.cast(list, raw.get("required_fields", []))
         self.global_settings = typing.cast(dict, raw.get("global_settings", {}))
 
-        self.model_registry = self._validate_fields(fields)
+        self.model_registry = self._validate_fields(flattened_fields)
         self._derive_all()
         return self.model_registry
 

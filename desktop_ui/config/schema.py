@@ -24,33 +24,37 @@ class SchemaMixin:
         all_properties = self._get_flat_properties()
 
         # 3. Build the final data structure using the UI map as the guide
-        for key, ui_info in self.ui_map.items():
-            if key.startswith("__"):
-                continue
-            merged_info = ui_info.copy()
-            merged_info['key'] = key
+        for tab_name, widgets in self.ui_map.items():
+            if not isinstance(widgets, dict): continue
+            for idx, (key, ui_info) in enumerate(widgets.items()):
+                if key.startswith("__"):
+                    continue
+                merged_info = ui_info.copy()
+                merged_info['key'] = key
+                merged_info['group'] = tab_name
+                merged_info['order'] = idx
 
-            # If ui_map has a default, keep it. Otherwise, use factory_defaults
-            if 'default' not in merged_info and key in self.factory_defaults:
-                merged_info['default'] = self.factory_defaults[key]
+                # If ui_map has a default, keep it. Otherwise, use factory_defaults
+                if 'default' not in merged_info and key in self.factory_defaults:
+                    merged_info['default'] = self.factory_defaults[key]
 
-            # Add enum values (for dropdowns) if they exist
-            prop_def = all_properties.get(key)
-            if prop_def and isinstance(prop_def, dict):
-                ref_path = prop_def.get("allOf", [{}])[0].get('$ref')
-                if ref_path:
-                    enum_def = self._get_definition_from_ref(ref_path)  # type: ignore
-                    if enum_def and "enum" in enum_def:
-                        custom_choices = self._load_custom_models(key)
-                        merged_info['values'] = custom_choices if custom_choices is not None else enum_def["enum"]
-            
-            # Manually handle UI-only enum settings
-            if key in self.all_model_fields or key == "system_prompt_profile":
-                custom_choices = self._load_custom_models(key)
-                if custom_choices is not None:
-                    merged_info['values'] = custom_choices
+                # Add enum values (for dropdowns) if they exist
+                prop_def = all_properties.get(key)
+                if prop_def and isinstance(prop_def, dict):
+                    ref_path = prop_def.get("allOf", [{}])[0].get('$ref')
+                    if ref_path:
+                        enum_def = self._get_definition_from_ref(ref_path)  # type: ignore
+                        if enum_def and "enum" in enum_def:
+                            custom_choices = self._load_custom_models(key)
+                            merged_info['values'] = custom_choices if custom_choices is not None else enum_def["enum"]
+                
+                # Manually handle UI-only enum settings
+                if key in self.all_model_fields or key == "system_prompt_profile":
+                    custom_choices = self._load_custom_models(key)
+                    if custom_choices is not None:
+                        merged_info['values'] = custom_choices
 
-            full_data[key] = merged_info
+                full_data[key] = merged_info
 
         return full_data
 

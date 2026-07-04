@@ -1,17 +1,10 @@
-# ============================================================================
-# MODEL REGISTRY - Single Source of Truth
-# ============================================================================
-# Mỗi model là MỘT block duy nhất chứa toàn bộ metadata.
-# Thêm model mới = thêm một block. Xóa model = xóa một block. KHÔNG sửa file nào khác.
-#
-# Các trường (chỉ 'key' là bắt buộc, mọi trường khác optional):
-#   key:          định danh nội bộ (dùng trong code/config/backend). BẮT BUỘC.
-#   label:        nhãn hiển thị trên UI theo kiểu <origin>/<model>. Thiếu -> dùng key.
-#   check_file:   đường dẫn file chứng minh model đã setup. Thiếu -> luôn coi là đã setup.
-#   check_module: tên module Python cần import (cho AI translator). Optional.
-#   source:       URL tải model. Optional.
-#   capabilities: ngôn ngữ hỗ trợ. Thiếu -> mặc định {__any__: __all__}.
-# ============================================================================
+# ========================================================================
+# CRITICAL RULE FOR AI AGENTS (e.g. Gemini, GPT):
+# DO NOT USE FLAT DICTIONARIES FOR THE 'fields' SECTION!
+# All model registry fields (like 'offline_translator', 'offline_ocr') MUST
+# be strictly nested under their exact corresponding UI Tab Name (e.g., 
+# 'General & Translator'). This matches the new frontend design.
+# ========================================================================
 schema_version: 2
 
 global_settings:
@@ -45,141 +38,147 @@ required_fields:
 - inpainter
 
 fields:
-  offline_translator:
-  - key: m2m100
-    check_file: models/Offline Translator/M2M100/sentencepiece.model
-  - key: m2m100_big
-    check_file: models/Offline Translator/M2M100/model.bin
-  - key: nllb
-    check_file: models/Offline Translator/NLLB/pytorch_model.bin
-    source: "hf://facebook/nllb-200-distilled-600M"
-  - key: nllb_big
-    check_file: models/Offline Translator/NLLB/pytorch_model.bin
-    source: "hf://facebook/nllb-200-distilled-1.3B"
-  - key: mbart50
-    check_file: models/Offline Translator/MBart50/pytorch_model.bin
-    source: "hf://facebook/mbart-large-50-many-to-many-mmt"
-  - key: jparacrawl
-    check_file: models/Offline Translator/JParaCrawl/spm.ja.nopretok.model
-  - key: jparacrawl_big
-    check_file: models/Offline Translator/JParaCrawl/spm.ja.nopretok.model
-  - key: qwen2
-    check_file: models/Offline Translator/Qwen2/model.safetensors
-    source: "hf://Qwen/Qwen2-7B-Instruct"
-  - key: qwen2_big
-    check_file: models/Offline Translator/Qwen2/model.safetensors
-    source: "hf://Qwen/Qwen2-72B-Instruct"
-  - key: offline
-    check_file: models/Offline Translator/M2M100/sentencepiece.model
+  General & Translator:
+    offline_translator:
+    - key: m2m100
+      check_file: models/Offline Translator/M2M100/sentencepiece.model
+    - key: m2m100_big
+      check_file: models/Offline Translator/M2M100/model.bin
+    - key: nllb
+      check_file: models/Offline Translator/NLLB/pytorch_model.bin
+      source: "hf://facebook/nllb-200-distilled-600M"
+    - key: nllb_big
+      check_file: models/Offline Translator/NLLB/pytorch_model.bin
+      source: "hf://facebook/nllb-200-distilled-1.3B"
+    - key: mbart50
+      check_file: models/Offline Translator/MBart50/pytorch_model.bin
+      source: "hf://facebook/mbart-large-50-many-to-many-mmt"
+    - key: jparacrawl
+      check_file: models/Offline Translator/JParaCrawl/spm.ja.nopretok.model
+    - key: jparacrawl_big
+      check_file: models/Offline Translator/JParaCrawl/spm.ja.nopretok.model
+    - key: qwen2
+      check_file: models/Offline Translator/Qwen2/model.safetensors
+      source: "hf://Qwen/Qwen2-7B-Instruct"
+    - key: qwen2_big
+      check_file: models/Offline Translator/Qwen2/model.safetensors
+      source: "hf://Qwen/Qwen2-72B-Instruct"
+    - key: offline
+      check_file: models/Offline Translator/M2M100/sentencepiece.model
 
-  ai_translator:
-  - key: gemini
-    check_file: app/plugins/translator/gemini_impl.py
-    default_endpoint: "https://generativelanguage.googleapis.com"
-    endpoint_inference: ["generativelanguage"]
-  - key: deepseek
-    check_file: app/plugins/translator/openai_impl.py
-    default_endpoint: "https://api.deepseek.com"
-    endpoint_inference: []
-  - key: groq
-    check_file: app/plugins/translator/openai_impl.py
-    default_endpoint: "https://api.groq.com/openai/v1"
-    endpoint_inference: []
-  - key: openai
-    check_file: app/plugins/translator/openai_impl.py
-    default_endpoint: "https://api.openai.com/v1"
-    endpoint_inference: []
-  - key: custom_openai
-    check_file: app/plugins/translator/openai_impl.py
-    endpoint_inference: []
-  - key: felo
-    check_file: app/plugins/translator/felo_impl.py
-    default_endpoint: "https://api.felo.ai/v1"
-    endpoint_inference: ["felo.ai"]
-  offline_ocr:
-  - key: 32px
-    check_file: models/OCR/32px/alphabet-all-v7.txt
-  - key: 48px
-    check_file: models/OCR/48px/ocr_ar_48px.ckpt
-  - key: 48px_ctc
-    check_file: models/OCR/48px_ctc/mit48pxctc_ocr.onnx
-    source: "hf://banned404/mit48pxctc-ocr-onnx"
+    ai_translator:
+    - key: gemini
+      check_file: app/plugins/translator/gemini_impl.py
+      default_endpoint: "https://generativelanguage.googleapis.com"
+      endpoint_inference: ["generativelanguage"]
+    - key: deepseek
+      check_file: app/plugins/translator/openai_impl.py
+      default_endpoint: "https://api.deepseek.com"
+      endpoint_inference: []
+    - key: groq
+      check_file: app/plugins/translator/openai_impl.py
+      default_endpoint: "https://api.groq.com/openai/v1"
+      endpoint_inference: []
+    - key: openai
+      check_file: app/plugins/translator/openai_impl.py
+      default_endpoint: "https://api.openai.com/v1"
+      endpoint_inference: []
+    - key: custom_openai
+      check_file: app/plugins/translator/openai_impl.py
+      endpoint_inference: []
+    - key: felo
+      check_file: app/plugins/translator/felo_impl.py
+      default_endpoint: "https://api.felo.ai/v1"
+      endpoint_inference: ["felo.ai"]
+  Detector & OCR:
+    offline_ocr:
+    - key: 32px
+      check_file: models/OCR/32px/alphabet-all-v7.txt
+    - key: 48px
+      check_file: models/OCR/48px/ocr_ar_48px.ckpt
+    - key: 48px_ctc
+      check_file: models/OCR/48px_ctc/mit48pxctc_ocr.onnx
+      source: "hf://banned404/mit48pxctc-ocr-onnx"
 
-  - key: paddle_onnx_rec_v6_tiny
-    check_file: models/OCR/Paddle_ONNX_Rec/Tiny/inference.onnx
-    source: "hf://PaddlePaddle/PP-OCRv6_tiny_rec_onnx@inference.onnx"
-  - key: paddle_onnx_rec_v6_small
-    check_file: models/OCR/Paddle_ONNX_Rec/Small/inference.onnx
-    source: "hf://PaddlePaddle/PP-OCRv6_small_rec_onnx@inference.onnx"
-  - key: paddle_onnx_rec_v6_medium
-    check_file: models/OCR/Paddle_ONNX_Rec/Medium/inference.onnx
-    source: "hf://PaddlePaddle/PP-OCRv6_medium_rec_onnx@inference.onnx"
+    - key: paddle_onnx_rec_v6_tiny
+      check_file: models/OCR/Paddle_ONNX_Rec/Tiny/inference.onnx
+      source: "hf://PaddlePaddle/PP-OCRv6_tiny_rec_onnx@inference.onnx"
+    - key: paddle_onnx_rec_v6_small
+      check_file: models/OCR/Paddle_ONNX_Rec/Small/inference.onnx
+      source: "hf://PaddlePaddle/PP-OCRv6_small_rec_onnx@inference.onnx"
+    - key: paddle_onnx_rec_v6_medium
+      check_file: models/OCR/Paddle_ONNX_Rec/Medium/inference.onnx
+      source: "hf://PaddlePaddle/PP-OCRv6_medium_rec_onnx@inference.onnx"
 
-  offline_detector:
-  - key: dbconvnext
-    check_file: models/Detector/DBConvNeXt/dbnet_convnext.ckpt
-  - key: craft
-    check_file: models/Detector/CRAFT/craft_mlt_25k.pth
+    offline_detector:
+    - key: dbconvnext
+      check_file: models/Detector/DBConvNeXt/dbnet_convnext.ckpt
+    - key: craft
+      check_file: models/Detector/CRAFT/craft_mlt_25k.pth
 
-  - key: paddle_onnx_v6_tiny
-    check_file: models/Detector/Paddle_ONNX/Tiny/inference.onnx
-    source: "hf://PaddlePaddle/PP-OCRv6_tiny_det_onnx@inference.onnx"
-  - key: paddle_onnx_v6_small
-    check_file: models/Detector/Paddle_ONNX/Small/inference.onnx
-    source: "hf://PaddlePaddle/PP-OCRv6_small_det_onnx@inference.onnx"
-  - key: paddle_onnx_v6_medium
-    check_file: models/Detector/Paddle_ONNX/Medium/inference.onnx
-    source: "hf://PaddlePaddle/PP-OCRv6_medium_det_onnx@inference.onnx"
-  - key: none
+    - key: paddle_onnx_v6_tiny
+      check_file: models/Detector/Paddle_ONNX/Tiny/inference.onnx
+      source: "hf://PaddlePaddle/PP-OCRv6_tiny_det_onnx@inference.onnx"
+    - key: paddle_onnx_v6_small
+      check_file: models/Detector/Paddle_ONNX/Small/inference.onnx
+      source: "hf://PaddlePaddle/PP-OCRv6_small_det_onnx@inference.onnx"
+    - key: paddle_onnx_v6_medium
+      check_file: models/Detector/Paddle_ONNX/Medium/inference.onnx
+      source: "hf://PaddlePaddle/PP-OCRv6_medium_det_onnx@inference.onnx"
+    - key: none
 
-  api_ocr:
-  - key: gemini_ocr
-    check_file: none
-    default_endpoint: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-  - key: google_ocr
-    check_file: none
-    default_endpoint: "https://vision.googleapis.com/v1/images:annotate"
-  - key: custom_ocr
-    check_file: none
-  - key: none
+    api_ocr:
+    - key: gemini_ocr
+      check_file: none
+      default_endpoint: "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    - key: google_ocr
+      check_file: none
+      default_endpoint: "https://vision.googleapis.com/v1/images:annotate"
+    - key: custom_ocr
+      check_file: none
+    - key: none
 
-  inpainter:
-  - key: lama
-    check_file: models/Inpainter/Lama_ONNX/lama_fp32.onnx
-    source: "hf://Carve/LaMa-ONNX@lama_fp32.onnx"
-  - key: manga_inpaint_v3
-    check_file: models/Inpainter/Manga_Inpaint_V3/inpainting_lama_mpe.ckpt
-    source: "hf://dremaz/manga-inpaint-v3@inpainting_lama_mpe.ckpt"
-  - key: sd
-  - key: none
+  Image & Inpainter:
+    inpainter:
+    - key: lama
+      check_file: models/Inpainter/Lama_ONNX/lama_fp32.onnx
+      source: "hf://Carve/LaMa-ONNX@lama_fp32.onnx"
+    - key: manga_inpaint_v3
+      check_file: models/Inpainter/Manga_Inpaint_V3/inpainting_lama_mpe.ckpt
+      source: "hf://dremaz/manga-inpaint-v3@inpainting_lama_mpe.ckpt"
+    - key: sd
+    - key: none
 
-  upscaler:
-  - key: waifu2x
-    check_file: models/Upscaler/Waifu2x/waifu2x-{os}/waifu2x-ncnn-vulkan{exe}
-    source: "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20220728/waifu2x-ncnn-vulkan-20220728-ubuntu.zip"
-  - key: esrgan
-    check_file: models/Upscaler/ESRGAN/esrgan-{os}/realesrgan-ncnn-vulkan{exe}
-    source: "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip"
-  - key: 4xultrasharp
+    upscaler:
+    - key: waifu2x
+      check_file: models/Upscaler/Waifu2x/waifu2x-{os}/waifu2x-ncnn-vulkan{exe}
+      source: "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20220728/waifu2x-ncnn-vulkan-20220728-ubuntu.zip"
+    - key: esrgan
+      check_file: models/Upscaler/ESRGAN/esrgan-{os}/realesrgan-ncnn-vulkan{exe}
+      source: "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip"
+    - key: 4xultrasharp
 
-  colorizer:
-  - key: none
-  renderer:
-  - key: pillow_renderer
-  - key: none
+    inpainting_precision:
+    - key: fp32
+    - key: fp16
+    - key: bf16
+  Render & Output:
+    renderer:
+    - key: pillow_renderer
+    - key: none
 
-  alignment:
-  - key: auto
-  - key: left
-  - key: center
-  - key: right
+    alignment:
+    - key: auto
+    - key: left
+    - key: center
+    - key: right
 
-  direction:
-  - key: auto
-  - key: horizontal
-  - key: vertical
+    direction:
+    - key: auto
+    - key: horizontal
+    - key: vertical
 
-  inpainting_precision:
-  - key: fp32
-  - key: fp16
-  - key: bf16
+  Output & Export: {}
+  Extra Settings:
+    colorizer:
+    - key: none

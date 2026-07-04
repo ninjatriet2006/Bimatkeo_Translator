@@ -95,11 +95,12 @@ class BaseConfigLoader:
                 ui_map = {}
                 
         # Programmatically override output_format to always use dropdown (optionmenu)
-        if isinstance(ui_map, dict) and "output_format" in ui_map:
-            if isinstance(ui_map["output_format"], dict):
-                ui_map["output_format"]["widget"] = "optionmenu"
-                if "options" in ui_map["output_format"]:
-                    ui_map["output_format"].pop("options", None)
+        if isinstance(ui_map, dict):
+            for tab, widgets in ui_map.items():
+                if isinstance(widgets, dict) and "output_format" in widgets:
+                    if isinstance(widgets["output_format"], dict):
+                        widgets["output_format"]["widget"] = "optionmenu"
+                        widgets["output_format"].pop("options", None)
                     
         return ui_map
 
@@ -152,4 +153,4 @@ class BaseConfigLoader:
 
     def get_tab_order(self):
         ui_map = getattr(self, "ui_map", {})
-        return ui_map.get("__tab_order__", [])
+        return list(ui_map.keys())

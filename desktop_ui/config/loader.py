@@ -71,7 +71,31 @@ class ConfigLoaderBase(BaseConfigLoader):
 
         # Load configs
         self.studio_config = self._load_yaml_file(self.studio_config_path)
-        self.oldsession_config = self._load_yaml_file(self.oldsession_path)
+        raw_oldsession = self._load_yaml_file(self.oldsession_path)
+        
+        # Flatten current_settings
+        if "current_settings" in raw_oldsession:
+            flat_settings = {}
+            for k, v in raw_oldsession["current_settings"].items():
+                if isinstance(v, dict):
+                    flat_settings.update(v)
+                else:
+                    flat_settings[k] = v
+            raw_oldsession["current_settings"] = flat_settings
+            
+        # Flatten job queue settings
+        if "job_queue" in raw_oldsession:
+            for job in raw_oldsession["job_queue"]:
+                if "settings" in job:
+                    flat_settings = {}
+                    for k, v in job["settings"].items():
+                        if isinstance(v, dict):
+                            flat_settings.update(v)
+                        else:
+                            flat_settings[k] = v
+                    job["settings"] = flat_settings
+                    
+        self.oldsession_config = raw_oldsession
         
         self.system_prompts_path = os.path.join(configs_dir, "system_prompt.yaml")
         self.system_prompts = self._load_yaml_file(self.system_prompts_path)
@@ -128,15 +152,56 @@ class ConfigLoaderBase(BaseConfigLoader):
 
 
     def save_oldsession_config(self):
-        self._save_yaml_file(self.oldsession_path, self.oldsession_config)
+        import copy
+        data_to_save = copy.deepcopy(self.oldsession_config)
+        
+        def nest_settings(flat_dict):
+            nested = {}
+            for k, v in flat_dict.items():
+                group = "Extra Settings"
+                if hasattr(self, 'full_config_data') and k in self.full_config_data:
+                    group = self.full_config_data[k].get("group", "Extra Settings")
+                if group not in nested:
+                    nested[group] = {}
+                nested[group][k] = v
+            return nested
+            
+        if "current_settings" in data_to_save and isinstance(data_to_save["current_settings"], dict):
+            data_to_save["current_settings"] = nest_settings(data_to_save["current_settings"])
+            
+        if "job_queue" in data_to_save and isinstance(data_to_save["job_queue"], list):
+            for job in data_to_save["job_queue"]:
+                if "settings" in job and isinstance(job["settings"], dict):
+                    job["settings"] = nest_settings(job["settings"])
+                    
+        # Add a critical AI rule comment at the top when saving
+        if not hasattr(data_to_save, 'yaml_set_start_comment'):
+            # Convert to ruamel.yaml.comments.CommentedMap if it's a plain dict
+            from ruamel.yaml.comments import CommentedMap
+            cm = CommentedMap(data_to_save)
+            data_to_save = cm
+            
+        if hasattr(data_to_save, 'yaml_set_start_comment'):
+            comment = """========================================================================
+CRITICAL RULE FOR AI AGENTS (e.g. Gemini, GPT):
+DO NOT USE FLAT DICTIONARIES FOR current_settings OR job_queue settings!
+This configuration uses a NESTED structure. The UI Tabs are the root keys
+(e.g., 'General & Translator'). All settings must be nested directly inside
+their respective tab.
+========================================================================"""
+            data_to_save.yaml_set_start_comment(comment)
+
+        self._save_yaml_file(self.oldsession_path, data_to_save)
 
 
     def get_factory_defaults(self):
         defaults = self.factory_defaults.copy()
         # Merge defaults from ui_map.json for UI-only settings
-        for key, ui_info in self.ui_map.items():
-            if not key.startswith("__") and "default" in ui_info:
-                defaults[key] = ui_info["default"]
+        for tab_name, widgets in self.ui_map.items():
+            if isinstance(widgets, dict):
+                for key, ui_info in widgets.items():
+                    if isinstance(ui_info, dict) and "default" in ui_info:
+                        defaults[key] = ui_info["default"]
         return defaults
 
 
