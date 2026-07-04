@@ -646,6 +646,42 @@ class HandlersMixin:
 
 
 
+    def _get_pool_profiles_file_path(self) -> str:
+        return self._get_yaml_config_path('pool_profiles.yaml')
+
+    def _load_pool_profiles(self, service: str = "Translator") -> dict:
+        profiles = self._load_api_profiles()
+        return {k: v.get("fallback_list", []) for k, v in profiles.items() if v.get("type") == "Pool" and v.get("service", "Translator") == service}
+
+    def _save_pool_profiles(self, pools: dict, service: str = "Translator"):
+        profiles = self._load_api_profiles()
+        profiles = {k: v for k, v in profiles.items() if not (v.get("type") == "Pool" and v.get("service", "Translator") == service)}
+        for k, v in pools.items():
+            profiles[k] = {"type": "Pool", "service": service, "fallback_list": v}
+        self._save_api_profiles(profiles)
+
+    def _open_manage_pools_dialog(self, service: str = "Translator"):
+        from desktop_ui.mainwindow.pool_dialog import ManagePoolsDialog
+        dialog = ManagePoolsDialog(self, service)
+        if dialog.exec():
+            # Dialog saved something, we need to refresh the pool selector UI
+            widget_key = 'ocr_pool_name' if service == "OCR" else 'pool_name'
+            pool_widget = self.setting_widgets.get(widget_key)
+            if pool_widget:
+                combo = pool_widget.findChild(QComboBox)
+                if combo:
+                    pools = self._load_pool_profiles(service)
+                    current_text = combo.currentText()
+                    combo.blockSignals(True)
+                    combo.clear()
+                    combo.addItem("--- Select ---")
+                    combo.addItems(list(pools.keys()))
+                    if current_text in pools:
+                        combo.setCurrentText(current_text)
+                    else:
+                        combo.setCurrentText("--- Select ---")
+                    combo.blockSignals(False)
+
     def _on_font_scale_changed(self, text: str):
         """Applies a global font size by RE-APPLYING the currently selected theme."""
         current_theme_name = self.theme_combobox.currentText()
