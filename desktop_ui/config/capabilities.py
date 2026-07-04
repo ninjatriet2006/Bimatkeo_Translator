@@ -48,33 +48,14 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
 
     def _initialize_and_repair_config(self) -> None: pass
     def _load_translator_capabilities(self):
-        """Returns translator groups + capabilities.
-
-        Priority: data derived from the model registry (single source of truth).
-        LOG_COLORS still comes from translator_capabilities.yaml if present.
-        Falls back to a minimal hardcoded default only if the registry produced nothing.
-        """
-        yaml_path = os.path.join(self.project_base_dir, ".config", "configs", "translator_capabilities.yaml")
-
-        # 1. Read LOG_COLORS (and any extra) from the existing YAML, if available.
-        yaml_data = {}
-        if os.path.exists(yaml_path):
-            try:
-                with open(yaml_path, 'r', encoding='utf-8') as f:
-                    loaded = yaml.load(f)
-                if isinstance(loaded, dict):
-                    yaml_data = loaded
-            except Exception as e:
-                print(f"[ConfigLoader] Error loading translator_capabilities.yaml: {e}")
-
-        # 2. Prefer registry-derived groups/capabilities (single source of truth).
+        """Returns translator groups + capabilities derived from the model registry (single source of truth)."""
         reg_groups = getattr(self, "registry_translator_groups", None)
         reg_caps = getattr(self, "registry_translator_capabilities", None)
         if reg_groups and reg_caps:
             print("[ConfigLoader] Loaded translator groups/capabilities from model registry.")
             return {
                 "TRANSLATOR_GROUPS": reg_groups,
-                "LOG_COLORS": yaml_data.get("LOG_COLORS", self._default_log_colors()),
+                "LOG_COLORS": self._default_log_colors(),
             }
 
         # Tự động lấy danh sách model từ registry (single source of truth)
@@ -85,7 +66,8 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
             offline_keys = []
             ai_keys = []
 
-        default_capabilities = {
+        print("[ConfigLoader] Registry groups unavailable; using minimal default capabilities.")
+        return {
             "TRANSLATOR_GROUPS": {
                 CAT_OFFLINE_MODELS: offline_keys,
                 CAT_API_BASED: ai_keys,
@@ -94,26 +76,8 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
                     "none"
                 ]
             },
-
-            "LOG_COLORS": {
-                "ERROR": "#E74C3C",
-                "SUCCESS": "#2ECC71",
-                "PIPELINE": "#5DADE2",
-                "WARNING": "#F39C12",
-                "INFO": "white",
-                "DEBUG": "gray",
-                "RAW": "gray"
-            }
+            "LOG_COLORS": self._default_log_colors()
         }
-        
-        # Registry produced nothing usable; fall back to the legacy YAML if it
-        # contains valid groups/capabilities, otherwise the minimal default.
-        if isinstance(yaml_data, dict) and "TRANSLATOR_GROUPS" in yaml_data:
-            print("[ConfigLoader] Registry unavailable; loaded capabilities from translator_capabilities.yaml.")
-            return yaml_data
-
-        print("[ConfigLoader] Registry and YAML unavailable; using minimal default capabilities.")
-        return default_capabilities
 
     def _default_log_colors(self):
         return {
@@ -301,18 +265,6 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
             print(f"[ConfigLoader] Error saving supporttargetlang.yaml: {e}")
             return False
 
-    def save_capabilities_config(self, capabilities_data):
-        """Saves translator capabilities data back to translator_capabilities.yaml."""
-        yaml_path = os.path.join(self.project_base_dir, ".config", "configs", "translator_capabilities.yaml")
-        try:
-            with open(yaml_path, 'w', encoding='utf-8') as f:
-                yaml.dump(capabilities_data, f)
-            self.translator_groups = capabilities_data.get("TRANSLATOR_GROUPS", {})
-            self.log_colors = capabilities_data.get("LOG_COLORS", self.log_colors)
-            self._initialize_and_repair_config()
-            return True
-        except Exception as e:
-            print(f"[ConfigLoader] Error saving translator_capabilities.yaml: {e}")
-            return False
+
 
 

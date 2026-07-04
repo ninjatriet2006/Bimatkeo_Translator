@@ -2,31 +2,7 @@ import os
 import sys
 from ruamel.yaml import YAML
 
-def clean_capabilities(base_dir):
-    yaml = YAML()
-    yaml.preserve_quotes = True
-    yaml.default_flow_style = False
-    
-    path = os.path.join(base_dir, ".config", "configs", "translator_capabilities.yaml")
-    if not os.path.exists(path):
-        return
-        
-    with open(path, "r", encoding="utf-8") as f:
-        data = yaml.load(f)
-        
-    remove_models = ["deepl", "youdao", "baidu", "caiyun", "sakura", "papago"]
-    
-    if "TRANSLATOR_GROUPS" in data:
-        api_based = data["TRANSLATOR_GROUPS"].get("--- API-BASED (Requires Setup) ---", [])
-        data["TRANSLATOR_GROUPS"]["--- API-BASED (Requires Setup) ---"] = [m for m in api_based if m not in remove_models]
-        
-    if "TRANSLATOR_CAPABILITIES" in data:
-        for m in remove_models:
-            data["TRANSLATOR_CAPABILITIES"].pop(m, None)
-            
-    with open(path, "w", encoding="utf-8") as f:
-        yaml.dump(data, f)
-        
+
 def clean_studio(base_dir):
     yaml = YAML()
     yaml.preserve_quotes = True
@@ -79,7 +55,6 @@ def clean_schema(base_dir):
 
 if __name__ == "__main__":
     base = "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator"
-    clean_capabilities(base)
     clean_studio(base)
     clean_schema(base)
     print("Cleaned YAML configs.")
