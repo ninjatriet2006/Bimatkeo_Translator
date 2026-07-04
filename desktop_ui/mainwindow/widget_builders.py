@@ -324,7 +324,7 @@ class WidgetBuildersMixin:
         self.settings_tab_view.clear()
         
         # Load and localize settings
-        self.config_loader.localize_ui_map(self.current_settings.get('app_language', 'English'))
+        self.config_loader.apply_language(self.current_settings.get('app_language', 'English'))
         self.config_loader.full_config_data = self.config_loader._build_full_config_data()
         
         # Re-build tabs

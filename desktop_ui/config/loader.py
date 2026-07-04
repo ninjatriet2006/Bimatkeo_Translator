@@ -139,7 +139,7 @@ class ConfigLoaderBase(BaseConfigLoader):
 
 
         self.app_language = self.oldsession_config.get("app_language", self.studio_config.get("app_language", "English"))
-        self.localize_ui_map(self.app_language)  # type: ignore
+        self.apply_language(self.app_language)  # type: ignore
 
         # The data is built and stored directly as attributes, not through getter methods
         self.factory_defaults = self._parse_factory_defaults()

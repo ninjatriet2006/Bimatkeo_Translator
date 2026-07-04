@@ -2,16 +2,16 @@ import copy
 from typing import TYPE_CHECKING, Dict, Any
 
 if TYPE_CHECKING:
-    class LocalizerMixinBase:
+    class LanguageAppMixinBase:
         localization: Dict[str, Any]
         ui_map: Dict[str, Any]
         app_language: str
         def _load_ui_map(self) -> Dict[str, Any]: ...
 else:
-    class LocalizerMixinBase:
+    class LanguageAppMixinBase:
         pass
 
-class LocalizerMixin(LocalizerMixinBase):
+class LanguageAppMixin(LanguageAppMixinBase):
     def get_lang_data(self, language: str) -> dict:
         if not self.localization:
             return {}
@@ -21,44 +21,54 @@ class LocalizerMixin(LocalizerMixinBase):
                 lang_code = code
                 break
         if not lang_code:
-            lang_code = "vi" if language == "Tiếng Việt" else "en"
+            if self.localization:
+                lang_code = list(self.localization.keys())[0]
+            else:
+                return {}
         return self.localization.get(lang_code, {})
 
-    def localize_ui_map(self, language: str):
-        """Localizes the ui_map based on the selected language."""
+    def apply_language(self, language: str):
+        """Applies the selected language strings to the UI Map. Acts as a validator."""
         self.app_language = language
         
-        # Reset to base copies from studio_config/files to avoid polluting original config & double localization
+        # Reset to base copies from studio_config/files to avoid polluting original config
         self.ui_map = copy.deepcopy(self._load_ui_map())
-
 
         lang_data = self.get_lang_data(language)
         if not lang_data:
-            return
+            print(f"[LanguageApp] WARNING: No language data found for '{language}'!")
+            lang_data = {}
 
-        # 1. Localize settings
         settings_translations = lang_data.get("settings", {})
-        
-        # We must build a new dict to rename keys (translate tab names)
-        new_ui_map = {}
         tab_translations = lang_data.get("tabs", {})
+        
+        new_ui_map = {}
         
         for tab_name, widgets in self.ui_map.items():
             if tab_name.startswith("__"):
                 continue
                 
             # Translate the tab name
-            translated_tab_name = tab_translations.get(tab_name, tab_name)
+            translated_tab_name = tab_translations.get(tab_name)
+            if not translated_tab_name:
+                print(f"\033[91m[LanguageApp] ERROR: Missing translation for Tab ID: '{tab_name}'\033[0m")
+                translated_tab_name = "<Not Named Tab>"
+                
             new_ui_map[translated_tab_name] = widgets
             
             # Translate settings within the tab
             for key, info in widgets.items():
+                if not isinstance(info, dict):
+                    continue
+                    
                 trans = settings_translations.get(key)
                 if trans:
-                    if "label" in trans:
-                        info["label"] = trans["label"]
-                    if "tooltip" in trans:
-                        info["tooltip"] = trans["tooltip"]
+                    info["label"] = trans.get("label", "<Not Named>")
+                    info["tooltip"] = trans.get("tooltip", "")
+                else:
+                    print(f"\033[91m[LanguageApp] ERROR: Missing translation for Widget ID: '{key}' in tab '{tab_name}'\033[0m")
+                    info["label"] = "<Not Named>"
+                    info["tooltip"] = ""
 
         # Restore any dunder keys
         for k, v in self.ui_map.items():
@@ -67,9 +77,7 @@ class LocalizerMixin(LocalizerMixinBase):
                 
         self.ui_map = new_ui_map
 
-
-
-        # Dynamically update the app_language dropdown options in the localized ui_map
+        # Dynamically update the app_language dropdown options
         for tab_name, widgets in self.ui_map.items():
             if not isinstance(widgets, dict): continue
             if "app_language" in widgets:
