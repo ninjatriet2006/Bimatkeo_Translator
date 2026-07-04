@@ -231,15 +231,26 @@ class Pipeline:
                         provider_name = translator_dict.get('translator', 'openai')
                         translator = TranslatorFactory.create(provider_name)
                         translator.log_callback = log_callback
-                        translator.load_weights({
-                            "endpoint": translator_dict.get('ai_endpoint'),
-                            "model": translator_dict.get('ai_model'),
-                            "key": translator_dict.get('ai_api_key', translator_dict.get('ai_key', '')),
-                            "max_retries": translator_dict.get('max_retries', 3),
-                            "glossary_path": translator_dict.get('glossary_path', ''),
-                            "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None'),
-                            "project_base_dir": project_root
-                        })
+                        category = translator_dict.get('translator_category', 'Offline')
+                        
+                        if category == 'Offline' or provider_name in ['nllb', 'm2m100']:
+                            from app.core.downloader import ModelDownloader
+                            try:
+                                trans_path = ModelDownloader.get_model_path_from_registry("offline_translator", provider_name)
+                                translator.load_weights(trans_path)
+                            except ValueError:
+                                log_callback("ERROR", f"Offline translator '{provider_name}' not found.")
+                                translator = None
+                        else:
+                            translator.load_weights({
+                                "endpoint": translator_dict.get('ai_endpoint'),
+                                "model": translator_dict.get('ai_model'),
+                                "key": translator_dict.get('ai_api_key', translator_dict.get('ai_key', '')),
+                                "max_retries": translator_dict.get('max_retries', 3),
+                                "glossary_path": translator_dict.get('glossary_path', ''),
+                                "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None'),
+                                "project_base_dir": project_root
+                            })
                 except Exception as e:
                     log_callback("ERROR", f"Failed to load translator: {e}")
                     translator = None
@@ -265,15 +276,26 @@ class Pipeline:
                         provider_name = translator_dict.get('translator', 'openai')
                         editor_translator = TranslatorFactory.create(provider_name)
                         editor_translator.log_callback = log_callback
-                        editor_translator.load_weights({
-                            "endpoint": translator_dict.get('ai_endpoint'),
-                            "model": translator_dict.get('ai_model'),
-                            "key": translator_dict.get('ai_api_key', translator_dict.get('ai_key', '')),
-                            "max_retries": translator_dict.get('max_retries', 3),
-                            "glossary_path": translator_dict.get('glossary_path', ''),
-                            "system_prompt_profile": "editor",
-                            "project_base_dir": project_root
-                        })
+                        category = translator_dict.get('translator_category', 'Offline')
+                        
+                        if category == 'Offline' or provider_name in ['nllb', 'm2m100']:
+                            from app.core.downloader import ModelDownloader
+                            try:
+                                trans_path = ModelDownloader.get_model_path_from_registry("offline_translator", provider_name)
+                                editor_translator.load_weights(trans_path)
+                            except ValueError:
+                                log_callback("ERROR", f"Offline editor translator '{provider_name}' not found.")
+                                editor_translator = None
+                        else:
+                            editor_translator.load_weights({
+                                "endpoint": translator_dict.get('ai_endpoint'),
+                                "model": translator_dict.get('ai_model'),
+                                "key": translator_dict.get('ai_api_key', translator_dict.get('ai_key', '')),
+                                "max_retries": translator_dict.get('max_retries', 3),
+                                "glossary_path": translator_dict.get('glossary_path', ''),
+                                "system_prompt_profile": "editor",
+                                "project_base_dir": project_root
+                            })
                 except Exception as e:
                     log_callback("ERROR", f"Failed to load editor translator: {e}")
                     editor_translator = None
@@ -373,7 +395,7 @@ class Pipeline:
             trans_worker = TranslatorWorker(
                 q_trans, 
                 chained_translators, 
-                "auto", 
+                config_dict.get("translator", {}).get("source_lang", "JPN"), 
                 target_lang, # Fallback overall target_lang
                 log_callback,
                 skip_languages=skip_languages,
@@ -405,7 +427,17 @@ class Pipeline:
                 
                 # Tính trước tên file đầu ra để kiểm tra resume
                 if is_text_only or filename.lower().endswith('.txt'):
+
+                    import json
+                    with open(os.path.join(output_path, f"test_data_{os.path.basename(ctx.page_id)}.json"), "w", encoding="utf-8") as f:
+                        json.dump({
+                            "bboxes": ctx.bboxes,
+                            "original_texts": ctx.original_texts,
+                            "translated_texts": ctx.translated_texts
+                        }, f, ensure_ascii=False, indent=2)
+                    
                     if config_dict.get('is_single_file', False):
+
                         output_filename = os.path.splitext(filename)[0] + f"_translated.txt"
                     else:
                         output_filename = filename
@@ -451,7 +483,17 @@ class Pipeline:
                 is_text_only = config_dict.get('job_type') == 'TX'
                 if is_text_only or ctx.page_id.lower().endswith('.txt'):
                     # Save translated text
+
+                    import json
+                    with open(os.path.join(output_path, f"test_data_{os.path.basename(ctx.page_id)}.json"), "w", encoding="utf-8") as f:
+                        json.dump({
+                            "bboxes": ctx.bboxes,
+                            "original_texts": ctx.original_texts,
+                            "translated_texts": ctx.translated_texts
+                        }, f, ensure_ascii=False, indent=2)
+                    
                     if config_dict.get('is_single_file', False):
+
                         output_filename = os.path.splitext(ctx.page_id)[0] + f"_translated.txt"
                     else:
                         output_filename = ctx.page_id
@@ -472,16 +514,28 @@ class Pipeline:
                     # ---------------------------------------------------------
                     # NEW: Dump intermediate states if running as a single test
                     # ---------------------------------------------------------
+
+                    import json
+                    with open(os.path.join(output_path, f"test_data_{os.path.basename(ctx.page_id)}.json"), "w", encoding="utf-8") as f:
+                        json.dump({
+                            "bboxes": ctx.bboxes,
+                            "original_texts": ctx.original_texts,
+                            "translated_texts": ctx.translated_texts
+                        }, f, ensure_ascii=False, indent=2)
+                    
                     if config_dict.get('is_single_file', False):
+
                         import json
                         
                         # Save Inpainted Image
-                        if ctx.inpainted_image is not None:
-                            cv2.imwrite(os.path.join(output_path, "test_inpainter.png"), ctx.inpainted_image)
+                        inpaint_img = ctx.get_inpainted_image()
+                        if inpaint_img is not None:
+                            cv2.imwrite(os.path.join(output_path, "test_inpainter.png"), inpaint_img)
                         
                         # Save BBoxes Image (Detector)
-                        if ctx.original_image is not None and ctx.bboxes:
-                            det_img = ctx.original_image.copy()
+                        orig_img = ctx.get_original_image()
+                        if orig_img is not None and ctx.bboxes:
+                            det_img = orig_img.copy()
                             for box in ctx.bboxes:
                                 cv2.rectangle(det_img, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 2)
                             cv2.imwrite(os.path.join(output_path, "test_detector.png"), det_img)

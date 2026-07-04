@@ -6,7 +6,7 @@ import re
 from app.core.dto import PageContext
 from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseTranslator, BaseInpainter, BaseRenderer, BaseCloudOCR, BaseUpscaler
 from app.core.vision_utils import sort_comic_text_boxes
-from app.core.ocr_corrector import VisionOCRCorrector
+from app.core.ocr_corrector import OfflineOCRCorrector
 
 try:
     from langdetect import detect
@@ -37,7 +37,7 @@ class OCRWorker(threading.Thread):
         self.ocr_config = ocr_config or {}
         self.render_config = render_config or {}
         self.log_callback = log_callback
-        self.corrector = VisionOCRCorrector(use_llm=True, log_callback=log_callback)
+        self.corrector = OfflineOCRCorrector(log_callback=log_callback)
         self.daemon = True
 
     def _apply_filters(self, bboxes, texts):
@@ -99,10 +99,7 @@ class OCRWorker(threading.Thread):
             if self.log_callback:
                 self.log_callback("OCR", f"Processing {ctx.page_id}...")
 
-            image = ctx.original_image
-            if image is None and getattr(ctx, 'original_image_path', None):
-                import cv2
-                image = cv2.imread(ctx.original_image_path)
+            image = ctx.get_original_image()
 
             if self.cloud_ocr and image is not None:
                 h, w = image.shape[:2]
@@ -142,12 +139,12 @@ class OCRWorker(threading.Thread):
                 if self.log_callback:
                     self.log_callback("OCR", f"Cloud OCR đã xử lý và gom lại thành {len(ctx.bboxes)} bong bóng chữ.")
 
-            elif self.detector and ctx.original_image is not None:
-                h, w = ctx.original_image.shape[:2]
+            elif self.detector and image is not None:
+                h, w = image.shape[:2]
                 
                 import cv2
                 import numpy as np
-                det_image = ctx.original_image.copy()
+                det_image = image.copy()
                 
                 # 1. Invert colors if requested
                 if self.ocr_config.get('det_invert'):
@@ -168,15 +165,16 @@ class OCRWorker(threading.Thread):
                         if self.log_callback:
                             self.log_callback("OCR", f"Auto-Rotate: Phát hiện ảnh bị xoay, tự động xoay lại {best_angle} độ.")
                         if best_angle == 90:
-                            ctx.original_image = cv2.rotate(ctx.original_image, cv2.ROTATE_90_CLOCKWISE)
+                            image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
                             det_image = cv2.rotate(det_image, cv2.ROTATE_90_CLOCKWISE)
                         elif best_angle == 180:
-                            ctx.original_image = cv2.rotate(ctx.original_image, cv2.ROTATE_180)
+                            image = cv2.rotate(image, cv2.ROTATE_180)
                             det_image = cv2.rotate(det_image, cv2.ROTATE_180)
                         elif best_angle == 270:
-                            ctx.original_image = cv2.rotate(ctx.original_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                            image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
                             det_image = cv2.rotate(det_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-                        h, w = ctx.original_image.shape[:2]
+                        h, w = image.shape[:2]
+                        ctx.set_original_image(image)
                         
                 raw_bboxes, raw_polygons = self.detector.detect(det_image)
                 
@@ -217,10 +215,10 @@ class OCRWorker(threading.Thread):
                                 
                                 M = cv2.getRotationMatrix2D(center, angle, 1.0)
                                 box_w, box_h = int(width), int(height)
-                                rotated = cv2.warpAffine(ctx.original_image, M, (ctx.original_image.shape[1], ctx.original_image.shape[0]))
+                                rotated = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
                                 crop = cv2.getRectSubPix(rotated, (box_w, box_h), center)
                             else:
-                                crop = ctx.original_image[box[1]:box[3], box[0]:box[2]]
+                                crop = image[box[1]:box[3], box[0]:box[2]]
                                 
                             if crop.size > 0 and crop.shape[0] >= 8 and crop.shape[1] >= 8:
                                 text, conf = self.recognizer.recognize(crop)
@@ -235,7 +233,7 @@ class OCRWorker(threading.Thread):
                         texts.append(text)
                             
                 # Stage 2: Vision OCR Correction
-                texts = self.corrector.correct(texts, ctx.original_image)
+                texts = self.corrector.correct(texts, image)
                 
                 # Stage 2.5: Filtering
                 bboxes, texts = self._apply_filters(bboxes, texts)
@@ -244,6 +242,8 @@ class OCRWorker(threading.Thread):
                 from app.core.vision_utils import merge_nearby_boxes_and_texts
                 if self.ocr_config.get('merge_nearby_boxes', False):
                     merged_bboxes, merged_texts = merge_nearby_boxes_and_texts(bboxes, texts, w, h)
+                    # Chạy lại corrector trên văn bản đã gộp để xử lý lỗi dính chữ Hán vào tiếng Anh do merge
+                    merged_texts = self.corrector.correct(merged_texts)
                 else:
                     merged_bboxes, merged_texts = bboxes, texts
                 
@@ -347,7 +347,7 @@ class TranslatorWorker(threading.Thread):
         def process_stage1_window(window: list[PageContext]):
             if not self.chained_translators:
                 for ctx in window:
-                    if not hasattr(ctx, "stage1_candidates"):
+                    if ctx.stage1_candidates is None:
                         ctx.stage1_candidates = []
                 return
                 
@@ -356,7 +356,7 @@ class TranslatorWorker(threading.Thread):
             page_line_map = []
             
             for ctx in window:
-                if not hasattr(ctx, "stage1_candidates"):
+                if ctx.stage1_candidates is None:
                     ctx.stage1_candidates = [[] for _ in range(len(ctx.original_texts or []))]
                     
                 if not ctx.original_texts:
@@ -374,25 +374,43 @@ class TranslatorWorker(threading.Thread):
             if not texts_to_translate:
                 return
                 
-            try:
-                if self.log_callback:
-                    self.log_callback("TRANSLATE", f"Stage 1: Processing window of {len(window)} pages ({len(texts_to_translate)} lines).")
+            def _process_recursive(texts, mapping):
+                if not texts:
+                    return
+                    
+                total_chars = sum(len(t) for t in texts)
                 
-                translated_part = step_translator.translate(texts_to_translate, self.src_lang, step_tgt_lang, [])
-                
-                for j, (ctx, line_idx) in enumerate(page_line_map):
-                    if j < len(translated_part):
-                        res = translated_part[j]
-                        text = res if isinstance(res, str) else res.get("text", "")
-                        score = 0.5 if isinstance(res, str) else res.get("score", 0.5)
-                        if line_idx != -1 and ctx.stage1_candidates is not None:
-                            ctx.stage1_candidates[line_idx].append({"text": text, "score": score})
-            except Exception as e:
-                if self.log_callback:
-                    self.log_callback("ERROR", f"Stage 1 Error: {e}")
+                if self.max_request_length > 0 and total_chars > self.max_request_length and len(texts) > 1:
+                    if self.log_callback:
+                        self.log_callback("TRANSLATE", f"Stage 1 payload ({total_chars} chars) exceeds limit. Splitting into 2 batches...")
+                    mid = len(texts) // 2
+                    _process_recursive(texts[:mid], mapping[:mid])
+                    _process_recursive(texts[mid:], mapping[mid:])
+                    return
+                    
+                try:
+                    if self.log_callback:
+                        self.log_callback("TRANSLATE", f"Stage 1: Processing batch of {len(texts)} lines ({total_chars} chars).")
+                    
+                    translated_part = step_translator.translate(texts, self.src_lang, step_tgt_lang, [])
+                    
+                    for j, (ctx, line_idx) in enumerate(mapping):
+                        if j < len(translated_part):
+                            res = translated_part[j]
+                            text = res if isinstance(res, str) else res.get("text", "")
+                            if self.log_callback:
+                                self.log_callback("DEBUG", f"OCR: {texts[j]} -> TRANSLATED: {text}")
+                            score = 0.5 if isinstance(res, str) else res.get("score", 0.5)
+                            if line_idx != -1 and ctx.stage1_candidates is not None:
+                                ctx.stage1_candidates[line_idx].append({"text": text, "score": score})
+                except Exception as e:
+                    if self.log_callback:
+                        self.log_callback("ERROR", f"Stage 1 Error: {e}")
+
+            _process_recursive(texts_to_translate, page_line_map)
 
         def commit_stage1_page(ctx: PageContext):
-            if not hasattr(ctx, "stage1_candidates"):
+            if ctx.stage1_candidates is None:
                 ctx.translated_texts = list(ctx.original_texts or [])
                 return
                 
@@ -414,7 +432,7 @@ class TranslatorWorker(threading.Thread):
             page_line_map = []
             
             for ctx in window:
-                if not hasattr(ctx, "stage2_candidates"):
+                if ctx.stage2_candidates is None:
                     ctx.stage2_candidates = [[] for _ in range(len(ctx.translated_texts or []))]
                     
                 if not ctx.translated_texts:
@@ -428,25 +446,41 @@ class TranslatorWorker(threading.Thread):
             if not texts_to_translate:
                 return
                 
-            try:
-                if self.log_callback:
-                    self.log_callback("TRANSLATE", f"Stage 2 (Double Check): Editing window of {len(window)} pages ({len(texts_to_translate)} lines).")
+            def _process_recursive(texts, mapping):
+                if not texts:
+                    return
+                    
+                total_chars = sum(len(t) for t in texts)
                 
-                translated_part = self.editor_translator.translate(texts_to_translate, "vi", "vi", [])
-                
-                for j, (ctx, line_idx) in enumerate(page_line_map):
-                    if j < len(translated_part):
-                        res = translated_part[j]
-                        text = res if isinstance(res, str) else res.get("text", "")
-                        score = 0.5 if isinstance(res, str) else res.get("score", 0.5)
-                        if line_idx != -1:
-                            ctx.stage2_candidates[line_idx].append({"text": text, "score": score})
-            except Exception as e:
-                if self.log_callback:
-                    self.log_callback("ERROR", f"Stage 2 Error: {e}")
+                if self.max_request_length > 0 and total_chars > self.max_request_length and len(texts) > 1:
+                    if self.log_callback:
+                        self.log_callback("TRANSLATE", f"Stage 2 payload ({total_chars} chars) exceeds limit. Splitting into 2 batches...")
+                    mid = len(texts) // 2
+                    _process_recursive(texts[:mid], mapping[:mid])
+                    _process_recursive(texts[mid:], mapping[mid:])
+                    return
+                    
+                try:
+                    if self.log_callback:
+                        self.log_callback("TRANSLATE", f"Stage 2 (Double Check): Editing batch of {len(texts)} lines ({total_chars} chars).")
+                    
+                    translated_part = self.editor_translator.translate(texts, "vi", "vi", [])
+                    
+                    for j, (ctx, line_idx) in enumerate(mapping):
+                        if j < len(translated_part):
+                            res = translated_part[j]
+                            text = res if isinstance(res, str) else res.get("text", "")
+                            score = 0.5 if isinstance(res, str) else res.get("score", 0.5)
+                            if line_idx != -1 and ctx.stage2_candidates is not None:
+                                ctx.stage2_candidates[line_idx].append({"text": text, "score": score})
+                except Exception as e:
+                    if self.log_callback:
+                        self.log_callback("ERROR", f"Stage 2 Error: {e}")
+
+            _process_recursive(texts_to_translate, page_line_map)
 
         def commit_stage2_page(ctx: PageContext):
-            if hasattr(ctx, "stage2_candidates") and ctx.stage2_candidates:
+            if ctx.stage2_candidates is not None:
                 best_translations = []
                 translated_texts = ctx.translated_texts or []
                 for i, line_cands in enumerate(ctx.stage2_candidates):
@@ -531,28 +565,16 @@ class InpaintWorker(threading.Thread):
                 self.log_callback("INPAINT", f"Inpainting {ctx.page_id}...")
 
             if self.inpainter and (ctx.raw_bboxes or ctx.bboxes):
-                image = ctx.original_image
-                if image is None and getattr(ctx, 'original_image_path', None):
-                    import cv2
-                    image = cv2.imread(ctx.original_image_path)
+                image = ctx.get_original_image()
                     
                 if image is not None:
                     try:
                         boxes_to_inpaint = ctx.raw_bboxes if ctx.raw_bboxes is not None else ctx.bboxes
                         if boxes_to_inpaint is not None:
                             inpainted = self.inpainter.inpaint(image, boxes_to_inpaint)
-                            
-                            if ctx.original_image is None and getattr(ctx, 'original_image_path', None):
-                                import os, cv2
-                                temp_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "temp")
-                                os.makedirs(temp_dir, exist_ok=True)
-                                temp_path = os.path.join(temp_dir, f"inpaint_{os.path.basename(ctx.page_id)}.png")
-                                cv2.imwrite(temp_path, inpainted)
-                                ctx.inpainted_image_path = temp_path
-                            else:
-                                ctx.inpainted_image = inpainted
+                            ctx.set_inpainted_image(inpainted)
                         else:
-                            ctx.inpainted_image = image.copy()
+                            ctx.set_inpainted_image(image.copy())
                     except Exception as e:
                         if self.log_callback:
                             self.log_callback("ERROR", f"Inpaint Error on {ctx.page_id}: {e}")
@@ -589,19 +611,11 @@ class UpscalerWorker(threading.Thread):
             if self.upscaler and self.ratio > 1:
                 try:
                     # Resolve background image (either inpainted or original)
-                    bg_image = ctx.inpainted_image
-                    if bg_image is None and getattr(ctx, 'inpainted_image_path', None):
-                        import cv2
-                        bg_image = cv2.imread(ctx.inpainted_image_path)
-                    if bg_image is None:
-                        bg_image = ctx.original_image
-                        if bg_image is None and getattr(ctx, 'original_image_path', None):
-                            import cv2
-                            bg_image = cv2.imread(ctx.original_image_path)
+                    bg_image = ctx.get_background_image()
                             
                     if bg_image is not None:
                         upscaled = self.upscaler.upscale(bg_image, self.ratio)
-                        ctx.inpainted_image = upscaled
+                        ctx.set_inpainted_image(upscaled)
                         # Update bounding boxes
                         if ctx.bboxes:
                             ctx.bboxes = [[coord * self.ratio for coord in box] for box in ctx.bboxes]
@@ -643,16 +657,7 @@ class RenderWorker(threading.Thread):
                 self.log_callback("RENDER", f"Rendering {ctx.page_id}...")
 
             if self.renderer:
-                bg_image = ctx.inpainted_image
-                if bg_image is None and getattr(ctx, 'inpainted_image_path', None):
-                    import cv2
-                    bg_image = cv2.imread(ctx.inpainted_image_path)
-                    
-                if bg_image is None:
-                    bg_image = ctx.original_image
-                    if bg_image is None and getattr(ctx, 'original_image_path', None):
-                        import cv2
-                        bg_image = cv2.imread(ctx.original_image_path)
+                bg_image = ctx.get_background_image()
                         
                 texts = ctx.translated_texts if ctx.translated_texts else ctx.original_texts
                 
@@ -667,7 +672,7 @@ class RenderWorker(threading.Thread):
                 else:
                     ctx.rendered_image = bg_image.copy() if bg_image is not None else None
             else:
-                bg_image = ctx.inpainted_image if ctx.inpainted_image is not None else ctx.original_image
+                bg_image = ctx.get_background_image()
                 ctx.rendered_image = bg_image.copy() if bg_image is not None else None
 
             self.out_q.put(ctx)

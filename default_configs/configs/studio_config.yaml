@@ -680,22 +680,7 @@ ui_map:
     tooltip: 'Prevents font size from falling below this value.
 
       -1 disables this feature.'
-  processing_mode:
-    widget: optionmenu
-    group: Extra Settings
-    order: 710
-    label: 'Processing Mode:'
-    default: Automatic
-    values:
-    - Automatic
-    - High VRAM
-    - Low VRAM
-    tooltip: 'Automatic: Chooses the best mode based on your GPU''s VRAM.
 
-      High VRAM: Processes all images at once. Fastest, for GPUs with >6GB VRAM.
-
-      Low VRAM: Processes images in small groups to prevent errors on GPUs with <=6GB
-      VRAM.'
   memory_mode:
     widget: optionmenu
     group: Extra Settings
@@ -708,18 +693,26 @@ ui_map:
     tooltip: 'RAM: Keeps image contexts in memory (fast but uses more RAM).
       DISK: Saves contexts to disk temporarily (prevents Out of Memory crashes when batching/sliding context).'
   context_window:
-    widget: entry
+    widget: spinbox
     group: Extra Settings
     order: 716
     label: 'Translation Window Size:'
-    default: '10'
+    default: 10
+    options:
+      from_: 1
+      to: 50
+      step: 1
     tooltip: 'Number of pages evaluated in a single translation batch.'
   stride_window:
-    widget: entry
+    widget: spinbox
     group: Extra Settings
     order: 717
     label: 'Translation Stride:'
-    default: '5'
+    default: 5
+    options:
+      from_: 1
+      to: 50
+      step: 1
     tooltip: 'Number of pages to slide forward. Smaller stride increases multi-pass evaluation and quality but is slower.'
   enable_double_check:
     widget: optionmenu
@@ -731,15 +724,7 @@ ui_map:
     - 'Yes'
     - 'No'
     tooltip: 'If Yes, enables a Stage 2 proofreading pass to smooth out the Vietnamese translation.'
-  batch_size:
-    widget: entry
-    group: Extra Settings
-    order: 720
-    label: 'Batch Size (Low VRAM Only):'
-    default: '5'
-    tooltip: 'How many images to process at a time in Low VRAM mode.
 
-      Smaller numbers use less VRAM but are slower.'
   preset_manager:
     widget: preset_manager
     group: Extra Settings

@@ -26,3 +26,6 @@ scratch/
 
 # Downloaded Fonts
 fonts/
+
+# Temp directories
+temp/

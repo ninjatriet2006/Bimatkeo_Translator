@@ -564,9 +564,9 @@ class JobRunnerMixin:
                 with open(json_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     
-                bboxes = data.get("bboxes", [])
-                original_texts = data.get("original_texts", [])
-                translated_texts = data.get("translated_texts", [])
+                bboxes = data.get("bboxes") or []
+                original_texts = data.get("original_texts") or []
+                translated_texts = data.get("translated_texts") or []
                 
                 # Update OCR Table
                 self.table_ocr.setRowCount(len(bboxes))
@@ -899,12 +899,7 @@ class JobRunnerMixin:
                 self._toggle_ui_state(True, job['id'])
 
                 settings = self.current_settings
-                selected_mode = settings.get('processing_mode', 'Automatic')
                 output_format = settings.get('output_format', 'png')
-
-                mode_to_use = 'High VRAM'
-                if selected_mode == 'Low VRAM' or (selected_mode == 'Automatic' and self.detected_vram_gb > 0 and self.detected_vram_gb <= 6):
-                    mode_to_use = 'Low VRAM'
 
                 source_path = job['source_path']
                 job_type_tag = f"TASK-{job.get('job_type')}" if job.get('job_type') != 'T' else settings.get('target_lang', 'ENG')
@@ -961,34 +956,12 @@ class JobRunnerMixin:
                 self.log("INFO", f"Found {len(files_to_process)} unprocessed image(s) for job '''{job['name']}'''.")
 
                 success = True
-                if mode_to_use == 'Low VRAM':
-                    # Legacy: Low VRAM Mode used to artificially batch images.
-                    # Since the pipeline is concurrent and processes sequentially, VRAM peak is constant.
-                    # We now run it identically to Fast Mode to preserve translation context windows.
-                    self.log("PIPELINE", f"Resuming job '''{job['name']}''' in Low VRAM Mode (Sequential Stream).")
-                    
-                    final_config = self._build_final_config_for_job(job)
-                    final_config['is_single_file'] = os.path.isfile(source_path)
-                    is_verbose = settings.get("enable_verbose_output", False)
-                    success = self._run_pipeline_in_process(job, final_output_path, final_config, is_verbose, output_format, is_single_test=False)
-                else:
-                    self.log("PIPELINE", f"Resuming job '''{job['name']}''' in High VRAM Mode.")
-
-                    temp_source_dir = os.path.join(self.temp_dir, "high_vram_processing")
-                    if os.path.exists(temp_source_dir): shutil.rmtree(temp_source_dir)
-                    os.makedirs(temp_source_dir)
-                    for f in files_to_process:
-                        src_file = source_path if os.path.isfile(source_path) else os.path.join(source_path, f)
-                        shutil.copy(src_file, temp_source_dir)
-
-                    job_for_run = copy.deepcopy(job)
-                    job_for_run['source_path'] = temp_source_dir
-
-                    final_config = self._build_final_config_for_job(job_for_run)
-                    final_config['is_single_file'] = os.path.isfile(source_path)
-                    is_verbose = settings.get("enable_verbose_output", False)
-                    success = self._run_pipeline_in_process(job_for_run, final_output_path, final_config, is_verbose, output_format, is_single_test=False)
-                    shutil.rmtree(temp_source_dir)
+                self.log("PIPELINE", f"Resuming job '''{job['name']}''' (Sequential Stream).")
+                
+                final_config = self._build_final_config_for_job(job)
+                final_config['is_single_file'] = os.path.isfile(source_path)
+                is_verbose = settings.get("enable_verbose_output", False)
+                success = self._run_pipeline_in_process(job, final_output_path, final_config, is_verbose, output_format, is_single_test=False)
 
                 job['status'] = "Completed" if success else ("Stopped" if self._stopped_by_user else "Failed")
 

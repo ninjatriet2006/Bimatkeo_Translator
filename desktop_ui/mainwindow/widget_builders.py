@@ -92,27 +92,6 @@ class WidgetBuildersMixin:
 
         # Special handling for Extra Settings tab (Theme manager, etc.)
         if raw_tab_name == "Extra Settings":
-            vram_info_label = QLabel()
-            vram_info_label.setWordWrap(True)
-            vram_info_label.setStyleSheet("font-size: 9pt; color: #999;")
-
-            if self.detected_vram_gb > 0:
-                vram_text = f"Detected {self.detected_vram_gb:.2f} GB of VRAM. "
-                if self.detected_vram_gb <= 6:
-                    vram_text += "<b>Recommendation: '''Low VRAM''' mode.</b>"
-                else:
-                    vram_text += "<b>Recommendation: '''High VRAM''' mode.</b>"
-            else:
-                vram_text = "Could not detect GPU VRAM. '''Low VRAM''' mode is recommended for safety."
-
-            vram_info_label.setText(vram_text)
-            layout.addWidget(vram_info_label)
-
-            separator = QFrame()
-            separator.setFrameShape(QFrame.Shape.HLine)
-            separator.setFrameShadow(QFrame.Shadow.Sunken)
-            layout.addWidget(separator)
-
             font_scale_widget = self._create_font_scale_widget()
             theme_manager_widget = self._create_theme_manager_widget()
             layout.addWidget(font_scale_widget)

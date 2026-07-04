@@ -259,14 +259,7 @@ settings:
     label: 'Min. Font Size:'
     tooltip: Prevents font size from falling below this value. -1 disables this 
       feature.
-  processing_mode:
-    label: 'Processing Mode:'
-    tooltip: 'Automatic: Chooses the best mode based on your GPU''s VRAM. High VRAM:
-      Processes all images at once. Low VRAM: Processes images in small groups.'
-  batch_size:
-    label: 'Batch Size (Low VRAM Only):'
-    tooltip: How many images to process at a time in Low VRAM mode. Smaller 
-      numbers use less VRAM but are slower.
+
   api_key_manager:
     label: Manage API Keys
     tooltip: Manage your translation API keys securely.

@@ -28,3 +28,62 @@ class PageContext:
     
     # Human-in-the-loop Synchronization Flag
     hitl_lock: threading.Event = field(default_factory=threading.Event)
+
+    @property
+    def is_disk_mode(self) -> bool:
+        """Kiểm tra xem context có đang hoạt động ở DISK mode không."""
+        return self.original_image_path is not None and self.original_image is None
+
+    def get_original_image(self) -> Optional[np.ndarray]:
+        """Lấy ảnh gốc từ RAM hoặc đọc từ đĩa nếu đang ở DISK mode."""
+        if self.original_image is not None:
+            return self.original_image
+        if self.original_image_path:
+            import cv2
+            return cv2.imread(self.original_image_path)
+        return None
+
+    def set_original_image(self, image: np.ndarray):
+        """Cập nhật ảnh gốc (thường dùng khi Auto-Rotate). Lưu xuống đĩa nếu ở DISK mode."""
+        if self.original_image_path and self.original_image is None:
+            import cv2, os
+            import pathlib
+            temp_dir = os.path.join(pathlib.Path(__file__).parent.parent.parent.resolve(), "temp")
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            # Chỉ ghi đè ra temp nếu file gốc không ở trong temp, để tránh loạn
+            temp_path = os.path.join(temp_dir, f"orig_{os.path.basename(self.page_id)}.png")
+            cv2.imwrite(temp_path, image)
+            self.original_image_path = temp_path
+        else:
+            self.original_image = image
+
+    def get_inpainted_image(self) -> Optional[np.ndarray]:
+        """Lấy ảnh đã xóa chữ từ RAM hoặc đọc từ đĩa nếu đang ở DISK mode."""
+        if self.inpainted_image is not None:
+            return self.inpainted_image
+        if self.inpainted_image_path:
+            import cv2
+            return cv2.imread(self.inpainted_image_path)
+        return None
+
+    def set_inpainted_image(self, image: np.ndarray):
+        """Cập nhật ảnh inpaint. Lưu xuống đĩa nếu ở DISK mode."""
+        if self.original_image_path and self.original_image is None:
+            import cv2, os
+            import pathlib
+            temp_dir = os.path.join(pathlib.Path(__file__).parent.parent.parent.resolve(), "temp")
+            os.makedirs(temp_dir, exist_ok=True)
+            temp_path = os.path.join(temp_dir, f"inpaint_{os.path.basename(self.page_id)}.png")
+            cv2.imwrite(temp_path, image)
+            self.inpainted_image_path = temp_path
+            self.inpainted_image = None
+        else:
+            self.inpainted_image = image
+
+    def get_background_image(self) -> Optional[np.ndarray]:
+        """Lấy ảnh nền (ưu tiên ảnh đã xóa chữ, nếu chưa có thì lấy ảnh gốc)."""
+        bg = self.get_inpainted_image()
+        if bg is not None:
+            return bg
+        return self.get_original_image()

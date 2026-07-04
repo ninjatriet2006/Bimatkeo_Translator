@@ -62,63 +62,71 @@ def sort_comic_text_boxes(bboxes: List[List[int]], direction: str = "rtl_ttb", i
 
 def merge_nearby_boxes_and_texts(bboxes: List[List[int]], texts: List[str], image_width: int, image_height: int) -> tuple[List[List[int]], List[str]]:
     """
-    Gom các bong bóng chữ ở gần nhau thành 1 bong bóng duy nhất.
-    Giúp tránh tình trạng 1 câu bị ngắt thành nhiều dòng dịch (word-by-word) làm mất ngữ cảnh.
+    Gom các bong bóng chữ ở gần nhau thành 1 bong bóng duy nhất bằng thuật toán Connected Components.
+    Giúp tránh tình trạng 1 câu bị ngắt thành nhiều dòng, hoặc các vùng bong bóng bị chồng lấn không được gộp chung.
     """
     if not bboxes or not texts or len(bboxes) != len(texts):
         return bboxes, texts
 
-    clusters = []
-    for i, box in enumerate(bboxes):
-        text = texts[i]
-        matched_cluster_idx = -1
+    n = len(bboxes)
+    parent = list(range(n))
+    
+    def find(i):
+        if parent[i] == i:
+            return i
+        parent[i] = find(parent[i])
+        return parent[i]
         
-        # Tìm xem box hiện tại có nên gộp với cluster nào không
-        for j, cluster in enumerate(clusters):
-            c_box = cluster["box"]
+    def union(i, j):
+        root_i = find(i)
+        root_j = find(j)
+        if root_i != root_j:
+            parent[root_i] = root_j
+
+    # Tạo đồ thị kết nối giữa các box
+    for i in range(n):
+        for j in range(i + 1, n):
+            box1 = bboxes[i]
+            box2 = bboxes[j]
             
-            # Tính khoảng cách giữa box hiện tại và cluster box
-            dx = max(0, max(c_box[0], box[0]) - min(c_box[2], box[2]))
-            dy = max(0, max(c_box[1], box[1]) - min(c_box[3], box[3]))
+            dx = max(0, max(box1[0], box2[0]) - min(box1[2], box2[2]))
+            dy = max(0, max(box1[1], box2[1]) - min(box1[3], box2[3]))
             
-            # Tính kích thước để làm hệ tham chiếu
-            w1, h1 = box[2] - box[0], box[3] - box[1]
-            w2, h2 = c_box[2] - c_box[0], c_box[3] - c_box[1]
+            w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
+            w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
             
-            # Lấy kích thước nhỏ hơn để tránh 1 box khổng lồ nuốt chửng mọi thứ
             min_w = min(w1, w2)
             min_h = min(h1, h2)
             
-            # Ngưỡng gap động: 50% chiều rộng nhỏ nhất, 80% chiều cao nhỏ nhất (tối thiểu 20px)
-            max_gap_x = max(20, int(min_w * 0.5))
-            max_gap_y = max(20, int(min_h * 0.8))
+            # Ngưỡng gap động: 150% chiều rộng nhỏ nhất, 200% chiều cao nhỏ nhất (tối thiểu 40px)
+            max_gap_x = max(40, int(min_w * 1.5))
+            max_gap_y = max(40, int(min_h * 2.0))
             
             if dx <= max_gap_x and dy <= max_gap_y:
-                matched_cluster_idx = j
-                break
-                
-        if matched_cluster_idx != -1:
-            c = clusters[matched_cluster_idx]
-            c_box = c["box"]
-            c["box"] = [
-                min(c_box[0], box[0]),
-                min(c_box[1], box[1]),
-                max(c_box[2], box[2]),
-                max(c_box[3], box[3])
-            ]
-            c["texts"].append(text)
-        else:
-            clusters.append({
-                "box": list(box),
-                "texts": [text]
-            })
-            
+                union(i, j)
+
+    # Gom nhóm các box theo root
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for i in range(n):
+        groups[find(i)].append(i)
+        
     merged_bboxes = []
     merged_texts = []
-    for c in clusters:
-        merged_bboxes.append(c["box"])
-        # Nối các câu lại, nếu không có dấu kết câu ở trước thì nối bằng dấu cách
-        merged_text = " ".join([t for t in c["texts"] if t.strip()])
-        merged_texts.append(merged_text)
+    
+    # Sắp xếp các nhóm dựa trên index của box đầu tiên trong nhóm (để giữ nguyên thứ tự sắp xếp ban đầu)
+    sorted_groups = sorted(groups.values(), key=lambda indices: indices[0])
+    
+    for indices in sorted_groups:
+        min_x = min(bboxes[i][0] for i in indices)
+        min_y = min(bboxes[i][1] for i in indices)
+        max_x = max(bboxes[i][2] for i in indices)
+        max_y = max(bboxes[i][3] for i in indices)
+        
+        merged_bboxes.append([min_x, min_y, max_x, max_y])
+        
+        # Nối text theo thứ tự ban đầu của các box trong nhóm
+        group_texts = [texts[i] for i in indices if texts[i].strip()]
+        merged_texts.append(" ".join(group_texts))
         
     return merged_bboxes, merged_texts

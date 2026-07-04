@@ -263,14 +263,7 @@ settings:
     label: 'Cỡ chữ tối thiểu:'
     tooltip: Ngăn không cho kích thước chữ giảm xuống dưới mức này. Điền -1 để 
       tắt tính năng.
-  processing_mode:
-    label: 'Chế độ xử lý:'
-    tooltip: 'Automatic: Tự động chọn dựa trên VRAM GPU. High VRAM: Xử lý tất cả ảnh
-      cùng lúc. Low VRAM: Xử lý theo từng nhóm nhỏ.'
-  batch_size:
-    label: 'Kích thước lô (Low VRAM):'
-    tooltip: Số lượng ảnh xử lý cùng lúc trong chế độ Low VRAM. Số lượng nhỏ hơn
-      giúp tiết kiệm VRAM hơn nhưng tốc độ chậm hơn.
+
   api_key_manager:
     label: Quản lý API Key
     tooltip: Mở và chỉnh sửa tệp keys.yaml để lưu trữ các API Key dịch thuật của

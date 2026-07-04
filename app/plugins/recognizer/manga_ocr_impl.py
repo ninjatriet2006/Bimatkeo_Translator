@@ -73,7 +73,7 @@ class MangaOCRRecognizerImpl(BaseTextRecognizer):
                 
             pil_img = Image.fromarray(img_rgb)
             
-            pixel_values = self.processor(images=pil_img, return_tensors="pt").pixel_values
+            pixel_values = self.processor(images=pil_img, text="", return_tensors="pt").pixel_values
             device = next(self.model.parameters()).device
             pixel_values = pixel_values.to(device)
             

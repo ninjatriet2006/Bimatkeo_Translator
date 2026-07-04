@@ -101,6 +101,24 @@ class PillowRenderer_Impl(BaseRenderer):
             box_width = x_max - x_min
             box_height = y_max - y_min
             
+            # Add dynamic padding (10%) to keep text inside circular/elliptical bubbles
+            pad_x = int(box_width * 0.1)
+            pad_y = int(box_height * 0.1)
+            
+            x_min += pad_x
+            x_max -= pad_x
+            y_min += pad_y
+            y_max -= pad_y
+            
+            box_width = x_max - x_min
+            box_height = y_max - y_min
+            
+            if box_width <= 0 or box_height <= 0:
+                # Revert if the box is too small
+                x_min, y_min, x_max, y_max = box
+                box_width = x_max - x_min
+                box_height = y_max - y_min
+                
             if box_width <= 0 or box_height <= 0:
                 continue
                 
@@ -120,8 +138,8 @@ class PillowRenderer_Impl(BaseRenderer):
                     best_y_offset = max(0, (box_height - total_height) / 2)
                 else:
                     # Auto-fit font size
-                    min_size = 10
-                    max_size = min(int(box_height), 150)
+                    min_size = 1
+                    max_size = min(box_height, 150)
                     
                     while min_size <= max_size:
                         mid_size = (min_size + max_size) // 2
@@ -148,6 +166,7 @@ class PillowRenderer_Impl(BaseRenderer):
                             min_size = mid_size + 1
                         else:
                             max_size = mid_size - 1
+                    print(f"[Renderer Debug] Box ({box_width}x{box_height}) | Final best_font: {getattr(best_font, 'size', 'None') if best_font else 'None'} | Text: {text[:20]}...")
                     
                     if best_font is None:
                         try:

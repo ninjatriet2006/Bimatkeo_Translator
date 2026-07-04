@@ -11,3 +11,4 @@ langdetect==1.0.9
 diffusers
 transformers
 accelerate
+pyspellchecker==0.9.0

@@ -75,6 +75,12 @@ class BaseAPITranslator(BaseTranslator):
                 except Exception:
                     pass
                 raise RuntimeError(f"HTTP Error {e.code}: {e.reason}\n{err_body[:500]}")
+            
+            if e.code == 429:
+                if self.log_callback:
+                    self.log_callback("WARNING", f"Rate Limit Exceeded (429). Response: {err_body}")
+                raise RuntimeError(f"HTTP_429_TOO_MANY_REQUESTS: {err_body}")
+                
             if self.log_callback:
                 self.log_callback("ERROR", f"API Request Error: {e}\nResponse: {err_body}")
             return {}
@@ -132,8 +138,14 @@ class BaseAPITranslator(BaseTranslator):
                 try:
                     raw_response = self._call_api(system_prompt, combined_text)
                 except Exception as e:
-                    if self.log_callback:
-                        self.log_callback("WARNING", f"API Error: {e}")
+                    err_str = str(e)
+                    if "HTTP_429_TOO_MANY_REQUESTS" in err_str:
+                        if self.log_callback:
+                            self.log_callback("WARNING", f"API Rate Limit (429). Sleeping for 15 seconds... (attempt {retry_count + 1}/{max_retries + 1})")
+                        time.sleep(15)
+                    else:
+                        if self.log_callback:
+                            self.log_callback("WARNING", f"API Error: {e}")
                     raw_response = None
                 
                 if raw_response:
