@@ -200,8 +200,7 @@ class WidgetBuildersMixin:
                 widget = self._create_api_manager_widget(info)
             elif widget_type == "grid_segmented_button":
                 widget = self._create_grid_segmented_button(info)
-            elif widget_type == "preset_manager":
-                widget = self._create_preset_manager(info)
+
             else:
                 widget = QLabel(f"TODO: '''{widget_type}'''")
                 widget.setStyleSheet("color: yellow;")
@@ -215,7 +214,7 @@ class WidgetBuildersMixin:
 
             if not context_key and info.get('key') in ['offline_translator', 'offline_detector', 'offline_ocr', 'api_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer', 'font_family', 'sd_base_model']:
                 self._setup_dynamic_action_buttons(info.get('key'), widget, right_layout)
-            elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "preset_manager", "api_key_manager", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
+            elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "api_key_manager", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
                 if info.get('recommendation'):
                     try:
                         from app.core.hardware_utils import get_recommended_size
@@ -751,42 +750,6 @@ class WidgetBuildersMixin:
                 row += 1
 
         return container
-
-    def _create_preset_manager(self, info: dict) -> QWidget:
-        """Creates the preset management compound widget."""
-        preset_frame = QFrame()
-        preset_frame.setObjectName("StyledPanel")
-        preset_frame.setFrameShape(QFrame.Shape.StyledPanel)
-        layout = QVBoxLayout(preset_frame)
-
-        self.profile_combobox = SearchableComboBox()
-        layout.addWidget(self.profile_combobox)
-
-        self.profile_name_entry = QLineEdit()
-        self.profile_name_entry.setPlaceholderText("Enter new preset name")
-        layout.addWidget(self.profile_name_entry)
-
-        self.profile_combobox.currentTextChanged.connect(self.profile_name_entry.setText)
-
-        button_container = QWidget()
-        button_layout = QHBoxLayout(button_container)
-        button_layout.setContentsMargins(0, 0, 0, 0)
-
-        save_btn = QPushButton("Save")
-        load_btn = QPushButton("Load")
-        delete_btn = QPushButton("Delete")
-
-        button_layout.addWidget(save_btn)
-        button_layout.addWidget(load_btn)
-        button_layout.addWidget(delete_btn)
-        layout.addWidget(button_container)
-
-        save_btn.clicked.connect(self._save_profile)
-        load_btn.clicked.connect(self._load_profile)
-        delete_btn.clicked.connect(self._delete_profile)
-
-        self._refresh_profile_list()
-        return preset_frame
 
     def _update_chain_ui_state(self):
         """

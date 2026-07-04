@@ -414,7 +414,7 @@ class RegistryMixin(_RegistryMixinBase):
     def optimize_profiles_once(self):
         """Runs the model fallback sweep across stored profiles/config ONCE per machine.
 
-        Sweeps every preset profile in profiles.yaml and the default settings in
+        Sweeps the default settings in
         studio_config (if present), repairing any model field that points at a
         deleted or not-set-up model. Records the machine fingerprint in
         studio_config so it does not run again on the same machine.
@@ -434,28 +434,7 @@ class RegistryMixin(_RegistryMixinBase):
 
             total_changes = []
 
-            # 1. Sweep preset profiles.yaml
-            profiles_path = os.path.join(
-                self.project_base_dir, ".config", "configs", "profiles.yaml"
-            )
-            if os.path.exists(profiles_path):
-                try:
-                    with open(profiles_path, "r", encoding="utf-8") as f:
-                        profiles = yaml.load(f) or {}
-                    if isinstance(profiles, dict):
-                        dirty = False
-                        for name, settings in profiles.items():
-                            changes = self.sweep_settings(settings)
-                            if changes:
-                                dirty = True
-                                total_changes.extend((name, k, o, n) for (k, o, n) in changes)
-                        if dirty:
-                            with open(profiles_path, "w", encoding="utf-8") as f:
-                                yaml.dump(profiles, f)
-                except Exception as e:
-                    print(f"[Registry] optimize: failed sweeping profiles.yaml: {e}")
-
-            # 2. Sweep default settings embedded in studio_config, if any.
+            # 1. Sweep default settings embedded in studio_config, if any.
             if isinstance(studio, dict):
                 default_settings = studio.get("default_settings")
                 if isinstance(default_settings, dict):
