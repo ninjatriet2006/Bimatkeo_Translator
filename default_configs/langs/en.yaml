@@ -132,15 +132,7 @@ settings:
   revert_upscaling:
     label: Revert Upscaling After
     tooltip: If checked, the image is upscaled for better processing, then scaled back down to its original size for the final output.
-  colorizer:
-    label: 'Colorizer Model:'
-    tooltip: The AI model to colorize black and white manga pages.
-  colorization_size:
-    label: 'Colorization Size:'
-    tooltip: The base resolution for the colorization process. Higher values can improve detail but are slower.
-  denoise_sigma:
-    label: 'Denoise Sigma:'
-    tooltip: Strength of the denoising filter applied during colorization. Higher values remove more noise but can soften details.
+
   restore_size_after_colorize:
     label: Restore Original Size After Colorize
     tooltip: 'EXPERIMENTAL: After colorizing, automatically calculate the required upscale ratio to restore the image to its original dimensions.'
@@ -187,12 +179,7 @@ settings:
   direction:
     label: 'Text Direction:'
     tooltip: Set the text direction. 'auto' tries to guess from the text, but you can force horizontal/vertical.
-  mask_dilation_offset:
-    label: 'Mask Dilation Offset:'
-    tooltip: 'Advanced: Expands (+) or shrinks (-) the mask around the text before inpainting. Can help clean text outlines.'
-  kernel_size:
-    label: 'Mask Kernel Size:'
-    tooltip: 'Advanced: Size of the kernel used in mask processing. Must be an odd number. Affects how the mask is blurred.'
+
   disable_font_border:
     label: Disable Font Border
     tooltip: Removes the automatic black border/outline around the font.

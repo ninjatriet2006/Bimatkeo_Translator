@@ -166,6 +166,4 @@ fields:
     - key: vertical
 
   Output & Export: {}
-  Extra Settings:
-    colorizer:
-    - key: none
+  Extra Settings: {}

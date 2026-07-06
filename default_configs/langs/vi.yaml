@@ -132,15 +132,7 @@ settings:
   revert_upscaling:
     label: 'Khôi phục kích thước cũ:'
     tooltip: Nếu bật, ảnh sẽ được phóng to để xử lý tốt hơn, sau đó thu nhỏ lại về kích thước ban đầu ở kết quả đầu ra cuối cùng.
-  colorizer:
-    label: 'Mô hình tô màu:'
-    tooltip: Mô hình AI dùng để tô màu cho các trang truyện tranh trắng đen.
-  colorization_size:
-    label: 'Kích thước tô màu:'
-    tooltip: Độ phân giải cơ sở cho quá trình tô màu. Giá trị cao hơn giúp tăng chi tiết màu sắc nhưng tốc độ xử lý sẽ chậm hơn.
-  denoise_sigma:
-    label: 'Độ khử nhiễu tô màu:'
-    tooltip: Mức độ bộ lọc khử nhiễu áp dụng khi tô màu. Giá trị cao hơn giúp loại bỏ nhiễu tốt hơn nhưng có thể làm mờ chi tiết.
+
   restore_size_after_colorize:
     label: 'Khôi phục kích thước sau tô màu:'
     tooltip: 'THỬ NGHIỆM: Sau khi tô màu, tự động tính toán tỷ lệ phóng to cần thiết để khôi phục ảnh về kích thước gốc ban đầu.'
@@ -189,12 +181,7 @@ settings:
   direction:
     label: 'Hướng chữ:'
     tooltip: Hướng viết của chữ. 'auto' sẽ tự động đoán theo văn bản gốc, hoặc bạn có thể bắt buộc viết ngang/viết dọc.
-  mask_dilation_offset:
-    label: 'Độ giãn nở mặt nạ:'
-    tooltip: 'Nâng cao: Mở rộng (+) hoặc thu hẹp (-) mặt nạ bao quanh chữ trước khi xóa chữ. Giúp làm sạch viền chữ thừa tốt hơn.'
-  kernel_size:
-    label: 'Cỡ hạt nhân mặt nạ (Kernel):'
-    tooltip: 'Nâng cao: Kích thước hạt nhân (kernel) dùng để xử lý mặt nạ. Phải là một số lẻ. Ảnh hưởng đến độ mờ của mặt nạ xóa chữ.'
+
   disable_font_border:
     label: 'Tắt viền phông chữ:'
     tooltip: Loại bỏ viền đen/đường viền tự động bao quanh phông chữ.
