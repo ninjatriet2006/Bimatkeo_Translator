@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Union, cast
 
 from app.core.interfaces import BaseTranslator
 from app.core.factories import TranslatorFactory
-from app.core.translator_utils import PromptBuilder, GlossaryManager
+from app.core.translator_utils import PromptBuilder
 
 class BaseAPITranslator(BaseTranslator):
     """Base class for HTTP API translators."""
@@ -15,7 +15,6 @@ class BaseAPITranslator(BaseTranslator):
         self.model = ""
         self.key = ""
         self.prompt_builder = PromptBuilder("")
-        self.glossary_manager = GlossaryManager("")
         self.log_callback = None
 
     def load_weights(self, model_path: str) -> None:
@@ -37,14 +36,8 @@ class BaseAPITranslator(BaseTranslator):
             system_prompt_profile = config.get("system_prompt_profile", "None")
             if system_prompt_profile and system_prompt_profile != "None":
                 self.prompt_builder = PromptBuilder(project_base_dir, system_prompt_profile)
-                self.glossary_manager = GlossaryManager(project_base_dir, system_prompt_profile)
-            else:
-                # Fallback to older glossary_path if present
-                glossary_path = config.get("glossary_path", "")
-                if glossary_path:
-                    # In this old fallback, glossary_path was sometimes a full path or a profile name
-                    self.glossary_manager = GlossaryManager(project_base_dir, glossary_path)
                 
+
         except Exception as e:
             if self.log_callback:
                 self.log_callback("ERROR", f"Failed to parse API config: {e}")
@@ -111,7 +104,7 @@ class BaseAPITranslator(BaseTranslator):
         if not texts:
             return cast(List[Union[str, dict]], texts)
             
-        system_prompt = self.prompt_builder.build_prompt(src_lang, tgt_lang, self.glossary_manager.glossary)
+        system_prompt = self.prompt_builder.build_prompt(src_lang, tgt_lang)
         
         # Build single chunk of texts without splitting limit
         current_chunk = []
@@ -239,8 +232,8 @@ class BaseAPITranslator(BaseTranslator):
                     original_line = line_str.split(": ", 1)[1] if ": " in line_str else line_str
                     all_translated_list.append({"text": original_line, "score": 0.0})
                     
-        # Apply glossary replacement post-translation just in case
-        translated_list = [{"text": self.glossary_manager.replace_post_translation(t["text"]), "score": t["score"]} for t in all_translated_list]
+        # Simply pass through the translated list
+        translated_list = all_translated_list
         return cast(List[Union[str, dict]], translated_list)
 
     def _call_api(self, system_prompt: str, user_text: str) -> str:

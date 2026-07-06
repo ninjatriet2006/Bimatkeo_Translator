@@ -41,6 +41,7 @@ class LanguageAppMixin(LanguageAppMixinBase):
 
         settings_translations = lang_data.get("settings", {})
         tab_translations = lang_data.get("tabs", {})
+        enums_translations = lang_data.get("enums", {})
         
         new_ui_map = {}
         
@@ -65,10 +66,20 @@ class LanguageAppMixin(LanguageAppMixinBase):
                 if trans:
                     info["label"] = trans.get("label", "<Not Named>")
                     info["tooltip"] = trans.get("tooltip", "")
+                    if "placeholder" in trans:
+                        info["placeholder"] = trans["placeholder"]
+                    if "button_text" in trans:
+                        info["button_text"] = trans["button_text"]
                 else:
                     print(f"\033[91m[LanguageApp] ERROR: Missing translation for Widget ID: '{key}' in tab '{tab_name}'\033[0m")
                     info["label"] = "<Not Named>"
                     info["tooltip"] = ""
+                    
+                if "values" in info and isinstance(info["values"], list):
+                    value_map = {}
+                    for v in info["values"]:
+                        value_map[v] = enums_translations.get(v, v)
+                    info["value_map"] = value_map
 
         # Restore any dunder keys
         for k, v in self.ui_map.items():

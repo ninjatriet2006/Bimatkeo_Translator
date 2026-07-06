@@ -357,8 +357,11 @@ class WidgetBuildersMixin:
         button_group.setExclusive(True)
 
         values = info.get("values", [])
+        value_map = info.get("value_map", {})
         for val in values:
-            button = QPushButton(val)
+            display_name = value_map.get(val, val)
+            button = QPushButton(str(display_name))
+            button.setProperty("internal_id", val)
             button.setCheckable(True)
             if val == info.get("default"):
                 button.setChecked(True)
@@ -436,9 +439,10 @@ class WidgetBuildersMixin:
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))
         else:
             combo_box.addItem("--- Select ---", "none")
+            value_map = info.get("value_map", {})
             for val in values:
                 exists = self.config_loader.check_model_existence(val, field=key) if key != 'api_ocr' else True
-                display_name = self.config_loader.format_display_label(val, key)
+                display_name = value_map.get(val, self.config_loader.format_display_label(val, key))
                 if not exists:
                     display_name = f"{display_name} (Not Setup)"
                 combo_box.addItem(display_name, val)
@@ -808,7 +812,7 @@ class WidgetBuildersMixin:
         """Updates the tooltip of the translator combobox to show its capabilities."""
         from .. import main_window as mw
         category = self._get_active_translator_category()
-        key = '''offline_translator''' if category == '''Offline''' else '''ai_translator'''
+        key = '''offline_translator''' if category == 'offline' else '''ai_translator'''
         translator_combo = self.setting_widgets.get(key)
         if not translator_combo:
             return

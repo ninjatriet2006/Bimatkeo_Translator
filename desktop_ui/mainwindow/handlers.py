@@ -112,14 +112,14 @@ class HandlersMixin:
         """Returns '''Offline''' or '''AI / Online'''."""
         widget = self.setting_widgets.get('translator_category')
         if not widget:
-            return 'Offline'
+            return 'offline'
         val = self._get_value_from_widget('translator_category', widget)
-        return val or 'Offline'
+        return val or 'offline'
 
     def _get_active_translator_name(self) -> str:
         """Returns the active translator name (e.g. sugoi, gemini, etc.)"""
         category = self._get_active_translator_category()
-        key = 'offline_translator' if category == 'Offline' else 'ai_translator'
+        key = 'offline_translator' if category == 'offline' else 'ai_translator'
         widget = self.setting_widgets.get(key)
         if not widget:
             return 'none'
@@ -129,15 +129,15 @@ class HandlersMixin:
         """Toggles the visibility of translator settings based on Offline vs AI category."""
         category = self._get_active_translator_category()
         
-        show_offline = (category == 'Offline')
-        show_ai = (category == 'AI / Online')
+        show_offline = (category == 'offline')
+        show_ai = (category == 'api')
 
         if 'offline_translator' in self.setting_rows:
             self.setting_rows['offline_translator'].setVisible(show_offline)
 
-        ai_mode = self.current_settings.get('ai_mode', 'Standalone API')
-        show_standalone = show_ai and (ai_mode == 'Standalone API')
-        show_pool = show_ai and (ai_mode == 'Pool APIs')
+        ai_mode = self.current_settings.get('ai_mode', 'standalone')
+        show_standalone = show_ai and (ai_mode == 'standalone')
+        show_pool = show_ai and (ai_mode == 'pool')
 
         if 'ai_mode' in self.setting_rows:
             self.setting_rows['ai_mode'].setVisible(show_ai)
@@ -181,24 +181,24 @@ class HandlersMixin:
         """Returns 'Offline' or 'AI / Online' for OCR."""
         widget = self.setting_widgets.get('ocr_category')
         if not widget:
-            return 'Offline'
+            return 'offline'
         val = self._get_value_from_widget('ocr_category', widget)
-        return val or 'Offline'
+        return val or 'offline'
 
     def _update_ocr_visibility(self):
         """Toggles the visibility of OCR/Detector settings based on Offline vs API category."""
         category = self._get_active_ocr_category()
         
-        show_offline = (category == 'Offline')
-        show_api = (category == 'AI / Online')
+        show_offline = (category == 'offline')
+        show_api = (category == 'api')
 
         for key in ['offline_detector', 'detection_size', 'offline_ocr']:
             if key in self.setting_rows:
                 self.setting_rows[key].setVisible(show_offline)
 
-        ocr_ai_mode = self.current_settings.get('ocr_ai_mode', 'Standalone API')
-        show_standalone = show_api and (ocr_ai_mode == 'Standalone API')
-        show_pool = show_api and (ocr_ai_mode == 'Pool APIs')
+        ocr_ai_mode = self.current_settings.get('ocr_ai_mode', 'standalone')
+        show_standalone = show_api and (ocr_ai_mode == 'standalone')
+        show_pool = show_api and (ocr_ai_mode == 'pool')
 
         if 'ocr_ai_mode' in self.setting_rows:
             self.setting_rows['ocr_ai_mode'].setVisible(show_api)
@@ -290,16 +290,16 @@ class HandlersMixin:
         settings = self.task_settings.get(context_key, {})
         rows = self.task_rows.get(context_key, {})
         
-        category = settings.get('translator_category', 'Offline')
-        show_offline = (category == 'Offline')
-        show_ai = (category == 'AI / Online')
+        category = settings.get('translator_category', 'offline')
+        show_offline = (category == 'offline')
+        show_ai = (category == 'api')
 
         if 'offline_translator' in rows:
             rows['offline_translator'].setVisible(show_offline)
 
-        ai_mode = settings.get('ai_mode', 'Standalone API')
-        show_standalone = show_ai and (ai_mode == 'Standalone API')
-        show_pool = show_ai and (ai_mode == 'Pool APIs')
+        ai_mode = settings.get('ai_mode', 'standalone')
+        show_standalone = show_ai and (ai_mode == 'standalone')
+        show_pool = show_ai and (ai_mode == 'pool')
 
         if 'ai_mode' in rows:
             rows['ai_mode'].setVisible(show_ai)
@@ -1167,7 +1167,9 @@ class HandlersMixin:
         elif widget_type in ["segmented_button", "grid_segmented_button"]:
             button_group = widget.findChild(QButtonGroup)
             if button_group and button_group.checkedButton():
-                value = button_group.checkedButton().text()
+                internal_id = button_group.checkedButton().property("internal_id")
+                value = internal_id if internal_id is not None else button_group.checkedButton().text()
+                
                 if key == "upscale_ratio":
                     if value == "Disabled":
                         return None

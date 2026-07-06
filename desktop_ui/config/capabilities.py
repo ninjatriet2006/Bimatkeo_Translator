@@ -178,7 +178,7 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
                 elif isinstance(self.system_prompts, dict) and model_name in self.system_prompts:
                     profile_data = self.system_prompts[model_name]
                 if isinstance(profile_data, dict):
-                    if "pre_dict" in profile_data or "post_dict" in profile_data or "role_description" in profile_data or "json_schema_rules" in profile_data:
+                    if "role_description" in profile_data or "json_schema_rules" in profile_data:
                         return True
                 return False
 

@@ -33,28 +33,3 @@ profiles:
           "global_notes": "Any general notes"
         }
         Ensure the `content` array has the EXACT SAME number of items as the input lines.
-    
-    pre_dict: |
-      # =========================================================
-      # PRE-TRANSLATION DICTIONARY (OCR CORRECTION)
-      # =========================================================
-      # Format: CorrectedText | OCR_Error
-      # This file corrects text BEFORE it is sent to the translator.
-      #----------------------------------------------------------
-      m | rn
-      I | l
-      !! | 11
-    
-    post_dict: |
-      # =========================================================
-      # POST-TRANSLATION DICTIONARY (TRANSLATION CORRECTION)
-      # =========================================================
-      # Format: YourPreferredTranslation | TranslatorOutput
-      # This file "beautifies" the text AFTER the translation is complete.
-      #----------------------------------------------------------
-      Eri-chan | Eri
-      Yuki-senpai | Yuki
-      Big brother | Onii-chan
-      Big sister | Onee-san
-      ... | ...—
-      [SFX_GOGOGO] | ゴゴゴゴ

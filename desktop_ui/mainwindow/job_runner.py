@@ -428,16 +428,16 @@ class JobRunnerMixin:
             return
 
         settings = self.current_settings
-        translator_type = settings.get("translator_category", "Offline")
+        translator_type = settings.get("translator_category", "offline")
         
-        if translator_type == "Offline":
+        if translator_type == "offline":
             offline_model = settings.get("offline_translator", "none")
             if not offline_model or offline_model == "none" or offline_model.startswith("---"):
                 QMessageBox.warning(self, "Lỗi Thiết Lập", "Vui lòng chọn Offline Model trước khi bắt đầu (Không thể để là --- Select ---).")
                 return
         else:
             ai_mode = settings.get("ai_mode", "")
-            if ai_mode == "Pool APIs":
+            if ai_mode == "pool":
                 pool_name = settings.get("pool_name", "")
                 if not pool_name or pool_name.startswith("---"):
                     QMessageBox.warning(self, "Lỗi Thiết Lập", "Vui lòng chọn Pool trước khi bắt đầu.")
@@ -469,7 +469,7 @@ class JobRunnerMixin:
         if self.fast_preview_check.isChecked():
             self.log("INFO", "Fast Preview enabled. Overriding settings for speed.")
             test_job['settings'].update({'detection_size': 1024, 'inpainting_size': 1024})
-            if test_job['settings'].get('processing_device') == 'NVIDIA GPU':
+            if test_job['settings'].get('processing_device') == 'cuda':
                 test_job['settings']['inpainting_precision'] = 'bf16'
 
         try:
@@ -618,16 +618,16 @@ class JobRunnerMixin:
             if job.get('status') != 'Ready' or job.get('job_type') not in ['T', 'TX']:
                 continue
             settings = self.current_settings
-            translator_type = settings.get("translator_category", "Offline")
+            translator_type = settings.get("translator_category", "offline")
             
-            if translator_type == "Offline":
+            if translator_type == "offline":
                 offline_model = settings.get("offline_translator", "none")
                 if not offline_model or offline_model == "none" or offline_model.startswith("---"):
                     QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn Offline Model trước khi bắt đầu (Không thể để là --- Select ---).")
                     return
             else:
                 ai_mode = settings.get("ai_mode", "")
-                if ai_mode == "Pool APIs":
+                if ai_mode == "pool":
                     pool_name = settings.get("pool_name", "")
                     if not pool_name or pool_name.startswith("---"):
                         QMessageBox.warning(self, "Lỗi Thiết Lập", f"Job '{job.get('name')}': Vui lòng chọn Pool trước khi bắt đầu.")
@@ -728,12 +728,12 @@ class JobRunnerMixin:
             final_config.setdefault('render', {})['gimp_font'] = selected_font_name
 
         translator_dict = final_config.setdefault("translator", {})
-        category = settings.get('translator_category', 'Offline')
-        if category == 'Offline':
+        category = settings.get('translator_category', 'offline')
+        if category == 'offline':
             translator_dict['translator'] = settings.get('offline_translator', 'none')
         else:
-            ai_mode = settings.get('ai_mode', 'Standalone API')
-            if ai_mode == 'Pool APIs':
+            ai_mode = settings.get('ai_mode', 'standalone')
+            if ai_mode == 'pool':
                 pool_name = settings.get('pool_name', '')
                 translator_dict['translator'] = 'pool'
                 translator_dict['pool_name'] = pool_name
@@ -785,10 +785,10 @@ class JobRunnerMixin:
                 translator_dict['translator'] = provider
 
         # --- Handle OCR API Profiles ---
-        ocr_category = settings.get('ocr_category', 'Offline')
-        if ocr_category == 'AI / Online':
-            ocr_ai_mode = settings.get('ocr_ai_mode', 'Standalone API')
-            if ocr_ai_mode == 'Pool APIs':
+        ocr_category = settings.get('ocr_category', 'offline')
+        if ocr_category == 'api':
+            ocr_ai_mode = settings.get('ocr_ai_mode', 'standalone')
+            if ocr_ai_mode == 'pool':
                 pool_name = settings.get('ocr_pool_name', '')
                 final_config['api_ocr'] = 'pool'
                 final_config['api_ocr_pool'] = []
@@ -818,7 +818,7 @@ class JobRunnerMixin:
         if settings.get('translator_chain'):
             final_config.get("translator", {}).pop('translator', None)
         
-        final_config['processing_device'] = settings.get('processing_device', 'CPU')
+        final_config['processing_device'] = settings.get('processing_device', 'cpu')
 
 
         if job_type == 'TX':
@@ -913,17 +913,17 @@ class JobRunnerMixin:
                     all_source_files = [os.path.basename(source_path)]
                     files_to_process = all_source_files
                 else:
-                    export_mode = settings.get('export_mode', 'Create New Folder (Avoid Overwrite)')
+                    export_mode = settings.get('export_mode', 'new_safe')
                     
-                    if export_mode == 'Translate In-Place (Modify Original)':
+                    if export_mode == 'inplace':
                         final_output_path = source_path
                     else:
-                        if export_mode == 'Create New Folder (Avoid Overwrite)':
+                        if export_mode == 'new_safe':
                             counter = 1
                             while os.path.exists(os.path.join(output_dir, final_output_folder_name)):
                                 final_output_folder_name = f"{base_output_folder_name} ({counter})"
                                 counter += 1
-                        elif export_mode == 'Create New Folder (Overwrite Existing)':
+                        elif export_mode == 'new_overwrite':
                             target_path = os.path.join(output_dir, final_output_folder_name)
                             if os.path.exists(target_path):
                                 try:

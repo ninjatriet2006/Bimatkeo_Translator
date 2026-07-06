@@ -1,9 +1,8 @@
 import os
-from typing import List
+from typing import List, Union
 
 from app.core.interfaces import BaseTranslator
 from app.core.factories import TranslatorFactory
-from app.core.translator_utils import GlossaryManager
 
 try:
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM  # type: ignore
@@ -18,7 +17,6 @@ class BaseOfflineTranslator(BaseTranslator):
         self.model = None
         self.device = "cuda" if HAS_TRANSFORMERS and torch.cuda.is_available() else "cpu"
         project_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        self.glossary_manager = GlossaryManager(project_base_dir)
         self.log_callback = None
         self.is_loaded = False
 
@@ -48,17 +46,17 @@ class BaseOfflineTranslator(BaseTranslator):
             if self.log_callback:
                 self.log_callback("ERROR", f"Failed to load offline model: {e}")
 
-    def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None) -> List[str]:
+    def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None) -> List[Union[str, dict]]:
         if not self.is_loaded or not texts:
             return texts
             
-        # Optional: offline translation can also benefit from pre-translation glossary replace
-        processed_texts = [self.glossary_manager.replace_pre_translation(t) for t in texts]
+        # No pre-translation glossary replace
+        processed_texts = texts
         
         translated_texts = self._perform_translation(processed_texts, src_lang, tgt_lang)
         
-        # Post-translation replace
-        final_texts = [self.glossary_manager.replace_post_translation(t) for t in translated_texts]
+        # No post-translation replace
+        final_texts = translated_texts
         return final_texts
 
     def _perform_translation(self, texts: List[str], src_lang: str, tgt_lang: str) -> List[str]:

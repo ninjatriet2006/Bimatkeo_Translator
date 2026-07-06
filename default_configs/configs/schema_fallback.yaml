@@ -9,7 +9,7 @@ $defs:
     type: string
   Colorizer:
     enum:
-    - none
+      - none
     title: Colorizer
     type: string
   ColorizerConfig:
@@ -24,34 +24,38 @@ $defs:
         type: integer
       colorizer:
         allOf:
-        - $ref: '#/$defs/Colorizer'
+          - $ref: '#/$defs/Colorizer'
         default: none
     title: ColorizerConfig
     type: object
   Detector:
     enum:
-    - default
-    - dbconvnext
-    - ctd
-    - craft
-    - paddle
-    - none
+      - default
+      - dbconvnext
+      - ctd
+      - craft
+      - paddle
+      - none
     title: Detector
     type: string
   DetectorConfig:
     properties:
       detector:
         allOf:
-        - $ref: '#/$defs/Detector'
+          - $ref: '#/$defs/Detector'
         default: none
       detection_size:
         default: 2048
         title: Detection Size
         type: integer
+        minimum: 1
+        maximum: 999999
       text_threshold:
         default: 0.5
         title: Text Threshold
         type: number
+        minimum: 10
+        maximum: 90
       det_rotate:
         default: false
         title: Det Rotate
@@ -68,14 +72,20 @@ $defs:
         default: false
         title: Det Gamma Correct
         type: boolean
+        minimum: 1
+        maximum: 30
       box_threshold:
         default: 0.7
         title: Box Threshold
         type: number
+        minimum: 10
+        maximum: 90
       unclip_ratio:
         default: 2.3
         title: Unclip Ratio
         type: number
+        minimum: 10
+        maximum: 50
     title: DetectorConfig
     type: object
   Direction:
@@ -86,36 +96,38 @@ $defs:
     type: string
   Inpainter:
     enum:
-    - default
-    - lama_large
-    - lama_mpe
-    - sd
-    - none
-    - original
+      - default
+      - lama_large
+      - lama_mpe
+      - sd
+      - none
+      - original
     title: Inpainter
     type: string
   InpainterConfig:
     properties:
       inpainter:
         allOf:
-        - $ref: '#/$defs/Inpainter'
+          - $ref: '#/$defs/Inpainter'
         default: none
       inpainting_size:
         default: 2048
         title: Inpainting Size
         type: integer
+        minimum: 1
+        maximum: 999999
       inpainting_precision:
         allOf:
-        - $ref: '#/$defs/InpaintPrecision'
+          - $ref: '#/$defs/InpaintPrecision'
         default: bf16
     title: InpainterConfig
     type: object
   Ocr:
     enum:
-    - 32px
-    - 48px
-    - 48px_ctc
-    - mocr
+      - 32px
+      - 48px
+      - 48px_ctc
+      - mocr
     title: Ocr
     type: string
   OcrConfig:
@@ -126,20 +138,24 @@ $defs:
         type: boolean
       ocr:
         allOf:
-        - $ref: '#/$defs/Ocr'
+          - $ref: '#/$defs/Ocr'
         default: none
       min_text_length:
         default: 0
         title: Min Text Length
         type: integer
+        minimum: 0
+        maximum: 10
       ignore_bubble:
         default: 0
         title: Ignore Bubble
         type: integer
+        minimum: 0
+        maximum: 500
       prob:
         anyOf:
-        - type: number
-        - type: 'null'
+          - type: number
+          - type: 'null'
         default:
         title: Prob
     title: OcrConfig
@@ -148,11 +164,11 @@ $defs:
     properties:
       renderer:
         allOf:
-        - $ref: '#/$defs/Renderer'
+          - $ref: '#/$defs/Renderer'
         default: none
       alignment:
         allOf:
-        - $ref: '#/$defs/Alignment'
+          - $ref: '#/$defs/Alignment'
         default: auto
       disable_font_border:
         default: false
@@ -160,14 +176,16 @@ $defs:
         type: boolean
       outline_color:
         anyOf:
-        - type: string
-        - type: 'null'
+          - type: string
+          - type: 'null'
         default: 'FFFFFF'
         title: Outline Color
       outline_width:
         default: 2
         title: Outline Width
         type: integer
+        minimum: 0
+        maximum: 10
       is_bold:
         default: false
         title: Is Bold
@@ -176,13 +194,17 @@ $defs:
         default: 0
         title: Font Size Offset
         type: integer
+        minimum: -20
+        maximum: 20
       font_size_minimum:
         default: -1
         title: Font Size Minimum
         type: integer
+        minimum: -1
+        maximum: 40
       direction:
         allOf:
-        - $ref: '#/$defs/Direction'
+          - $ref: '#/$defs/Direction'
         default: auto
       uppercase:
         default: false
@@ -202,22 +224,26 @@ $defs:
         type: boolean
       font_color:
         anyOf:
-        - type: string
-        - type: 'null'
+          - type: string
+          - type: 'null'
         default:
         title: Font Color
       line_spacing:
         anyOf:
-        - type: integer
-        - type: 'null'
+          - type: integer
+          - type: 'null'
         default:
         title: Line Spacing
+        minimum: 0
+        maximum: 30
       font_size:
         anyOf:
-        - type: integer
-        - type: 'null'
+          - type: integer
+          - type: 'null'
         default:
         title: Font Size
+        minimum: 0
+        maximum: 150
       rtl:
         default: true
         title: Rtl
@@ -229,33 +255,33 @@ $defs:
     type: string
   Translator:
     enum:
-    - chatgpt
-    - chatgpt_2stage
-    - none
-    - original
-    - deepseek
-    - groq
-    - gemini
-    - gemini_2stage
-    - custom_openai
-    - offline
-    - nllb
-    - nllb_big
-    - sugoi
-    - jparacrawl
-    - jparacrawl_big
-    - m2m100
-    - m2m100_big
-    - mbart50
-    - qwen2
-    - qwen2_big
+      - chatgpt
+      - chatgpt_2stage
+      - none
+      - original
+      - deepseek
+      - groq
+      - gemini
+      - gemini_2stage
+      - custom_openai
+      - offline
+      - nllb
+      - nllb_big
+      - sugoi
+      - jparacrawl
+      - jparacrawl_big
+      - m2m100
+      - m2m100_big
+      - mbart50
+      - qwen2
+      - qwen2_big
     title: Translator
     type: string
   TranslatorConfig:
     properties:
       translator:
         allOf:
-        - $ref: '#/$defs/Translator'
+          - $ref: '#/$defs/Translator'
         default: none
       target_lang:
         default: none
@@ -267,26 +293,26 @@ $defs:
         type: boolean
       skip_lang:
         anyOf:
-        - type: string
-        - type: 'null'
+          - type: string
+          - type: 'null'
         default:
         title: Skip Lang
       gpt_config:
         anyOf:
-        - type: string
-        - type: 'null'
+          - type: string
+          - type: 'null'
         default:
         title: Gpt Config
       translator_chain:
         anyOf:
-        - type: string
-        - type: 'null'
+          - type: string
+          - type: 'null'
         default:
         title: Translator Chain
       selective_translation:
         anyOf:
-        - type: string
-        - type: 'null'
+          - type: string
+          - type: 'null'
         default:
         title: Selective Translation
       enable_post_translation_check:
@@ -311,7 +337,7 @@ $defs:
     properties:
       upscaler:
         allOf:
-        - $ref: '#/$defs/Upscaler'
+          - $ref: '#/$defs/Upscaler'
         default: none
       revert_upscaling:
         default: false
@@ -319,29 +345,29 @@ $defs:
         type: boolean
       upscale_ratio:
         anyOf:
-        - type: integer
-        - type: 'null'
+          - type: integer
+          - type: 'null'
         default:
         title: Upscale Ratio
     title: UpscaleConfig
     type: object
   Upscaler:
     enum:
-    - waifu2x
-    - esrgan
-    - 4xultrasharp
+      - waifu2x
+      - esrgan
+      - 4xultrasharp
     title: Upscaler
     type: string
 properties:
   filter_text:
     anyOf:
-    - type: string
-    - type: 'null'
+      - type: string
+      - type: 'null'
     default:
     title: Filter Text
   render:
     allOf:
-    - $ref: '#/$defs/RenderConfig'
+      - $ref: '#/$defs/RenderConfig'
     default:
       renderer: none
       alignment: auto
@@ -362,14 +388,14 @@ properties:
       rtl: true
   upscale:
     allOf:
-    - $ref: '#/$defs/UpscaleConfig'
+      - $ref: '#/$defs/UpscaleConfig'
     default:
       upscaler: none
       revert_upscaling: false
       upscale_ratio:
   translator:
     allOf:
-    - $ref: '#/$defs/TranslatorConfig'
+      - $ref: '#/$defs/TranslatorConfig'
     default:
       translator: none
       target_lang: none
@@ -384,19 +410,19 @@ properties:
       post_check_target_lang_threshold: 0.5
   detector:
     allOf:
-    - $ref: '#/$defs/DetectorConfig'
+      - $ref: '#/$defs/DetectorConfig'
     default: none
   colorizer:
     allOf:
-    - $ref: '#/$defs/ColorizerConfig'
+      - $ref: '#/$defs/ColorizerConfig'
     default: none
   inpainter:
     allOf:
-    - $ref: '#/$defs/InpainterConfig'
+      - $ref: '#/$defs/InpainterConfig'
     default: none
   ocr:
     allOf:
-    - $ref: '#/$defs/OcrConfig'
+      - $ref: '#/$defs/OcrConfig'
     default: none
   force_simple_sort:
     default: false
@@ -410,5 +436,80 @@ properties:
     default: 20
     title: Mask Dilation Offset
     type: integer
+  processing_device:
+    title: Processing Device
+    type: string
+    enum:
+      - cpu
+      - cuda
+  translator_category:
+    title: Translator Category
+    type: string
+    enum:
+      - offline
+      - api
+  ai_mode:
+    title: Ai Mode
+    type: string
+    enum:
+      - standalone
+      - pool
+  ocr_category:
+    title: Ocr Category
+    type: string
+    enum:
+      - offline
+      - api
+  ocr_ai_mode:
+    title: Ocr Ai Mode
+    type: string
+    enum:
+      - standalone
+      - pool
+  upscale_ratio:
+    title: Upscale Ratio
+    type: string
+    enum:
+      - '1'
+      - '2'
+      - '3'
+      - '4'
+  direction:
+    title: Direction
+    type: string
+    enum:
+      - horizontal_rtl
+      - horizontal_ltr
+      - vertical_rtl
+      - vertical_ltr
+  output_format:
+    title: Output Format
+    type: string
+    enum:
+      - png
+      - jpg
+      - webp
+      - pdf
+      - psd
+      - xcf
+  export_mode:
+    title: Export Mode
+    type: string
+    enum:
+      - new_safe
+      - new_overwrite
+      - inplace
+  memory_mode:
+    title: Memory Mode
+    type: string
+    enum:
+      - ram
+      - disk
+  enable_double_check:
+    title: Enable Double Check
+    type: string
+    enum:
+      - yes
+      - no
 title: Config
 type: object

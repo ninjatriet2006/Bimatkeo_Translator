@@ -8,44 +8,35 @@ tabs:
 tasks:
   raw_output:
     label: Chỉ xóa chữ (RAW)
-    description: Xóa chữ khỏi hình ảnh, giữ lại bong bóng thoại trống. Tác vụ 
-      này không thực hiện bất kỳ dịch thuật nào.
+    description: Xóa chữ khỏi hình ảnh, giữ lại bong bóng thoại trống. Tác vụ này không thực hiện bất kỳ dịch thuật nào.
   upscale:
     label: Phóng to hình ảnh (Upscale)
-    description: Tăng độ phân giải hình ảnh bằng mô hình AI đã chọn, không thực 
-      hiện thay đổi nào khác.
+    description: Tăng độ phân giải hình ảnh bằng mô hình AI đã chọn, không thực hiện thay đổi nào khác.
   colorize:
     label: Tô màu hình ảnh (Colorize)
-    description: Tô màu cho ảnh trắng đen, cố gắng giữ nguyên khu vực chữ bằng 
-      cách phát hiện chúng trước.
+    description: Tô màu cho ảnh trắng đen, cố gắng giữ nguyên khu vực chữ bằng cách phát hiện chúng trước.
   extract_translate:
     label: Trích xuất và Dịch chữ (OCR & Trans)
-    description: Phát hiện, nhận diện (OCR) và dịch văn bản nhưng không vẽ lại 
-      vào ảnh. Xuất kết quả dưới dạng tệp văn bản.
+    description: Phát hiện, nhận diện (OCR) và dịch văn bản nhưng không vẽ lại vào ảnh. Xuất kết quả dưới dạng tệp văn bản.
   inpaint_only:
     label: Chỉ xóa chữ (Inpaint/Clean)
-    description: Phát hiện và xóa sạch chữ khỏi ảnh, không thực hiện dịch thuật 
-      hay vẽ chữ. Trả về các bong bóng thoại trống rỗng.
+    description: Phát hiện và xóa sạch chữ khỏi ảnh, không thực hiện dịch thuật hay vẽ chữ. Trả về các bong bóng thoại trống rỗng.
   text_only_translation:
     label: Thuần dịch Text (.txt)
-    description: Dịch tệp văn bản (.txt) từ ngôn ngữ này sang ngôn ngữ khác theo
-      từng dòng. Không cần nhận diện ảnh.
+    description: Dịch tệp văn bản (.txt) từ ngôn ngữ này sang ngôn ngữ khác theo từng dòng. Không cần nhận diện ảnh.
 settings:
   processing_device:
     label: 'Thiết bị xử lý:'
-    tooltip: Sử dụng CPU để tương thích mọi thiết bị hoặc NVIDIA GPU để xử lý 
-      nhanh hơn đáng kể (yêu cầu cài đặt driver và card đồ họa tương thích).
+    tooltip: Sử dụng CPU để tương thích mọi thiết bị hoặc NVIDIA GPU để xử lý nhanh hơn đáng kể (yêu cầu cài đặt driver và card đồ họa tương thích).
   target_lang:
     label: 'Ngôn ngữ đích:'
     tooltip: Ngôn ngữ đích muốn dịch văn bản sang.
   translator_category:
     label: 'Loại bộ dịch:'
-    tooltip: Chọn giữa mô hình dịch ngoại tuyến (offline) cục bộ hoặc sử dụng 
-      API trực tuyến (online). Nội bộ).'
+    tooltip: Chọn giữa mô hình dịch ngoại tuyến (offline) cục bộ hoặc sử dụng API trực tuyến (online). Nội bộ).'
   api_name:
     label: 'Tên API:'
-    tooltip: Chọn một cấu hình API hiện có hoặc nhập tên mới để tạo/lưu cấu hình
-      mới.
+    tooltip: Chọn một cấu hình API hiện có hoặc nhập tên mới để tạo/lưu cấu hình mới.
   offline_translator:
     label: 'Mô hình Offline:'
     tooltip: Chọn mô hình dịch cục bộ offline để dịch văn bản.
@@ -55,193 +46,155 @@ settings:
   ai_endpoint:
     label: 'API Endpoint:'
     tooltip: Đường dẫn API gốc (Endpoint) của dịch vụ AI đã chọn.
+    placeholder: 'VD: https://api.openai.com/v1'
   ai_model:
     label: 'Tên mô hình:'
-    tooltip: Tên mô hình của dịch vụ dịch thuật. Nhấn 'Fetch' để lấy danh sách 
-      các mô hình khả dụng từ endpoint.
+    tooltip: Tên mô hình của dịch vụ dịch thuật. Nhấn 'Fetch' để lấy danh sách các mô hình khả dụng từ endpoint.
+    placeholder: 'VD: gemini-2.5-flash'
+    button_text: Lấy
   ai_key:
     label: 'API Key:'
     tooltip: Mã khóa API (API Key) bảo mật để xác thực với dịch vụ đã chọn.
+    placeholder: Nhập khóa API của bạn
   enable_translator_chain:
     label: 'Sử dụng chuỗi dịch:'
-    tooltip: Bật tùy chọn này để sử dụng chuỗi dịch dịch chuyển tiếp qua nhiều 
-      bộ dịch. Tùy chọn này sẽ vô hiệu hóa bộ dịch chính ở trên.
+    tooltip: Bật tùy chọn này để sử dụng chuỗi dịch dịch chuyển tiếp qua nhiều bộ dịch. Tùy chọn này sẽ vô hiệu hóa bộ dịch chính ở trên.
   translator_chain:
     label: 'Các bước dịch:'
-    tooltip: Thêm các bước dịch theo thứ tự. Kết quả đầu ra của bước trước sẽ 
-      làm đầu vào cho bước sau.
+    tooltip: Thêm các bước dịch theo thứ tự. Kết quả đầu ra của bước trước sẽ làm đầu vào cho bước sau.
   no_text_lang_skip:
     label: Dịch cùng ngôn ngữ
-    tooltip: Nếu bật, bộ dịch vẫn sẽ chạy ngay cả khi ngôn ngữ nguồn và ngôn ngữ
-      đích giống nhau.
+    tooltip: Nếu bật, bộ dịch vẫn sẽ chạy ngay cả khi ngôn ngữ nguồn và ngôn ngữ đích giống nhau.
   skip_lang:
     label: 'Ngôn ngữ bỏ qua dịch:'
-    tooltip: Mở tệp cấu hình skip_languages.yaml để thiết lập các ngôn ngữ cần 
-      bỏ qua không dịch.
+    tooltip: Mở tệp cấu hình skip_languages.yaml để thiết lập các ngôn ngữ cần bỏ qua không dịch.
   dict_profile:
     label: 'Cấu hình Từ điển & GPT:'
-    tooltip: Chọn cấu hình từ điển nhúng (bao gồm sửa lỗi OCR, sửa lỗi dịch và 
-      prompt GPT).
+    tooltip: Chọn cấu hình từ điển nhúng (bao gồm sửa lỗi OCR, sửa lỗi dịch và prompt GPT).
   detector:
     label: 'Mô hình phát hiện:'
-    tooltip: Mô hình AI dùng để phát hiện các ô thoại (bong bóng thoại) trên 
-      trang. Khuyên dùng 'default' cho hầu hết truyện tranh.
+    tooltip: Mô hình AI dùng để phát hiện các ô thoại (bong bóng thoại) trên trang. Khuyên dùng 'default' cho hầu hết truyện tranh.
   detection_size:
     label: 'Kích thước phát hiện:'
-    tooltip: Độ phân giải ảnh được thay đổi để phát hiện chữ. Giá trị cao hơn 
-      giúp phát hiện chữ nhỏ tốt hơn nhưng tốc độ chậm hơn.
+    tooltip: Độ phân giải ảnh được thay đổi để phát hiện chữ. Giá trị cao hơn giúp phát hiện chữ nhỏ tốt hơn nhưng tốc độ chậm hơn.
   ocr:
     label: 'Mô hình OCR:'
     tooltip: Mô hình AI dùng để đọc/nhận diện các ký tự chữ bên trong ô thoại.
   ignore_bubble:
     label: 'Bỏ qua ô thoại nhỏ:'
-    tooltip: Bỏ qua các ô thoại có diện tích (pixel) nhỏ hơn mức này. Hữu ích để
-      lọc nhiễu hoặc các hiệu ứng âm thanh nhỏ.
+    tooltip: Bỏ qua các ô thoại có diện tích (pixel) nhỏ hơn mức này. Hữu ích để lọc nhiễu hoặc các hiệu ứng âm thanh nhỏ.
   use_mocr_merge:
     label: Sử dụng mOCR Merge
-    tooltip: Chế độ đặc biệt cho mô hình 'mocr' giúp cải thiện độ chính xác đối 
-      với các phông chữ khó, nhưng tốc độ sẽ chậm hơn một chút.
+    tooltip: Chế độ đặc biệt cho mô hình 'mocr' giúp cải thiện độ chính xác đối với các phông chữ khó, nhưng tốc độ sẽ chậm hơn một chút.
   text_threshold:
     label: 'Ngưỡng văn bản:'
-    tooltip: Độ tin cậy tối thiểu để mô hình nhận dạng một khu vực là 'chữ'. Giá
-      trị thấp hơn sẽ tìm được nhiều chữ hơn nhưng có thể lẫn nhiễu.
+    tooltip: Độ tin cậy tối thiểu để mô hình nhận dạng một khu vực là 'chữ'. Giá trị thấp hơn sẽ tìm được nhiều chữ hơn nhưng có thể lẫn nhiễu.
   box_threshold:
     label: 'Ngưỡng khung thoại:'
-    tooltip: Độ tin cậy tối thiểu để xác định khung viền bao quanh chữ. Giá trị 
-      cao hơn sẽ tạo ra các khung ôm sát và chính xác hơn.
+    tooltip: Độ tin cậy tối thiểu để xác định khung viền bao quanh chữ. Giá trị cao hơn sẽ tạo ra các khung ôm sát và chính xác hơn.
   unclip_ratio:
     label: 'Tỷ lệ Unclip:'
-    tooltip: Mức độ mở rộng khung chữ được phát hiện để lấy thêm viền chữ hoặc 
-      một phần ô thoại. Giá trị quá cao có thể làm các khung chữ bị gộp vào 
-      nhau.
+    tooltip: Mức độ mở rộng khung chữ được phát hiện để lấy thêm viền chữ hoặc một phần ô thoại. Giá trị quá cao có thể làm các khung chữ bị gộp vào nhau.
   det_rotate:
     label: 'Phát hiện chữ xoay:'
-    tooltip: Cho phép phát hiện chữ viết dọc hoặc chữ bị xoay nghiêng bên trong 
-      ô thoại.
+    tooltip: Cho phép phát hiện chữ viết dọc hoặc chữ bị xoay nghiêng bên trong ô thoại.
   det_auto_rotate:
     label: 'Tự động xoay ảnh:'
-    tooltip: Tự động xoay lại toàn bộ ảnh nếu phát hiện ảnh bị xoay nghiêng 
-      trước khi xử lý.
+    tooltip: Tự động xoay lại toàn bộ ảnh nếu phát hiện ảnh bị xoay nghiêng trước khi xử lý.
   det_invert:
     label: 'Đảo ngược màu ảnh:'
-    tooltip: Đảo ngược màu sắc ảnh (đen thành trắng và ngược lại) trước khi phát
-      hiện. Hữu ích cho chữ trắng trên nền đen.
+    tooltip: Đảo ngược màu sắc ảnh (đen thành trắng và ngược lại) trước khi phát hiện. Hữu ích cho chữ trắng trên nền đen.
   det_gamma_correct:
     label: 'Hiệu chỉnh Gamma:'
-    tooltip: Áp dụng hiệu chỉnh gamma trước khi phát hiện chữ. Giúp tăng khả 
-      năng nhận diện trên một số loại ảnh nhất định.
+    tooltip: Áp dụng hiệu chỉnh gamma trước khi phát hiện chữ. Giúp tăng khả năng nhận diện trên một số loại ảnh nhất định.
   min_text_length:
     label: 'Độ dài chữ tối thiểu:'
-    tooltip: Bỏ qua văn bản nhận diện được nếu độ dài ngắn hơn mức này. Hữu ích 
-      để lọc nhiễu hoặc các ký tự đơn lẻ.
+    tooltip: Bỏ qua văn bản nhận diện được nếu độ dài ngắn hơn mức này. Hữu ích để lọc nhiễu hoặc các ký tự đơn lẻ.
   prob:
     label: 'Ngưỡng xác suất OCR:'
-    tooltip: Độ tin cậy tối thiểu để chấp nhận kết quả nhận diện chữ (OCR). Để 
-      trống để tự động áp dụng giá trị mặc định của hệ thống.
+    tooltip: Độ tin cậy tối thiểu để chấp nhận kết quả nhận diện chữ (OCR). Để trống để tự động áp dụng giá trị mặc định của hệ thống.
+    placeholder: 'VD: 0.85 (mặc định: tự động)'
   inpainter:
     label: 'Mô hình xóa chữ:'
-    tooltip: Mô hình AI dùng để xóa chữ gốc và tái tạo lại hình nền phía sau 
-      chữ.
+    tooltip: Mô hình AI dùng để xóa chữ gốc và tái tạo lại hình nền phía sau chữ.
   inpainting_precision:
     label: 'Độ chính xác xóa chữ:'
-    tooltip: Độ chính xác tính toán khi xóa chữ. 'fp32' tương thích tốt nhất. 
-      'fp16' hoặc 'bf16' xử lý nhanh hơn trên các GPU đời mới.
+    tooltip: Độ chính xác tính toán khi xóa chữ. 'fp32' tương thích tốt nhất. 'fp16' hoặc 'bf16' xử lý nhanh hơn trên các GPU đời mới.
   inpainting_size:
     label: 'Kích thước xóa chữ:'
-    tooltip: Độ phân giải cho quá trình xóa chữ. Giá trị cao hơn giúp tăng chất 
-      lượng ảnh nền nhưng sẽ chậm hơn nhiều và tốn VRAM.
+    tooltip: Độ phân giải cho quá trình xóa chữ. Giá trị cao hơn giúp tăng chất lượng ảnh nền nhưng sẽ chậm hơn nhiều và tốn VRAM.
   upscaler:
     label: 'Mô hình siêu phân giải:'
-    tooltip: Mô hình AI được sử dụng để tăng độ phân giải hình ảnh (siêu phân 
-      giải/upscale).
+    tooltip: Mô hình AI được sử dụng để tăng độ phân giải hình ảnh (siêu phân giải/upscale).
   upscale_ratio:
     label: 'Tỷ lệ phóng to:'
-    tooltip: Tỷ lệ phóng to độ phân giải ảnh. Chọn 'Disabled' để tắt tính năng 
-      phóng to.
+    tooltip: Tỷ lệ phóng to độ phân giải ảnh. Chọn 'Disabled' để tắt tính năng phóng to.
   revert_upscaling:
     label: 'Khôi phục kích thước cũ:'
-    tooltip: Nếu bật, ảnh sẽ được phóng to để xử lý tốt hơn, sau đó thu nhỏ lại 
-      về kích thước ban đầu ở kết quả đầu ra cuối cùng.
+    tooltip: Nếu bật, ảnh sẽ được phóng to để xử lý tốt hơn, sau đó thu nhỏ lại về kích thước ban đầu ở kết quả đầu ra cuối cùng.
   colorizer:
     label: 'Mô hình tô màu:'
     tooltip: Mô hình AI dùng để tô màu cho các trang truyện tranh trắng đen.
   colorization_size:
     label: 'Kích thước tô màu:'
-    tooltip: Độ phân giải cơ sở cho quá trình tô màu. Giá trị cao hơn giúp tăng 
-      chi tiết màu sắc nhưng tốc độ xử lý sẽ chậm hơn.
+    tooltip: Độ phân giải cơ sở cho quá trình tô màu. Giá trị cao hơn giúp tăng chi tiết màu sắc nhưng tốc độ xử lý sẽ chậm hơn.
   denoise_sigma:
     label: 'Độ khử nhiễu tô màu:'
-    tooltip: Mức độ bộ lọc khử nhiễu áp dụng khi tô màu. Giá trị cao hơn giúp 
-      loại bỏ nhiễu tốt hơn nhưng có thể làm mờ chi tiết.
+    tooltip: Mức độ bộ lọc khử nhiễu áp dụng khi tô màu. Giá trị cao hơn giúp loại bỏ nhiễu tốt hơn nhưng có thể làm mờ chi tiết.
   restore_size_after_colorize:
     label: 'Khôi phục kích thước sau tô màu:'
-    tooltip: 'THỬ NGHIỆM: Sau khi tô màu, tự động tính toán tỷ lệ phóng to cần thiết
-      để khôi phục ảnh về kích thước gốc ban đầu.'
+    tooltip: 'THỬ NGHIỆM: Sau khi tô màu, tự động tính toán tỷ lệ phóng to cần thiết để khôi phục ảnh về kích thước gốc ban đầu.'
   renderer:
     label: 'Bộ vẽ chữ (Render):'
-    tooltip: Trình dựng hình (Render Engine) dùng để vẽ chữ đã dịch lên trên ảnh
-      đã được xóa chữ.
+    tooltip: Trình dựng hình (Render Engine) dùng để vẽ chữ đã dịch lên trên ảnh đã được xóa chữ.
   font_family:
     label: 'Phông chữ:'
-    tooltip: Phông chữ sử dụng cho văn bản dịch. Bạn có thể chọn phông chữ hệ 
-      thống hoặc đặt các tệp phông chữ vào thư mục 'fonts'.
+    tooltip: Phông chữ sử dụng cho văn bản dịch. Bạn có thể chọn phông chữ hệ thống hoặc đặt các tệp phông chữ vào thư mục 'fonts'.
   font_color:
     label: 'Màu chữ:'
-    tooltip: 'Màu sắc của chữ đã dịch dưới dạng mã Hex (ví dụ: 000000 cho màu đen,
-      ffffff cho màu trắng).'
+    tooltip: 'Màu sắc của chữ đã dịch dưới dạng mã Hex (ví dụ: 000000 cho màu đen, ffffff cho màu trắng).'
+    button_text: '...'
   alignment:
     label: 'Căn lề chữ:'
-    tooltip: Cách căn lề chữ bên trong ô thoại (trái, giữa, phải). 'auto' sẽ tự 
-      động quyết định dựa trên ngữ cảnh.
+    tooltip: Cách căn lề chữ bên trong ô thoại (trái, giữa, phải). 'auto' sẽ tự động quyết định dựa trên ngữ cảnh.
   font_size_offset:
     label: 'Bù trừ cỡ chữ:'
-    tooltip: Điều chỉnh kích thước phông chữ tự động. Giá trị dương làm chữ to 
-      hơn, giá trị âm làm chữ nhỏ đi.
+    tooltip: Điều chỉnh kích thước phông chữ tự động. Giá trị dương làm chữ to hơn, giá trị âm làm chữ nhỏ đi.
   auto_rename:
     label: 'Tự động đổi tên thư mục:'
     tooltip: 'Tự động đổi tên thư mục đầu ra với hậu tố ngôn ngữ dịch (ví dụ: ''manga-ENG'').'
   output_format:
     label: 'Định dạng đầu ra:'
-    tooltip: Chọn định dạng ảnh đầu ra cuối cùng. Khuyên dùng định dạng PNG để 
-      giữ chất lượng tốt nhất.
+    tooltip: Chọn định dạng ảnh đầu ra cuối cùng. Khuyên dùng định dạng PNG để giữ chất lượng tốt nhất.
   overwrite_output:
     label: 'Ghi đè thư mục đầu ra:'
-    tooltip: Nếu bật, bất kỳ thư mục đầu ra nào trùng tên sẽ bị xóa hoàn toàn 
-      trước khi bắt đầu xử lý.
+    tooltip: Nếu bật, bất kỳ thư mục đầu ra nào trùng tên sẽ bị xóa hoàn toàn trước khi bắt đầu xử lý.
   avoid_conflicts:
     label: 'Tránh ghi đè trùng tên
 
       (Tạo thư mục mới mỗi lần chạy):'
-    tooltip: 'KHUYÊN DÙNG. Nếu bật, ứng dụng sẽ tạo thư mục mới được đánh số (ví dụ:
-      ''Manga-ENG (1)'') nếu trùng tên thư mục đầu ra đã có.'
+    tooltip: 'KHUYÊN DÙNG. Nếu bật, ứng dụng sẽ tạo thư mục mới được đánh số (ví dụ: ''Manga-ENG (1)'') nếu trùng tên thư mục đầu ra đã có.'
   backup_original:
     label: 'Sao lưu thư mục gốc:'
-    tooltip: Tạo một bản sao lưu thư mục gốc trước khi xử lý, có gắn mốc thời 
-      gian để tránh mất mát dữ liệu.
+    tooltip: Tạo một bản sao lưu thư mục gốc trước khi xử lý, có gắn mốc thời gian để tránh mất mát dữ liệu.
   filter_text:
     label: 'Bộ lọc chữ (ngăn cách bằng dấu phẩy):'
-    tooltip: Nhập các mẫu chữ bạn muốn OCR bỏ qua. Hữu ích để lọc bỏ các yếu tố 
-      như hình mờ hoặc hiệu ứng âm thanh. Văn bản khớp sẽ không được dịch.
+    tooltip: Nhập các mẫu chữ bạn muốn OCR bỏ qua. Hữu ích để lọc bỏ các yếu tố như hình mờ hoặc hiệu ứng âm thanh. Văn bản khớp sẽ không được dịch.
   font_size:
     label: 'Cỡ chữ cố định (Ghi đè):'
-    tooltip: Đặt kích thước phông chữ cố định cho tất cả chữ một cách thủ công. 
-      Điền '0' hoặc để trống để hệ thống tự động căn chỉnh.
+    tooltip: Đặt kích thước phông chữ cố định cho tất cả chữ một cách thủ công. Điền '0' hoặc để trống để hệ thống tự động căn chỉnh.
   line_spacing:
     label: 'Khoảng cách dòng:'
-    tooltip: Đặt khoảng cách giữa các dòng văn bản thủ công. Điền '0' hoặc để 
-      trống để tự động căn chỉnh.
+    tooltip: Đặt khoảng cách giữa các dòng văn bản thủ công. Điền '0' hoặc để trống để tự động căn chỉnh.
   direction:
     label: 'Hướng chữ:'
-    tooltip: Hướng viết của chữ. 'auto' sẽ tự động đoán theo văn bản gốc, hoặc 
-      bạn có thể bắt buộc viết ngang/viết dọc.
+    tooltip: Hướng viết của chữ. 'auto' sẽ tự động đoán theo văn bản gốc, hoặc bạn có thể bắt buộc viết ngang/viết dọc.
   mask_dilation_offset:
     label: 'Độ giãn nở mặt nạ:'
-    tooltip: 'Nâng cao: Mở rộng (+) hoặc thu hẹp (-) mặt nạ bao quanh chữ trước khi
-      xóa chữ. Giúp làm sạch viền chữ thừa tốt hơn.'
+    tooltip: 'Nâng cao: Mở rộng (+) hoặc thu hẹp (-) mặt nạ bao quanh chữ trước khi xóa chữ. Giúp làm sạch viền chữ thừa tốt hơn.'
   kernel_size:
     label: 'Cỡ hạt nhân mặt nạ (Kernel):'
-    tooltip: 'Nâng cao: Kích thước hạt nhân (kernel) dùng để xử lý mặt nạ. Phải là
-      một số lẻ. Ảnh hưởng đến độ mờ của mặt nạ xóa chữ.'
+    tooltip: 'Nâng cao: Kích thước hạt nhân (kernel) dùng để xử lý mặt nạ. Phải là một số lẻ. Ảnh hưởng đến độ mờ của mặt nạ xóa chữ.'
   disable_font_border:
     label: 'Tắt viền phông chữ:'
     tooltip: Loại bỏ viền đen/đường viền tự động bao quanh phông chữ.
@@ -253,29 +206,32 @@ settings:
     tooltip: Bắt buộc tất cả văn bản đã dịch hiển thị ở dạng chữ thường.
   no_hyphenation:
     label: 'Tắt ngắt từ gạch nối:'
-    tooltip: Ngăn không cho trình dựng hình tự động ngắt từ xuống dòng bằng dấu 
-      gạch nối (-).
+    tooltip: Ngăn không cho trình dựng hình tự động ngắt từ xuống dòng bằng dấu gạch nối (-).
   rtl:
     label: 'Thứ tự đọc phải qua trái (RTL):'
-    tooltip: Bật đối với truyện đọc từ phải sang trái như Manga Nhật Bản. Điều 
-      này giúp các ô thoại được xử lý theo đúng thứ tự đọc.
+    tooltip: Bật đối với truyện đọc từ phải sang trái như Manga Nhật Bản. Điều này giúp các ô thoại được xử lý theo đúng thứ tự đọc.
   font_size_minimum:
     label: 'Cỡ chữ tối thiểu:'
-    tooltip: Ngăn không cho kích thước chữ giảm xuống dưới mức này. Điền -1 để 
-      tắt tính năng.
+    tooltip: Ngăn không cho kích thước chữ giảm xuống dưới mức này. Điền -1 để tắt tính năng.
 
   api_key_manager:
     label: Quản lý API Key
-    tooltip: Mở và chỉnh sửa tệp keys.yaml để lưu trữ các API Key dịch thuật của
-      bạn.
+    tooltip: Mở và chỉnh sửa tệp keys.yaml để lưu trữ các API Key dịch thuật của bạn.
   enable_verbose_output:
     label: Bật đầu ra Verbose ⚠
-    tooltip: 'CẢNH BÁO: Lưu lại toàn bộ các bước trung gian (mặt nạ, khung nhận diện
-      OCR, v.v.) vào thư mục ''debug_output'' của mỗi tiến trình để phục vụ debug.
-      Tùy chọn này tiêu tốn nhiều dung lượng ổ đĩa và làm chậm tốc độ xử lý.'
+    tooltip: 'CẢNH BÁO: Lưu lại toàn bộ các bước trung gian (mặt nạ, khung nhận diện OCR, v.v.) vào thư mục ''debug_output'' của mỗi tiến trình để phục vụ debug. Tùy chọn này tiêu tốn nhiều dung lượng ổ đĩa và làm chậm tốc độ xử lý.'
   app_language:
     label: 'Ngôn ngữ giao diện:'
     tooltip: Chọn ngôn ngữ hiển thị của giao diện ứng dụng (nhãn và chú thích).
+  ocr_api_endpoint:
+    placeholder: 'VD: https://api.openai.com/v1'
+  ocr_api_model:
+    placeholder: 'VD: gemini-2.5-flash'
+    button_text: Lấy
+  ocr_api_key:
+    placeholder: Nhập khóa API của bạn
+  outline_color:
+    button_text: '...'
 flow_steps:
   detection: 📝 Nhận diện
   ocr: 🔍 OCR
@@ -290,3 +246,33 @@ flow_steps:
   colorize: 🎨 Tô Màu
   hardsub: 🔤 Hardsub
   reletter: ✒️ Viết Lại (Reletter)
+enums:
+  cpu: CPU
+  cuda: NVIDIA GPU
+  offline: Offline
+  api: AI / Online
+  standalone: API Độc Lập
+  pool: Pool API
+  '1': '1'
+  '2': '2'
+  '3': '3'
+  '4': '4'
+  horizontal_rtl: 'Ngang: Phải sang Trái'
+  horizontal_ltr: 'Ngang: Trái sang Phải'
+  vertical_rtl: 'Dọc: Phải sang Trái'
+  vertical_ltr: 'Dọc: Trái sang Phải'
+  png: png
+  jpg: jpg
+  webp: webp
+  pdf: pdf
+  psd: psd
+  xcf: xcf
+  new_safe: Tạo Thư Mục Mới (Tránh Ghi Đè)
+  new_overwrite: Tạo Thư Mục Mới (Ghi Đè Kẻ Thù)
+  inplace: Dịch Ghi Đè Lên Bản Gốc
+  ram: RAM
+  disk: DISK
+  yes: Có
+  no: Không
+  english: Tiếng Anh
+  tiếng_việt: Tiếng Việt

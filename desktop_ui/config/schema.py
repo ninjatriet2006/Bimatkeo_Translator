@@ -41,6 +41,13 @@ class SchemaMixin:
                 # Add enum values (for dropdowns) if they exist
                 prop_def = all_properties.get(key)
                 if prop_def and isinstance(prop_def, dict):
+                    if 'minimum' in prop_def and 'min' not in merged_info:
+                        merged_info['min'] = prop_def['minimum']
+                    if 'maximum' in prop_def and 'max' not in merged_info:
+                        merged_info['max'] = prop_def['maximum']
+                    if "enum" in prop_def:
+                        merged_info['values'] = prop_def["enum"]
+                        
                     ref_path = prop_def.get("allOf", [{}])[0].get('$ref')
                     if ref_path:
                         enum_def = self._get_definition_from_ref(ref_path)  # type: ignore
