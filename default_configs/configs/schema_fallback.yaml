@@ -359,6 +359,27 @@ $defs:
     title: Upscaler
     type: string
 properties:
+  global_settings:
+    title: Global Settings
+    type: object
+    properties:
+      model_blacklist:
+        title: Model Blacklist
+        type: array
+        items:
+          type: string
+        default:
+          - embedding
+          - tts
+          - whisper
+          - dall-e
+          - moderation
+          - classifier
+          - aqa
+          - sib
+          - babbage
+          - davinci
+          - ada
   filter_text:
     anyOf:
       - type: string
@@ -368,62 +389,24 @@ properties:
   render:
     allOf:
       - $ref: '#/$defs/RenderConfig'
-    default:
-      renderer: none
-      alignment: auto
-      disable_font_border: false
-      outline_color: 'FFFFFF'
-      outline_width: 2
-      is_bold: false
-      font_size_offset: 0
-      font_size_minimum: -1
-      direction: auto
-      uppercase: false
-      lowercase: false
-      gimp_font: Sans-serif
-      no_hyphenation: false
-      font_color:
-      line_spacing:
-      font_size:
-      rtl: true
   upscale:
     allOf:
       - $ref: '#/$defs/UpscaleConfig'
-    default:
-      upscaler: none
-      revert_upscaling: false
-      upscale_ratio:
   translator:
     allOf:
       - $ref: '#/$defs/TranslatorConfig'
-    default:
-      translator: none
-      target_lang: none
-      no_text_lang_skip: false
-      skip_lang:
-      gpt_config:
-      translator_chain:
-      selective_translation:
-      enable_post_translation_check: true
-      post_check_max_retry_attempts: 3
-      post_check_repetition_threshold: 20
-      post_check_target_lang_threshold: 0.5
   detector:
     allOf:
       - $ref: '#/$defs/DetectorConfig'
-    default: none
   colorizer:
     allOf:
       - $ref: '#/$defs/ColorizerConfig'
-    default: none
   inpainter:
     allOf:
       - $ref: '#/$defs/InpainterConfig'
-    default: none
   ocr:
     allOf:
       - $ref: '#/$defs/OcrConfig'
-    default: none
   force_simple_sort:
     default: false
     title: Force Simple Sort

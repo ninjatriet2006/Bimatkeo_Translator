@@ -13,19 +13,6 @@ global_settings:
     google_font_css: "https://fonts.googleapis.com/css?family="
     paddle_en_dict: "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/ppocr/utils/en_dict.txt"
 
-  model_blacklist:
-  - embedding
-  - tts
-  - whisper
-  - dall-e
-  - moderation
-  - classifier
-  - aqa
-  - sib
-  - babbage
-  - davinci
-  - ada
-
   model_priority_keywords:
     high: ["gpt-4o", "o1", "o3", "deepseek-chat", "mixtral", "llama3"]
     medium: ["gpt-4", "deepseek", "llama"]

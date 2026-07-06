@@ -7,24 +7,38 @@ import os
 def _get_registry_data():
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     registry_path = os.path.join(project_root, ".config", "models", "model_registry.yaml")
+    schema_path = os.path.join(project_root, "default_configs", "configs", "schema_fallback.yaml")
+    
+    global_blacklist = []
+    ai_translators = []
+    
     try:
         from ruamel.yaml import YAML
         y = YAML()
+        
+        # Load custom endpoints
         with open(registry_path, "r", encoding="utf-8") as f:
-            data = y.load(f)
-            return data.get("global_settings", {}), data.get("fields", {}).get("ai_translator", [])
+            reg_data = y.load(f)
+            ai_translators = reg_data.get("fields", {}).get("ai_translator", [])
+            
+        # Load SSOT model blacklist
+        with open(schema_path, "r", encoding="utf-8") as f:
+            schema_data = y.load(f)
+            global_blacklist = schema_data.get("properties", {}).get("global_settings", {}).get("properties", {}).get("model_blacklist", {}).get("default", [])
+            
     except Exception as e:
-        print(f"[api_utils] Warning: Failed to load registry for settings: {e}")
-        return {}, []
+        print(f"[api_utils] Warning: Failed to load registry/schema: {e}")
+        
+    return global_blacklist, ai_translators
 
-_GLOBAL_SETTINGS, _AI_TRANSLATOR_REGISTRY = _get_registry_data()
+_MODEL_BLACKLIST, _AI_TRANSLATOR_REGISTRY = _get_registry_data()
 
 def is_blacklisted(model_name: str) -> bool:
     name_lower = model_name.lower()
-    blacklist_keywords = _GLOBAL_SETTINGS.get("model_blacklist", [
+    blacklist_keywords = _MODEL_BLACKLIST if _MODEL_BLACKLIST else [
         "embedding", "tts", "whisper", "dall-e", "moderation", 
         "classifier", "aqa", "sib", "babbage", "davinci", "ada"
-    ])
+    ]
     for kw in blacklist_keywords:
         if kw in name_lower:
             return True
