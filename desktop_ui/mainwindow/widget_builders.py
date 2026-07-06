@@ -435,8 +435,7 @@ class WidgetBuildersMixin:
                             combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))
         else:
-            if key in ['offline_detector', 'offline_ocr', 'api_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
-                combo_box.addItem("--- Select ---", "none")
+            combo_box.addItem("--- Select ---", "none")
             for val in values:
                 exists = self.config_loader.check_model_existence(val, field=key) if key != 'api_ocr' else True
                 display_name = self.config_loader.format_display_label(val, key)

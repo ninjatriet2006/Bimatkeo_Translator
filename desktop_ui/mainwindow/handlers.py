@@ -1152,6 +1152,11 @@ class HandlersMixin:
                     return val
                 return mw.LANGUAGES.get(widget.currentText(), "auto")
             val = widget.currentData()
+            
+            # Khắc phục lỗi rác "update_trigger"
+            if val in ["update_trigger", "update_all_software_trigger"]:
+                return None
+                
             if val is not None:
                 return val
             return widget.currentText()
@@ -1350,11 +1355,34 @@ class HandlersMixin:
         
         # Save UI Session State (current settings and theme) to oldsession.yaml
         if hasattr(self.config_loader, 'oldsession_config'):
-            self.config_loader.oldsession_config["current_settings"] = getattr(self, 'current_settings', {})
+            if hasattr(self, 'setting_widgets'):
+                clean_settings = {}
+                for key, widget in self.setting_widgets.items():
+                    if key == 'translator_chain':
+                        clean_settings[key] = self._get_translator_chain_string()
+                    else:
+                        val = self._get_value_from_widget(key, widget)
+                        if val is not None:
+                            clean_settings[key] = val
+                self.config_loader.oldsession_config["current_settings"] = clean_settings
+                self.current_settings = clean_settings  # Update memory too
+            else:
+                self.config_loader.oldsession_config["current_settings"] = getattr(self, 'current_settings', {})
+                
             if hasattr(self, 'theme_combobox'):
                 self.config_loader.oldsession_config["theme"] = self.theme_combobox.currentText()
                 
-            if hasattr(self, 'task_settings'):
+            if hasattr(self, 'task_settings') and hasattr(self, 'task_widgets'):
+                clean_tasks = {}
+                for ctx, ctx_widgets in self.task_widgets.items():
+                    clean_tasks[ctx] = {}
+                    for key, widget in ctx_widgets.items():
+                        val = self._get_value_from_widget(key, widget)
+                        if val is not None:
+                            clean_tasks[ctx][key] = val
+                self.config_loader.oldsession_config["task_settings"] = clean_tasks
+                self.task_settings = clean_tasks  # Update memory too
+            elif hasattr(self, 'task_settings'):
                 self.config_loader.oldsession_config["task_settings"] = self.task_settings
             if hasattr(self, 'job_queue'):
                 self.config_loader.oldsession_config["job_queue"] = self.job_queue
