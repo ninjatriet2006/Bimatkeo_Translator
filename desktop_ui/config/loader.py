@@ -54,7 +54,7 @@ class ConfigLoaderBase(BaseConfigLoader):
         os.makedirs(configs_dir, exist_ok=True)
         os.makedirs(models_dir, exist_ok=True)
 
-        root_configs = ["studio_config.yaml", "supporttargetlang.yaml", "api_profiles.json"]
+        root_configs = ["supporttargetlang.yaml", "api_profiles.json"]
         for f in root_configs:
             old_path = os.path.join(config_dir, f)
             new_path = os.path.join(configs_dir, f)
@@ -66,11 +66,9 @@ class ConfigLoaderBase(BaseConfigLoader):
                 except Exception:
                     pass
 
-        self.studio_config_path = os.path.join(configs_dir, "studio_config.yaml")
         self.oldsession_path = os.path.join(configs_dir, "oldsession.yaml")
 
         # Load configs
-        self.studio_config = self._load_yaml_file(self.studio_config_path)
         raw_oldsession = self._load_yaml_file(self.oldsession_path)
         
         # Flatten current_settings
@@ -135,10 +133,11 @@ class ConfigLoaderBase(BaseConfigLoader):
         # Run config initialization and repair before building data
         self._initialize_and_repair_config()  # type: ignore
 
-        self.ui_map = self._load_ui_map()
+        from desktop_ui.config.studio_ui_map import STUDIO_UI_MAP
+        import copy
+        self.ui_map = copy.deepcopy(STUDIO_UI_MAP)
 
-
-        self.app_language = self.oldsession_config.get("app_language", self.studio_config.get("app_language", "English"))
+        self.app_language = self.oldsession_config.get("app_language", "English")
         self.apply_language(self.app_language)  # type: ignore
 
         # The data is built and stored directly as attributes, not through getter methods

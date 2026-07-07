@@ -885,7 +885,7 @@ class HandlersMixin:
                 offline_combo.addItem(label, val)
                 last_idx = offline_combo.count() - 1
                 offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            is_en = self.config_loader.studio_config.get("app_language", "vi") == "en"
+            is_en = self.config_loader.oldsession_config.get("app_language", "vi") == "en"
             update_langs_text = UPDATE_SUPPORTED_LANGS_EN if is_en else UPDATE_SUPPORTED_LANGS
             update_software_text = UPDATE_SOFTWARE_EN if is_en else UPDATE_SOFTWARE
             
@@ -943,7 +943,7 @@ class HandlersMixin:
                 ai_combo.addItem(label, val)
                 last_idx = ai_combo.count() - 1
                 ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            is_en = self.config_loader.studio_config.get("app_language", "vi") == "en"
+            is_en = self.config_loader.oldsession_config.get("app_language", "vi") == "en"
             update_langs_text = UPDATE_SUPPORTED_LANGS_EN if is_en else UPDATE_SUPPORTED_LANGS
             update_software_text = UPDATE_SOFTWARE_EN if is_en else UPDATE_SOFTWARE
 
@@ -1577,7 +1577,7 @@ class HandlersMixin:
 
         self.log("INFO", f"Đang cập nhật bắt buộc phông chữ: {google_family}...")
         main_font_combo.setEnabled(False)
-        fonts_dir = os.path.join(self.project_base_dir, "fonts")
+        fonts_dir = os.path.join(self.project_base_dir, "fonts", "google_fonts")
 
         from PySide6.QtWidgets import QProgressDialog
         from PySide6.QtCore import Qt
@@ -1654,7 +1654,7 @@ class HandlersMixin:
 
         self.log("INFO", f"Initiating download for font family: {font_family}...")
         main_font_combo.setEnabled(False)
-        fonts_dir = os.path.join(self.project_base_dir, "fonts")
+        fonts_dir = os.path.join(self.project_base_dir, "fonts", "google_fonts")
 
         from PySide6.QtWidgets import QProgressDialog
         from PySide6.QtCore import Qt
@@ -1802,7 +1802,7 @@ class HandlersMixin:
             yaml = YAML()
             with open(local_versions_path, "r", encoding="utf-8") as f:
                 lv_data = yaml.load(f) or {}
-                local_versions = lv_data.get("fonts", {})
+                local_versions = lv_data.get("fonts", {}).get("google_fonts", {})
         
         progress_dialog = QMessageBox(self)
         progress_dialog.setWindowTitle("Đang kiểm tra")
@@ -1874,7 +1874,7 @@ class HandlersMixin:
         progress.show()
         
         main_font_combo.setEnabled(False)
-        fonts_dir = os.path.join(self.project_base_dir, "fonts")
+        fonts_dir = os.path.join(self.project_base_dir, "fonts", "google_fonts")
         
         css_url = self.config_loader.global_settings.get("resources", {}).get(
             "google_font_css", 
@@ -2045,13 +2045,15 @@ class HandlersMixin:
         if reply == QMessageBox.StandardButton.No:
             return
             
-        fonts_dir = os.path.join(self.project_base_dir, "fonts")
         deleted = False
         
-        for filename in os.listdir(fonts_dir):
-            if filename.endswith(".ttf") and font_name.replace(" ", "") in filename:
-                os.remove(os.path.join(fonts_dir, filename))
-                deleted = True
+        for filename, filepath in list(self.font_map.items()):
+            if filename.endswith(('.ttf', '.otf', '.ttc')) and font_name.replace(" ", "") in filename:
+                try:
+                    os.remove(filepath)
+                    deleted = True
+                except Exception as e:
+                    print(f"Lỗi khi xóa {filepath}: {e}")
                 
         if deleted:
             QMessageBox.information(self, "Thành công", f"Đã xóa font '{font_name}'.")
@@ -2067,8 +2069,11 @@ class HandlersMixin:
                 yaml.default_flow_style = False
                 with open(local_versions_file, "r", encoding="utf-8") as lf:
                     local_versions = yaml.load(lf) or {}
-                if "fonts" in local_versions and font_name in local_versions["fonts"]:
-                    del local_versions["fonts"][font_name]
+                if "fonts" in local_versions and isinstance(local_versions["fonts"], dict):
+                    if "google_fonts" in local_versions["fonts"] and font_name in local_versions["fonts"]["google_fonts"]:
+                        del local_versions["fonts"]["google_fonts"][font_name]
+                    if "custom_fonts" in local_versions["fonts"] and font_name in local_versions["fonts"]["custom_fonts"]:
+                        del local_versions["fonts"]["custom_fonts"][font_name]
                     with open(local_versions_file, "w", encoding="utf-8") as lf:
                         yaml.dump(local_versions, lf)
                 

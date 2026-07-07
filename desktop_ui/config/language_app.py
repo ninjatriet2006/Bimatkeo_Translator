@@ -31,8 +31,9 @@ class LanguageAppMixin(LanguageAppMixinBase):
         """Applies the selected language strings to the UI Map. Acts as a validator."""
         self.app_language = language
         
-        # Reset to base copies from studio_config/files to avoid polluting original config
-        self.ui_map = copy.deepcopy(self._load_ui_map())
+        # Reset to base copies from studio_ui_map to avoid polluting original config
+        from desktop_ui.config.studio_ui_map import STUDIO_UI_MAP
+        self.ui_map = copy.deepcopy(STUDIO_UI_MAP)
 
         lang_data = self.get_lang_data(language)
         if not lang_data:

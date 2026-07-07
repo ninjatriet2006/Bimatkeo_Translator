@@ -6,10 +6,7 @@ from typing import Any
 class BaseConfigLoader:
     project_base_dir: str
     cache_path: str
-    studio_config_path: str
-    studio_config: dict[str, Any]
     backend_schema: dict[str, Any] | None
-    ui_map: dict[str, Any]
     factory_defaults: dict[str, Any]
 
 
@@ -83,29 +80,7 @@ class BaseConfigLoader:
         ansi_escape = re.compile(r'\x1B\[[0-9;]*[A-Za-z]')
         return ansi_escape.sub('', text)
 
-    def _load_ui_map(self):
-        if hasattr(self, 'studio_config') and self.studio_config and "ui_map" in self.studio_config:
-            ui_map = self.studio_config["ui_map"]
-        else:
-            map_path = os.path.join(self.project_base_dir, '.config', 'configs', 'ui_map.yaml')
-            try:
-                ui_map = self._load_yaml_file(map_path)
-            except Exception as e:
-                print(f"[ERROR] UI map loading failed: {e}")
-                ui_map = {}
-                
-        # Programmatically override output_format to always use dropdown (optionmenu)
-        if isinstance(ui_map, dict):
-            for tab, widgets in ui_map.items():
-                if isinstance(widgets, dict) and "output_format" in widgets:
-                    if isinstance(widgets["output_format"], dict):
-                        widgets["output_format"]["widget"] = "optionmenu"
-                        widgets["output_format"].pop("options", None)
-                    
-        return ui_map
 
-
-    
     def _get_definition_from_ref(self, ref_path):
         try:
             parts = ref_path.split('/')[1:]
