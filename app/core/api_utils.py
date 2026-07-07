@@ -46,7 +46,7 @@ def is_blacklisted(model_name: str) -> bool:
 
 def priority_sort_key(m_name: str):
     m_lower = m_name.lower()
-    priorities = _GLOBAL_SETTINGS.get("model_priority_keywords", {})
+    priorities = {}
     high = priorities.get("high", ["gpt-4o", "o1", "o3", "deepseek-chat", "mixtral", "llama3"])
     medium = priorities.get("medium", ["gpt-4", "deepseek", "llama"])
     low = priorities.get("low", ["gpt-3.5"])
