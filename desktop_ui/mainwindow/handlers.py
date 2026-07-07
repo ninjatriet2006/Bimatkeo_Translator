@@ -37,72 +37,24 @@ class FontDownloadWorker(QThread):
         self.fonts_dir = fonts_dir
 
     def run(self):
-        import urllib.request
-        import urllib.parse
-        import re
-        import os
         try:
-            url = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(self.font_family)}:regular,italic,700,700italic"
-            req = urllib.request.Request(url, headers={'User-Agent': 'curl/7.81.0'})
-            with urllib.request.urlopen(req, timeout=15) as response:
-                css_content = response.read().decode('utf-8')
+            import sys
+            import os
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            if base_dir not in sys.path:
+                sys.path.insert(0, base_dir)
+            from app.core.fonts.manager import FontsManager
             
-            blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
-            if not blocks:
-                url_fallback = f"https://fonts.googleapis.com/css?family={urllib.parse.quote(self.font_family)}"
-                req_fb = urllib.request.Request(url_fallback, headers={'User-Agent': 'curl/7.81.0'})
-                with urllib.request.urlopen(req_fb, timeout=15) as response_fb:
-                    css_content = response_fb.read().decode('utf-8')
-                blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
+            # Temporary GOOGLE_FONTS list just for instantiation if we don't have it here. 
+            # Scanner isn't used for download, so empty list is fine for the manager initialization in this context.
+            manager = FontsManager(base_dir, [])
             
-            if not blocks:
-                self.finished.emit(False, "Không tìm thấy cấu hình phông chữ trên Google Fonts.")
-                return
-
-            os.makedirs(self.fonts_dir, exist_ok=True)
-            extracted_any = False
-            
-            total_blocks = len(blocks)
-            
-            for idx, block in enumerate(blocks):
-                url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
-                if url_match:
-                    ttf_url = url_match.group(1).strip()
-                    style_match = re.search(r'font-style:\s*([^;]+);', block)
-                    weight_match = re.search(r'font-weight:\s*([^;]+);', block)
-                    
-                    style = style_match.group(1).strip() if style_match else "normal"
-                    weight = weight_match.group(1).strip() if weight_match else "400"
-                    
-                    clean_name = self.font_family.replace(" ", "")
-                    if weight == "700" and style == "italic":
-                        suffix = "-BoldItalic"
-                    elif weight == "700":
-                        suffix = "-Bold"
-                    elif style == "italic":
-                        suffix = "-Italic"
-                    else:
-                        suffix = "-Regular"
-                    
-                    filename = f"{clean_name}{suffix}.ttf"
-                    dest_path = os.path.join(self.fonts_dir, filename)
-                    
-                    self.progress.emit(idx, total_blocks, filename)
-                    
-                    req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
-                    with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
-                        font_data = res_ttf.read()
-                    
-                    with open(dest_path, "wb") as f:
-                        f.write(font_data)
-                    extracted_any = True
-                    
-                    self.progress.emit(idx + 1, total_blocks, filename)
-                    
-            if extracted_any:
-                self.finished.emit(True, self.font_family)
-            else:
-                self.finished.emit(False, "Không tìm thấy tệp font phù hợp để tải về.")
+            manager.download_font(
+                self.font_family, 
+                self.fonts_dir, 
+                progress_callback=self.progress.emit
+            )
+            self.finished.emit(True, self.font_family)
         except Exception as e:
             self.finished.emit(False, str(e))
 
@@ -1533,38 +1485,29 @@ class HandlersMixin:
         requeue_action.triggered.connect(self._requeue_job)
         menu.exec(self.history_list_widget.mapToGlobal(position))
 
+    def _get_fonts_manager(self):
+        """Returns a singleton instance of FontsManager."""
+        if not hasattr(self, '_fonts_manager_instance'):
+            import sys
+            if self.project_base_dir not in sys.path:
+                sys.path.insert(0, self.project_base_dir)
+            from app.core.fonts.manager import FontsManager
+            self._fonts_manager_instance = FontsManager(self.project_base_dir, self.GOOGLE_FONTS)
+        return self._fonts_manager_instance
+
     def _build_font_map(self):
         """Scans the project'''s /fonts folder to create a name-to-filepath map."""
-        self.font_map = {}
-        found_any = False
-        for folder in ["fonts", os.path.join(".config", "configs", "fonts")]:
-            fonts_dir = os.path.join(self.project_base_dir, folder)
-            if os.path.isdir(fonts_dir):
-                found_any = True
-                for font_file in sorted(os.listdir(fonts_dir)):
-                    if font_file.lower().endswith(('.ttf', '.otf', '.ttc')):
-                        font_path = os.path.join(fonts_dir, font_file)
-                        self.font_map[font_file] = font_path
-        if not found_any:
+        self.font_map = self._get_fonts_manager().build_font_map()
+        if not self.font_map:
             print(f"[WARNING] Fonts directories not found")
 
     def _get_google_font_family_from_filename(self, filename: str) -> str:
         """Checks if the filename matches any of our known Google Fonts and returns the family name."""
-        clean_fn = filename.replace("-", "").replace(" ", "").lower()
-        for gf in self.GOOGLE_FONTS:
-            clean_gf = gf.replace(" ", "").lower()
-            if clean_gf in clean_fn:
-                return gf
-        return None
+        return self._get_fonts_manager().get_google_font_family_from_filename(filename)
 
     def _get_installed_google_fonts(self) -> dict:
         """Scans the current font map and maps Google Font Family Name -> list of local font filenames."""
-        installed_google_fonts = {}
-        for filename in self.font_map.keys():
-            google_family = self._get_google_font_family_from_filename(filename)
-            if google_family:
-                installed_google_fonts.setdefault(google_family, []).append(filename)
-        return installed_google_fonts
+        return self._get_fonts_manager().get_installed_google_fonts()
 
     def _save_font_version_from_online_metadata(self, font_family: str):
         """Fetches the latest online version of a single font family and saves it in config."""
@@ -2283,25 +2226,16 @@ class HandlersMixin:
                     
                     if model_name in ["sd_1_5", "sd_nsfw"]:
                         try:
-                            from huggingface_hub import snapshot_download
-                            repo_id = "runwayml/stable-diffusion-v1-5" if model_name == "sd_1_5" else "Kernel/sd-nsfw"
-                            self.progress.emit(30, f"Đang đồng bộ Base Model từ {repo_id}...")
+                            import sys
+                            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                            if base_dir not in sys.path:
+                                sys.path.insert(0, base_dir)
+                                
+                            from app.core.hugging_face import HuggingFaceManager
+                            hf_manager = HuggingFaceManager()
                             
-                            snapshot_download(
-                                repo_id=repo_id, 
-                                allow_patterns=[
-                                    "*.json", 
-                                    "*.txt", 
-                                    "unet/*.safetensors", 
-                                    "vae/*.safetensors", 
-                                    "text_encoder/*.safetensors", 
-                                    "tokenizer/*", 
-                                    "scheduler/*", 
-                                    "feature_extractor/*", 
-                                    "safety_checker/*.safetensors"
-                                ],
-                                resume_download=True
-                            )
+                            repo_id = "runwayml/stable-diffusion-v1-5" if model_name == "sd_1_5" else "Kernel/sd-nsfw"
+                            hf_manager.download_diffusers(repo_id, progress_callback=self.progress.emit)
                             
                             # Mark as completed
                             local_versions = {}
@@ -2311,7 +2245,7 @@ class HandlersMixin:
                             
                             if key not in local_versions:
                                 local_versions[key] = {}
-                            local_versions[key][model_name] = "hf_latest"
+                            local_versions[key][model_name] = hf_manager.check_version(repo_id)
                             with open(local_versions_file, "w", encoding="utf-8") as lf:
                                 yaml.dump(local_versions, lf)
                                 
@@ -2352,7 +2286,20 @@ class HandlersMixin:
                         hf_url_parts = url[5:].split('@', 1)
                         repo_id = hf_url_parts[0]
                         hf_specific_file = hf_url_parts[1] if len(hf_url_parts) > 1 else None
-                        latest_version = "hf_latest"
+                        
+                        import sys
+                        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                        if base_dir not in sys.path:
+                            sys.path.insert(0, base_dir)
+                        from app.core.hugging_face import HuggingFaceManager
+                        hf_manager = HuggingFaceManager()
+                        
+                        try:
+                            self.progress.emit(35, f"Đang kiểm tra phiên bản trên HuggingFace cho {repo_id}...")
+                            latest_version = hf_manager.check_version(repo_id)
+                        except Exception as e:
+                            self.finished.emit(False, f"Lỗi kiểm tra phiên bản HF: {e}")
+                            return
                         zipball_url = ""
                     elif url.lower().endswith(('.zip', '.tar.gz', '.tar')):
                         is_direct_archive = True
@@ -2411,64 +2358,8 @@ class HandlersMixin:
                                 model_dir = os.path.join(base_dir, os.path.dirname(check_file_path))
                             else:
                                 model_dir = os.path.join(base_dir, "models", "Offline Translator", model_name)
-                            os.makedirs(model_dir, exist_ok=True)
                             
-                            hf_endpoint = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
-                            tree_url = f"{hf_endpoint}/api/models/{repo_id}/tree/main?recursive=True"
-                            req = urllib.request.Request(tree_url, headers={'User-Agent': 'Mozilla/5.0'})
-                            
-                            with urllib.request.urlopen(req, timeout=15) as response:
-                                files_data = json.loads(response.read().decode('utf-8'))
-                                
-                            target_files = []
-                            # Pre-calculate safetensors paths to avoid downloading .bin when safetensors exist
-                            safetensors_paths = {item.get("path", "") for item in files_data if item.get("path", "").endswith(".safetensors")}
-                            
-                            for item in files_data:
-                                if item.get("type") == "file":
-                                    path = item.get("path", "")
-                                    if hf_specific_file and path != hf_specific_file:
-                                        continue
-                                    ext = os.path.splitext(path)[1].lower()
-                                    if ext in [".msgpack", ".h5", ".ot", ".md"] or path.startswith("."):
-                                        continue
-                                    if ext == ".bin":
-                                        safetensors_equivalent = path[:-4] + ".safetensors"
-                                        if safetensors_equivalent in safetensors_paths:
-                                            continue # skip .bin if .safetensors exists
-                                    target_files.append(item)
-                                        
-                            total_files = len(target_files)
-                            if total_files == 0:
-                                self.finished.emit(False, f"Không tìm thấy file hợp lệ nào trong repository {repo_id}")
-                                return
-                                
-                            for idx, item in enumerate(target_files):
-                                path = item.get("path")
-                                size = item.get("size", 0)
-                                import urllib.parse
-                                hf_endpoint = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
-                                file_url = f"{hf_endpoint}/{repo_id}/resolve/main/{urllib.parse.quote(path)}"
-                                local_path = os.path.join(model_dir, path)
-                                
-                                os.makedirs(os.path.dirname(local_path), exist_ok=True)
-                                self.progress.emit(70 + int((idx/total_files)*25), f"Đang tải {path} ({idx+1}/{total_files})...")
-                                
-                                req_file = urllib.request.Request(file_url, headers={'User-Agent': 'Mozilla/5.0'})
-                                with urllib.request.urlopen(req_file, timeout=60) as resp:
-                                    with open(local_path, "wb") as f:
-                                        downloaded = 0
-                                        chunk_size = 1024 * 1024
-                                        while True:
-                                            chunk = resp.read(chunk_size)
-                                            if not chunk:
-                                                break
-                                            f.write(chunk)
-                                            downloaded += len(chunk)
-                                            if size > 0 and downloaded % (2 * 1024 * 1024) < chunk_size:
-                                                percent = int((downloaded/size)*100)
-                                                self.progress.emit(70 + int((idx/total_files)*25), f"Đang tải {path} ({idx+1}/{total_files}) - {percent}%")
-                                                
+                            hf_manager.download(repo_id, model_dir, hf_specific_file, progress_callback=self.progress.emit)
                         except Exception as e:
                             self.finished.emit(False, f"Lỗi khi tải từ HuggingFace: {e}")
                             return
@@ -3038,24 +2929,18 @@ class CheckAllFontsWorker(QThread):
         self.metadata_url = metadata_url
 
     def run(self):
-        import urllib.request
         try:
-            req = urllib.request.Request(self.metadata_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=15) as response:
-                data = json.loads(response.read().decode('utf-8'))
+            import sys
+            import os
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            if base_dir not in sys.path:
+                sys.path.insert(0, base_dir)
+            from app.core.fonts.manager import FontsManager
             
-            updates_needed = []
-            for family in self.installed_families:
-                key = family.lower().replace(" ", "-")
-                if key not in data:
-                    key = family.lower().replace(" ", "")
-                
-                if key in data:
-                    online_ver = data[key].get("version", "")
-                    local_ver = self.local_versions.get(family, None)
-                    if not local_ver or local_ver != online_ver:
-                        updates_needed.append((family, local_ver or "Chưa đăng ký", online_ver))
+            manager = FontsManager(base_dir, [])
+            manager.version_checker.metadata_url = self.metadata_url
             
+            updates_needed = manager.check_versions(self.installed_families, self.local_versions)
             self.finished.emit(True, updates_needed, "")
         except Exception as e:
             self.finished.emit(False, [], str(e))
@@ -3072,71 +2957,24 @@ class BulkFontDownloadWorker(QThread):
         self.css_url = css_url
 
     def run(self):
-        import urllib.request
-        import urllib.parse
-        import re
-        
-        success_updates = {}
-        failed_errors = []
-        total = len(self.updates_to_download)
-        for idx, (family, _, online_ver) in enumerate(self.updates_to_download):
-            self.progress.emit(idx + 1, total, family)
-            try:
-                url = f"{self.css_url}{urllib.parse.quote(family)}:regular,italic,700,700italic"
-                req = urllib.request.Request(url, headers={'User-Agent': 'curl/7.81.0'})
-                with urllib.request.urlopen(req, timeout=15) as response:
-                    css_content = response.read().decode('utf-8')
-                
-                blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
-                if not blocks:
-                    url_fallback = f"{self.css_url}{urllib.parse.quote(family)}"
-                    req_fb = urllib.request.Request(url_fallback, headers={'User-Agent': 'curl/7.81.0'})
-                    with urllib.request.urlopen(req_fb, timeout=15) as response_fb:
-                        css_content = response_fb.read().decode('utf-8')
-                    blocks = re.findall(r'@font-face\s*\{([^}]+)\}', css_content)
-                
-                if blocks:
-                    extracted_any = False
-                    for block in blocks:
-                        url_match = re.search(r'url\((https://fonts\.gstatic\.com/s/[^)]+\.ttf)\)', block)
-                        if url_match:
-                            ttf_url = url_match.group(1).strip()
-                            style_match = re.search(r'font-style:\s*([^;]+);', block)
-                            weight_match = re.search(r'font-weight:\s*([^;]+);', block)
-                            
-                            style = style_match.group(1).strip() if style_match else "normal"
-                            weight = weight_match.group(1).strip() if weight_match else "400"
-                            
-                            clean_name = family.replace(" ", "")
-                            if weight == "700" and style == "italic":
-                                suffix = "-BoldItalic"
-                            elif weight == "700":
-                                suffix = "-Bold"
-                            elif style == "italic":
-                                suffix = "-Italic"
-                            else:
-                                suffix = "-Regular"
-                            
-                            filename = f"{clean_name}{suffix}.ttf"
-                            dest_path = os.path.join(self.fonts_dir, filename)
-                            
-                            req_ttf = urllib.request.Request(ttf_url, headers={'User-Agent': 'curl/7.81.0'})
-                            with urllib.request.urlopen(req_ttf, timeout=15) as res_ttf:
-                                font_data = res_ttf.read()
-                            
-                            with open(dest_path, "wb") as f:
-                                f.write(font_data)
-                            extracted_any = True
-                            
-                    if extracted_any:
-                        success_updates[family] = online_ver
-                    else:
-                        failed_errors.append(f"{family} (Không tìm thấy liên kết tệp ttf)")
-                else:
-                    failed_errors.append(f"{family} (Không tải được cấu hình từ Google CSS API)")
-            except Exception as e:
-                print(f"[ERROR] Failed to download/update '{family}': {e}")
-                failed_errors.append(f"{family} ({str(e)})")
-        
-        error_msg = "; ".join(failed_errors)
-        self.finished.emit(True, success_updates, error_msg)
+        try:
+            import sys
+            import os
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            if base_dir not in sys.path:
+                sys.path.insert(0, base_dir)
+            from app.core.fonts.manager import FontsManager
+            
+            manager = FontsManager(base_dir, [])
+            manager.downloader.css_url = self.css_url
+            
+            success_updates, failed_errors = manager.download_bulk(
+                self.updates_to_download, 
+                self.fonts_dir, 
+                progress_callback=self.progress.emit
+            )
+            
+            error_msg = "; ".join(failed_errors)
+            self.finished.emit(True, success_updates, error_msg)
+        except Exception as e:
+            self.finished.emit(False, {}, str(e))

@@ -17,9 +17,20 @@ class HuggingFaceManager:
         self.downloader = HFDownloader()
         self.version_checker = HFVersionChecker()
         
-    def check_and_update(self, repo_id: str, local_version: str):
+    def check_version(self, repo_id: str) -> str:
         """
-        Checks for update and downloads if a new version is available.
-        To be implemented.
+        Returns the latest formatted version string.
         """
-        pass
+        return self.version_checker.get_latest_version(repo_id)
+        
+    def download(self, repo_id: str, model_dir: str, hf_specific_file: str = None, progress_callback=None):
+        """
+        Downloads a standard model.
+        """
+        self.downloader.download_model(repo_id, model_dir, hf_specific_file, progress_callback)
+
+    def download_diffusers(self, repo_id: str, progress_callback=None):
+        """
+        Downloads a diffusers pipeline model using huggingface_hub.
+        """
+        self.downloader.download_diffusers(repo_id, progress_callback)
