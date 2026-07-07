@@ -1,3 +1,11 @@
+# ========================================================================
+# [AI_ARCH_NOTE]: API PROFILES CONFIGURATION
+# - Purpose: Stores user-configured credentials for cloud translator/OCR services.
+# - Structure: Key-Value pairs of profile names containing type, endpoint, key, model.
+# - Consumed by: desktop_ui/mainwindow/handlers.py, app/core/pipeline.py
+# - Modified by: User via UI API Manager.
+# - Critical Rules: Do not log or expose API keys.
+# ========================================================================
 TokenRouter:
   type: Standalone
   service: Translator

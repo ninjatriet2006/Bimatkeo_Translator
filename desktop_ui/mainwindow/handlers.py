@@ -1852,7 +1852,14 @@ class HandlersMixin:
             main_font_combo.blockSignals(False)
             return
 
-        local_versions = self.config_loader.studio_config.get("font_versions", {})
+        local_versions_path = os.path.join(self.config_loader.project_base_dir, ".config", "models", "local_versions.yaml")
+        local_versions = {}
+        if os.path.exists(local_versions_path):
+            from ruamel.yaml import YAML
+            yaml = YAML()
+            with open(local_versions_path, "r", encoding="utf-8") as f:
+                lv_data = yaml.load(f) or {}
+                local_versions = lv_data.get("fonts", {})
         
         progress_dialog = QMessageBox(self)
         progress_dialog.setWindowTitle("Đang kiểm tra")
@@ -2109,10 +2116,19 @@ class HandlersMixin:
             self._build_font_map()
             
             # Remove version from config
-            local_versions = self.config_loader.oldsession_config.get("font_versions", {})
-            if font_name in local_versions:
-                del local_versions[font_name]
-                self.config_loader.save_oldsession_config()
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            local_versions_file = os.path.join(base_dir, ".config", "models", "local_versions.yaml")
+            if os.path.exists(local_versions_file):
+                from ruamel.yaml import YAML
+                yaml = YAML()
+                yaml.preserve_quotes = True
+                yaml.default_flow_style = False
+                with open(local_versions_file, "r", encoding="utf-8") as lf:
+                    local_versions = yaml.load(lf) or {}
+                if "fonts" in local_versions and font_name in local_versions["fonts"]:
+                    del local_versions["fonts"][font_name]
+                    with open(local_versions_file, "w", encoding="utf-8") as lf:
+                        yaml.dump(local_versions, lf)
                 
             combo = self._dynamic_btns_map['font_family']['combo']
             font_names = list(self.font_map.keys())
@@ -2157,9 +2173,9 @@ class HandlersMixin:
             yaml.preserve_quotes = True
             yaml.default_flow_style = False
             with open(local_versions_file, "r", encoding="utf-8") as lf:
-                local_versions = yaml.load(lf)
-            if model_name in local_versions:
-                del local_versions[model_name]
+                local_versions = yaml.load(lf) or {}
+            if key in local_versions and model_name in local_versions[key]:
+                del local_versions[key][model_name]
                 with open(local_versions_file, "w", encoding="utf-8") as lf:
                     yaml.dump(local_versions, lf)
                     
@@ -2293,7 +2309,9 @@ class HandlersMixin:
                                 with open(local_versions_file, "r", encoding="utf-8") as lf:
                                     local_versions = yaml.load(lf) or {}
                             
-                            local_versions[model_name] = "hf_latest"
+                            if key not in local_versions:
+                                local_versions[key] = {}
+                            local_versions[key][model_name] = "hf_latest"
                             with open(local_versions_file, "w", encoding="utf-8") as lf:
                                 yaml.dump(local_versions, lf)
                                 
@@ -2365,9 +2383,9 @@ class HandlersMixin:
                         yaml.preserve_quotes = True
                         yaml.default_flow_style = False
                         with open(local_versions_file, "r", encoding="utf-8") as lf:
-                            local_versions = yaml.load(lf)
+                            local_versions = yaml.load(lf) or {}
                             
-                    current_version = local_versions.get(model_name, "none")
+                    current_version = local_versions.get(key, {}).get(model_name, "none")
                     
                     # Force update if check file does not exist, even if version matches
                     needs_update = True
@@ -2557,7 +2575,9 @@ class HandlersMixin:
                     
 
                     # Update local version
-                    local_versions[model_name] = latest_version
+                    if key not in local_versions:
+                        local_versions[key] = {}
+                    local_versions[key][model_name] = latest_version
                     with open(local_versions_file, "w", encoding="utf-8") as lf:
                         yaml.dump(local_versions, lf)
                         

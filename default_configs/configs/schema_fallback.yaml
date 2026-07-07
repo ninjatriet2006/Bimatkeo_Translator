@@ -1,7 +1,11 @@
-# ==========================================
-# Schema Fallback
-# Sơ đồ cấu hình mặc định (phòng khi không lấy được schema từ core)
-# ==========================================
+# ========================================================================
+# [AI_ARCH_NOTE]: SCHEMA FALLBACK
+# - Purpose: Fallback default schema when core schema cannot be loaded.
+# - Structure: JSON Schema format in YAML.
+# - Consumed by: app/core/base_config.py
+# - Modified by: Developers.
+# - Critical Rules: Must strictly follow JSON Schema Draft standard.
+# ========================================================================
 
 $defs:
   Alignment:

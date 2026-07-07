@@ -1,6 +1,11 @@
-# Cấu hình ẩn phục vụ Dev Test (Tắt/Bật các khối Pipeline)
-# Các thuộc tính dưới đây sẽ đè lên cấu hình được truyền từ giao diện UI.
-# Thay đổi thành false để bỏ qua (bypass) khối chức năng tương ứng nhằm debug lỗi.
+# ========================================================================
+# [AI_ARCH_NOTE]: PIPELINE DEBUG CONFIGURATION
+# - Purpose: Hidden developer overrides to toggle specific stages of the image translation pipeline.
+# - Structure: Flat boolean flags.
+# - Consumed by: app/core/pipeline.py
+# - Modified by: User manually
+# - Critical Rules: Do not change flags unless debugging.
+# ========================================================================
 
 enable_ocr: true
 enable_translator: true

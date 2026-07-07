@@ -1,10 +1,10 @@
 # ========================================================================
-# CRITICAL RULE FOR AI AGENTS (e.g. Gemini, GPT):
-# DO NOT USE FLAT DICTIONARIES FOR THIS FILE!
-# DO NOT ADD 'group' OR 'order' FIELDS TO ANY WIDGET!
-# This configuration uses a NESTED structure. The UI Tabs are the root keys
-# (e.g., 'General & Translator'). All widgets must be nested directly inside
-# their respective tab. The rendering order is strictly top-to-bottom natively.
+# [AI_ARCH_NOTE]: STUDIO UI CONFIGURATION
+# - Purpose: Maps backend settings to UI widgets for the dynamic settings panel.
+# - Structure: Nested structure (UI Tabs -> widget definitions).
+# - Consumed by: desktop_ui/mainwindow/handlers.py
+# - Modified by: Developers manually adding new UI elements.
+# - Critical Rules: DO NOT USE FLAT DICTIONARIES! DO NOT ADD 'group' OR 'order' FIELDS!
 # ========================================================================
 ui_map:
   General & Translator:

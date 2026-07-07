@@ -1,9 +1,10 @@
 # ========================================================================
-# CRITICAL RULE FOR AI AGENTS (e.g. Gemini, GPT):
-# DO NOT USE FLAT DICTIONARIES FOR THE 'fields' SECTION!
-# All model registry fields (like 'offline_translator', 'offline_ocr') MUST
-# be strictly nested under their exact corresponding UI Tab Name (e.g., 
-# 'General & Translator'). This matches the new frontend design.
+# [AI_ARCH_NOTE]: MODEL REGISTRY
+# - Purpose: Central registry mapping models to their physical files and metadata.
+# - Structure: Nested. 'fields' MUST be strictly nested under exact UI Tab Names.
+# - Consumed by: app/core/config_loader.py, desktop_ui/mainwindow/handlers.py
+# - Modified by: Developers adding new models.
+# - Critical Rules: DO NOT USE FLAT DICTIONARIES FOR THE 'fields' SECTION!
 # ========================================================================
 schema_version: 2
 

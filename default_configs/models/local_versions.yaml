@@ -1,10 +1,30 @@
-m2m100: latest_direct
-nllb: hf_latest
-lama: hf_latest
-paddle_onnx_v6_tiny: hf_latest
-paddle_onnx_v6_small: hf_latest
-paddle_onnx_v6_medium: hf_latest
-paddle_onnx_rec_v6_tiny: hf_latest
-paddle_onnx_rec_v6_small: hf_latest
-paddle_onnx_rec_v6_medium: hf_latest
-48px_ctc: hf_latest
+# ========================================================================
+# [AI_ARCH_NOTE]: LOCAL VERSIONS
+# - Purpose: Tracks locally downloaded model versions.
+# - Structure: Nested by category (offline_translator, offline_ocr, fonts...).
+# - Consumed by: desktop_ui/mainwindow/handlers.py, app/core/fonts/
+# - Modified by: App when a user downloads/updates an asset.
+# - Critical Rules: DO NOT USE FLAT DICTIONARIES. Must group by category.
+# ========================================================================
+
+offline_translator:
+  m2m100: latest_direct
+  nllb: hf_latest
+
+offline_detector:
+  paddle_onnx_v6_tiny: hf_latest
+  paddle_onnx_v6_small: hf_latest
+  paddle_onnx_v6_medium: hf_latest
+
+offline_ocr:
+  48px_ctc: hf_latest
+  paddle_onnx_rec_v6_tiny: hf_latest
+  paddle_onnx_rec_v6_small: hf_latest
+  paddle_onnx_rec_v6_medium: hf_latest
+
+inpainter:
+  lama: hf_latest
+
+upscaler: {}
+
+fonts: {}
