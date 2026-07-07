@@ -1542,10 +1542,10 @@ class HandlersMixin:
         
         def on_done(version):
             if version:
-                versions = self.config_loader.oldsession_config.setdefault("font_versions", {})
-                versions[font_family] = version
-                self.config_loader.save_oldsession_config()
-                print(f"[Config] Updated font version for '''{font_family}''' to '''{version}'''")
+                import os
+                local_versions_file = os.path.join(self.config_loader.project_base_dir, ".config", "models", "local_versions.yaml")
+                self._get_fonts_manager().update_local_version(local_versions_file, font_family, version)
+                print(f"[Config] Updated font version for '{font_family}' to '{version}'")
             self._active_ver_workers.discard(worker)
 
         worker.done.connect(on_done)
@@ -1893,13 +1893,12 @@ class HandlersMixin:
             main_font_combo.setEnabled(True)
             
             if success_updates:
-                versions = self.config_loader.oldsession_config.setdefault("font_versions", {})
-                for fam, ver in success_updates.items():
-                    versions[fam] = ver
-                self.config_loader.save_oldsession_config()
+                import os
+                local_versions_file = os.path.join(self.config_loader.project_base_dir, ".config", "models", "local_versions.yaml")
+                self._get_fonts_manager().update_bulk_local_versions(local_versions_file, success_updates)
                 
-                for fam in success_updates.keys():
-                    self._save_font_version_from_online_metadata(fam)
+                # Removing the individual online metadata fetch because Bulk Download already retrieves the versions.
+                # The versions are already saved via update_bulk_local_versions above.
                 
                 self.log("SUCCESS", f"Đã cập nhật thành công {len(success_updates)} phông chữ!")
                 self._build_font_map()
@@ -2238,16 +2237,8 @@ class HandlersMixin:
                             hf_manager.download_diffusers(repo_id, progress_callback=self.progress.emit)
                             
                             # Mark as completed
-                            local_versions = {}
-                            if os.path.exists(local_versions_file):
-                                with open(local_versions_file, "r", encoding="utf-8") as lf:
-                                    local_versions = yaml.load(lf) or {}
-                            
-                            if key not in local_versions:
-                                local_versions[key] = {}
-                            local_versions[key][model_name] = hf_manager.check_version(repo_id)
-                            with open(local_versions_file, "w", encoding="utf-8") as lf:
-                                yaml.dump(local_versions, lf)
+                            latest_ver = hf_manager.check_version(repo_id)
+                            hf_manager.update_local_version(local_versions_file, key, model_name, latest_ver)
                                 
                             self.finished.emit(True, f"Đã tải xong Base Model: {model_name}.")
                             return
@@ -2466,11 +2457,18 @@ class HandlersMixin:
                     
 
                     # Update local version
-                    if key not in local_versions:
-                        local_versions[key] = {}
-                    local_versions[key][model_name] = latest_version
-                    with open(local_versions_file, "w", encoding="utf-8") as lf:
-                        yaml.dump(local_versions, lf)
+                    if is_huggingface:
+                        hf_manager.update_local_version(local_versions_file, key, model_name, latest_version)
+                    else:
+                        local_versions = {}
+                        if os.path.exists(local_versions_file):
+                            with open(local_versions_file, "r", encoding="utf-8") as lf:
+                                local_versions = yaml.load(lf) or {}
+                        if key not in local_versions:
+                            local_versions[key] = {}
+                        local_versions[key][model_name] = latest_version
+                        with open(local_versions_file, "w", encoding="utf-8") as lf:
+                            yaml.dump(local_versions, lf)
                         
                     # Create models folder based on captured config
                     if check_file_path:

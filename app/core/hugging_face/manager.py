@@ -34,3 +34,26 @@ class HuggingFaceManager:
         Downloads a diffusers pipeline model using huggingface_hub.
         """
         self.downloader.download_diffusers(repo_id, progress_callback)
+
+    def update_local_version(self, local_versions_file: str, key: str, model_name: str, version: str):
+        """
+        Records the downloaded version in local_versions.yaml.
+        """
+        import os
+        from ruamel.yaml import YAML
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        yaml.default_flow_style = False
+        
+        local_versions = {}
+        if os.path.exists(local_versions_file):
+            with open(local_versions_file, "r", encoding="utf-8") as lf:
+                local_versions = yaml.load(lf) or {}
+                
+        if key not in local_versions:
+            local_versions[key] = {}
+            
+        local_versions[key][model_name] = version
+        
+        with open(local_versions_file, "w", encoding="utf-8") as lf:
+            yaml.dump(local_versions, lf)
