@@ -715,8 +715,7 @@ class HandlersMixin:
                 new_value = self._get_value_from_widget(key, widget)
                 
             if isinstance(widget, QComboBox):
-                text = widget.currentText()
-                if text in [UPDATE_LANGS_LIST, UPDATE_SUPPORTED_LANGS]:
+                if new_value == "update_trigger":
                     self._trigger_online_config_update_from_combo(key, widget)
                     return
 
@@ -810,7 +809,9 @@ class HandlersMixin:
 
     def _on_translator_changed(self, translator_name: str):
         """Handles changes in the main translator selection."""
-        if translator_name == UPDATE_SUPPORTED_LANGS:
+        lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+        ui_strings = lang_data.get("ui_strings", {})
+        if translator_name == ui_strings.get("update_supported_langs", "📥 Update translation support list..."):
             return
         if translator_name and " (Not Setup)" in translator_name:
             translator_name = translator_name.split(" (Not Setup)")[0]
@@ -885,9 +886,10 @@ class HandlersMixin:
                 offline_combo.addItem(label, val)
                 last_idx = offline_combo.count() - 1
                 offline_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            is_en = self.config_loader.oldsession_config.get("app_language", "vi") == "en"
-            update_langs_text = UPDATE_SUPPORTED_LANGS_EN if is_en else UPDATE_SUPPORTED_LANGS
-            update_software_text = UPDATE_SOFTWARE_EN if is_en else UPDATE_SOFTWARE
+            lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+            ui_strings = lang_data.get("ui_strings", {})
+            update_langs_text = ui_strings.get("update_supported_langs", "📥 Update translation support list...")
+            update_software_text = ui_strings.get("update_all_models", "📥 Update ALL {category} models...").replace("{category}", "software")
             
             offline_combo.addItem(update_langs_text, "update_trigger")
             offline_combo.addItem(update_software_text, "update_software_trigger")
@@ -943,9 +945,10 @@ class HandlersMixin:
                 ai_combo.addItem(label, val)
                 last_idx = ai_combo.count() - 1
                 ai_combo.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-            is_en = self.config_loader.oldsession_config.get("app_language", "vi") == "en"
-            update_langs_text = UPDATE_SUPPORTED_LANGS_EN if is_en else UPDATE_SUPPORTED_LANGS
-            update_software_text = UPDATE_SOFTWARE_EN if is_en else UPDATE_SOFTWARE
+            lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+            ui_strings = lang_data.get("ui_strings", {})
+            update_langs_text = ui_strings.get("update_supported_langs", "📥 Update translation support list...")
+            update_software_text = ui_strings.get("update_all_models", "📥 Update ALL {category} models...").replace("{category}", "software")
 
             ai_combo.addItem(update_langs_text, "update_trigger")
             ai_combo.addItem(update_software_text, "update_software_trigger")
@@ -1040,7 +1043,9 @@ class HandlersMixin:
 
     def _on_target_lang_changed(self, target_lang_name: str):
         """Handles changes in the target language selection."""
-        if target_lang_name == UPDATE_LANGS_LIST:
+        lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+        ui_strings = lang_data.get("ui_strings", {})
+        if target_lang_name == ui_strings.get("update_langs_list", "📥 Update language list..."):
             return
         self._filter_translator_dropdowns(target_lang_name)
 
@@ -1475,7 +1480,7 @@ class HandlersMixin:
         self._start_pipeline_thread()
 
     def _show_history_context_menu(self, position):
-        """Creates and shows the context menu for the history list."""
+        """Creates and shows the history list context menu."""
         selected_items = self.history_list_widget.selectedItems()
         if not selected_items:
             return
@@ -1548,7 +1553,9 @@ class HandlersMixin:
                 print(f"[Config] Updated font version for '{font_family}' to '{version}'")
             self._active_ver_workers.discard(worker)
 
+        worker = SingleVersionFetchWorker(metadata_url)
         worker.done.connect(on_done)
+        self._active_ver_workers.add(worker)
         worker.start()
 
     def _force_update_current_font(self, main_font_combo: QComboBox):
@@ -1897,9 +1904,6 @@ class HandlersMixin:
                 local_versions_file = os.path.join(self.config_loader.project_base_dir, ".config", "models", "local_versions.yaml")
                 self._get_fonts_manager().update_bulk_local_versions(local_versions_file, success_updates)
                 
-                # Removing the individual online metadata fetch because Bulk Download already retrieves the versions.
-                # The versions are already saved via update_bulk_local_versions above.
-                
                 self.log("SUCCESS", f"Đã cập nhật thành công {len(success_updates)} phông chữ!")
                 self._build_font_map()
                 font_names = list(self.font_map.keys())
@@ -2137,10 +2141,8 @@ class HandlersMixin:
         if reply == QMessageBox.StandardButton.No:
             return
             
-        # Simplified bulk update: just show a dialog saying it's queued (since full implementation is too complex for this script, we'll implement a basic one or mock it)
-        # For now, we'll just loop through and call _trigger_model_software_update sequentially or tell user to do one by one.
-        info_title = "In Development" if is_en else "Đang phát triển"
-        info_msg = "Bulk download feature will be implemented in a future update. Please download each model individually for now." if is_en else "Tính năng tải hàng loạt sẽ được triển khai trong bản cập nhật sau. Vui lòng tải từng mô hình ở hiện tại."
+        info_title = "In Development"
+        info_msg = "Bulk download feature will be implemented in a future update. Please download each model individually for now."
         QMessageBox.information(self, info_title, info_msg)
 
     def _trigger_model_software_update(self, key: str):
@@ -2671,7 +2673,9 @@ class HandlersMixin:
             for name, code in sorted(mw.LANGUAGES.items()):
                 if code != "auto":
                     combo.addItem(name, code)
-            combo.addItem(UPDATE_LANGS_LIST, "update_trigger")
+            lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+            ui_strings = lang_data.get("ui_strings", {})
+            combo.addItem(ui_strings.get("update_langs_list", "📥 Update language list..."), "update_trigger")
         elif key in self.config_loader.all_model_fields:
             if key not in ["offline_translator", "ai_translator", "api_ocr"]:
                 combo.addItem("--- Select ---", "none")
@@ -2693,17 +2697,26 @@ class HandlersMixin:
                     combo.setItemData(idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             
             if supports_langs:
-                combo.addItem(UPDATE_SUPPORTED_LANGS, "update_trigger")
+                lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+                ui_strings = lang_data.get("ui_strings", {})
+                combo.addItem(ui_strings.get("update_supported_langs", "📥 Update translation support list..."), "update_trigger")
                 
             if has_any_check_file:
                 if key in ["offline_translator", "ai_translator"]:
-                    combo.addItem(UPDATE_SOFTWARE, "update_software_trigger")
+                    lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+                    ui_strings = lang_data.get("ui_strings", {})
+                    update_software_text = ui_strings.get("update_all_models", "📥 Update ALL {category} models...").replace("{category}", "software")
+                    combo.addItem(update_software_text, "update_software_trigger")
                 else:
-                    is_en = self.current_settings.get('app_language', 'English') in ['English', 'en', 'ENG']
                     ui_map = getattr(self.config_loader, 'ui_map', {})
                     labels = ui_map.get("labels", {})
                     localized_key = labels.get(key, key.replace("_", " ").title())
-                    update_all_key_text = f"📥 Update ALL {localized_key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {localized_key}..."
+                    
+                    lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+                    ui_strings = lang_data.get("ui_strings", {})
+                    update_all_text_template = ui_strings.get("update_all_models", "📥 Update ALL {category} models...")
+                    update_all_key_text = update_all_text_template.replace("{category}", localized_key)
+                    
                     combo.addItem(update_all_key_text, "update_all_software_trigger")
                     
         current_val = self.current_settings.get(key)

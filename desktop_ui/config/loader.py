@@ -33,85 +33,28 @@ class ConfigLoaderBase(BaseConfigLoader):
         # Ensure directories exist and migrate old root files early
         config_dir = os.path.join(self.project_base_dir, ".config")
         
-        default_configs_dir = os.path.join(self.project_base_dir, "default_configs")
-        if os.path.exists(default_configs_dir):
-            import shutil
-            for root, _, files in os.walk(default_configs_dir):
-                rel_path = os.path.relpath(root, default_configs_dir)
-                dest_dir = os.path.join(config_dir, rel_path) if rel_path != "." else config_dir
-                os.makedirs(dest_dir, exist_ok=True)
-                for f in files:
-                    src_f = os.path.join(root, f)
-                    dst_f = os.path.join(dest_dir, f)
-                    if not os.path.exists(dst_f):
-                        try:
-                            shutil.copy2(src_f, dst_f)
-                        except Exception:
-                            pass
-                            
+        # Call migration from RepairMixin
+        self._migrate_legacy_file_structures()  # type: ignore
+        
         configs_dir = os.path.join(config_dir, "configs")
         models_dir = os.path.join(config_dir, "models")
-        os.makedirs(configs_dir, exist_ok=True)
-        os.makedirs(models_dir, exist_ok=True)
-
-        root_configs = ["supporttargetlang.yaml", "api_profiles.json"]
-        for f in root_configs:
-            old_path = os.path.join(config_dir, f)
-            new_path = os.path.join(configs_dir, f)
-            if os.path.exists(old_path):
-                try:
-                    if os.path.exists(new_path):
-                        os.remove(new_path)
-                    os.rename(old_path, new_path)
-                except Exception:
-                    pass
 
         self.oldsession_path = os.path.join(configs_dir, "oldsession.yaml")
 
         # Load configs
         raw_oldsession = self._load_yaml_file(self.oldsession_path)
         
-        # Flatten current_settings
-        if "current_settings" in raw_oldsession:
-            flat_settings = {}
-            for k, v in raw_oldsession["current_settings"].items():
-                if isinstance(v, dict):
-                    flat_settings.update(v)
-                else:
-                    flat_settings[k] = v
-            raw_oldsession["current_settings"] = flat_settings
-            
-        # Flatten job queue settings
-        if "job_queue" in raw_oldsession:
-            for job in raw_oldsession["job_queue"]:
-                if "settings" in job:
-                    flat_settings = {}
-                    for k, v in job["settings"].items():
-                        if isinstance(v, dict):
-                            flat_settings.update(v)
-                        else:
-                            flat_settings[k] = v
-                    job["settings"] = flat_settings
-                    
+        # Flatten current_settings and job_queue via RepairMixin
+        self._flatten_oldsession_structure(raw_oldsession)  # type: ignore
         self.oldsession_config = raw_oldsession
         
         self.system_prompts_path = os.path.join(configs_dir, "system_prompt.yaml")
         self.system_prompts = self._load_yaml_file(self.system_prompts_path)
 
-        # Load languages from .config/langs/ early
-        langs_dir = os.path.join(config_dir, "langs")
-        os.makedirs(langs_dir, exist_ok=True)
-        self.localization = {}
-        if os.path.exists(langs_dir):
-            try:
-                for filename in os.listdir(langs_dir):
-                    if filename.endswith(".yaml") or filename.endswith(".yml"):
-                        lang_code = os.path.splitext(filename)[0]
-                        file_path = os.path.join(langs_dir, filename)
-                        with open(file_path, "r", encoding="utf-8") as f:
-                            self.localization[lang_code] = yaml.load(f) or {}
-            except Exception as e:
-                print(f"[ConfigLoader] Error loading files in langs directory: {e}")
+        # Initialize the LanguageManager
+        from app.core.langs.manager import LanguageManager
+        self.language_manager = LanguageManager(self.project_base_dir)
+        self.localization = self.language_manager.localization
 
         # Load the model registry FIRST (single source of truth).
         # This derives self._DEFAULT_CHECKS and registry-based groups/capabilities
@@ -137,8 +80,9 @@ class ConfigLoaderBase(BaseConfigLoader):
         import copy
         self.ui_map = copy.deepcopy(STUDIO_UI_MAP)
 
-        self.app_language = self.oldsession_config.get("app_language", "English")
-        self.apply_language(self.app_language)  # type: ignore
+        # Resolve and apply language securely
+        self.app_language = self.language_manager.resolve_app_language(self.oldsession_config)
+        self.ui_map = self.language_manager.apply_language_to_ui_map(self.ui_map, self.app_language)
 
         # The data is built and stored directly as attributes, not through getter methods
         self.factory_defaults = self._parse_factory_defaults()

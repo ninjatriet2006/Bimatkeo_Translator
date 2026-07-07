@@ -415,9 +415,10 @@ class WidgetBuildersMixin:
                     if not exists:
                         last_idx = combo_box.count() - 1
                         combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
-                is_en = self.current_settings.get('app_language', 'English') == 'English'
-                update_support_text = UPDATE_SUPPORTED_LANGS_EN if is_en else UPDATE_SUPPORTED_LANGS
-                update_all_text = UPDATE_ALL_MODELS_EN if is_en else UPDATE_ALL_MODELS
+                lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+                ui_strings = lang_data.get("ui_strings", {})
+                update_support_text = ui_strings.get("update_supported_langs", "📥 Update translation support list...")
+                update_all_text = ui_strings.get("update_all_models", "📥 Update ALL {category} models...").replace("{category}", "software")
                 combo_box.addItem(update_support_text, "update_trigger")
                 combo_box.addItem(update_all_text, "update_all_software_trigger")
             else:
@@ -452,14 +453,15 @@ class WidgetBuildersMixin:
             
             # Thêm lựa chọn cập nhật tất cả cho các mô hình AI khác
             if key in ['offline_detector', 'offline_ocr', 'inpainter', 'upscaler', 'colorizer', 'renderer']:
-                is_en = self.current_settings.get('app_language', 'English') in ['English', 'en', 'ENG']
-                
                 # Fetch localized name for the category
                 ui_map = getattr(self.config_loader, 'ui_map', {})
                 labels = ui_map.get("labels", {})
                 localized_key = labels.get(key, key.replace("_", " ").title())
                 
-                update_all_key_text = f"📥 Update ALL {localized_key} models..." if is_en else f"📥 Cập nhật TẤT CẢ mô hình {localized_key}..."
+                lang_data = self.config_loader.get_lang_data(self.config_loader.app_language)
+                ui_strings = lang_data.get("ui_strings", {})
+                update_all_text_template = ui_strings.get("update_all_models", "📥 Update ALL {category} models...")
+                update_all_key_text = update_all_text_template.replace("{category}", localized_key)
                 combo_box.addItem(update_all_key_text, "update_all_software_trigger")
                 
             self._set_combobox_value_by_data(combo_box, str(info.get("default")))

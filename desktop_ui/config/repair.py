@@ -66,4 +66,67 @@ class RepairMixin:
         except Exception as e:
             print(f"[ConfigLoader] Error writing supporttargetlang.yaml: {e}")
 
+    def _migrate_legacy_file_structures(self):
+        """
+        Migrates and copies default configurations, ensuring old root files are placed correctly.
+        """
+        config_dir = os.path.join(self.project_base_dir, ".config")
+        default_configs_dir = os.path.join(self.project_base_dir, "default_configs")
+        
+        if os.path.exists(default_configs_dir):
+            import shutil
+            for root, _, files in os.walk(default_configs_dir):
+                rel_path = os.path.relpath(root, default_configs_dir)
+                dest_dir = os.path.join(config_dir, rel_path) if rel_path != "." else config_dir
+                os.makedirs(dest_dir, exist_ok=True)
+                for f in files:
+                    src_f = os.path.join(root, f)
+                    dst_f = os.path.join(dest_dir, f)
+                    if not os.path.exists(dst_f):
+                        try:
+                            shutil.copy2(src_f, dst_f)
+                        except Exception:
+                            pass
+                            
+        configs_dir = os.path.join(config_dir, "configs")
+        models_dir = os.path.join(config_dir, "models")
+        os.makedirs(configs_dir, exist_ok=True)
+        os.makedirs(models_dir, exist_ok=True)
+
+        root_configs = ["supporttargetlang.yaml", "api_profiles.json"]
+        for f in root_configs:
+            old_path = os.path.join(config_dir, f)
+            new_path = os.path.join(configs_dir, f)
+            if os.path.exists(old_path):
+                try:
+                    if os.path.exists(new_path):
+                        os.remove(new_path)
+                    os.rename(old_path, new_path)
+                except Exception:
+                    pass
+
+    def _flatten_oldsession_structure(self, raw_oldsession: dict):
+        """
+        In-place flattening of oldsession nested settings for legacy compatibility during runtime.
+        """
+        if "current_settings" in raw_oldsession:
+            flat_settings = {}
+            for k, v in raw_oldsession["current_settings"].items():
+                if isinstance(v, dict):
+                    flat_settings.update(v)
+                else:
+                    flat_settings[k] = v
+            raw_oldsession["current_settings"] = flat_settings
+            
+        if "job_queue" in raw_oldsession:
+            for job in raw_oldsession["job_queue"]:
+                if "settings" in job:
+                    flat_settings = {}
+                    for k, v in job["settings"].items():
+                        if isinstance(v, dict):
+                            flat_settings.update(v)
+                        else:
+                            flat_settings[k] = v
+                    job["settings"] = flat_settings
+
 

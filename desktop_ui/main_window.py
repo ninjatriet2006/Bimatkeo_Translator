@@ -84,6 +84,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, ConsoleMixin, Han
     def __init__(self):
         super().__init__()
         self.project_base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
         self.config_loader = ConfigLoader(self.project_base_dir)
         
         # Update LANGUAGES dynamically from the backend if loaded
