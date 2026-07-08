@@ -16,6 +16,9 @@ from app.core.ocr.cloud_runner import CloudOCRRunner
 from app.core.ocr.local_runner import LocalOCRRunner
 
 class OCRProcessor:
+    cloud_runner: CloudOCRRunner | None
+    local_runner: LocalOCRRunner | None
+
     def __init__(self, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, cloud_ocr: BaseCloudOCR | None = None, ocr_config: dict | None = None, render_config: dict | None = None, log_callback=None):
         self.ocr_config = ocr_config or {}
         self.render_config = render_config or {}
@@ -40,7 +43,7 @@ class OCRProcessor:
         if self.log_callback:
             self.log_callback("OCR", f"Processing {ctx.page_id}...")
 
-        if self.cloud_runner:
+        if self.cloud_runner is not None:
             self.cloud_runner.run(ctx)
-        elif self.local_runner:
+        elif self.local_runner is not None:
             self.local_runner.run(ctx)

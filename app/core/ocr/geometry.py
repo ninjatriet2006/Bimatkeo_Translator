@@ -12,7 +12,7 @@ INTEGRITY NOTES (For AI Agents):
 import numpy as np
 from typing import List
 
-def sort_comic_text_boxes(bboxes: List[List[int]], direction: str = "rtl_ttb", image_width: int = 2000, image_height: int = 3000) -> List[List[int]]:
+def sort_comic_text_boxes(bboxes: List[list], direction: str = "rtl_ttb", image_width: int = 2000, image_height: int = 3000) -> List[list]:
     """
     Sắp xếp các bounding boxes [x1, y1, x2, y2] theo thứ tự luồng đọc truyện.
     
