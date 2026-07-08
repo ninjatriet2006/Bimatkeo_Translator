@@ -33,7 +33,7 @@ class MangaOCRRecognizerImpl(BaseTextRecognizer):
         expected_filename = os.path.basename(model_path) # config.json
         
         if not os.path.exists(model_path):
-            url = ModelDownloader.get_source_url_from_registry("offline_ocr", "manga_ocr")
+            url = RecognizerFactory.get_source_url_from_registry("offline_ocr", "manga_ocr")
             if url:
                 if log_callback:
                     log_callback("INFO", f"Đang tiến hành tải tự động Manga-OCR từ {url}...")

@@ -26,7 +26,7 @@ class InpainterManager:
             if enable_advanced_diffusion:
                 inpainter_name = config_dict.get("inpainter", {}).get("diffusion_model", "powerpaint_v1")
                 try:
-                    inp_path = ModelDownloader.get_model_path_from_registry("diffusion_main_model", inpainter_name)
+                    inp_path = DiffusionMainModelFactory.get_model_path_from_registry("diffusion_main_model", inpainter_name)
                     if inpainter_name != "none":
                         inpainter = DiffusionMainModelFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback, **config_dict.get("inpainter", {}))
                 except ValueError:
@@ -35,7 +35,7 @@ class InpainterManager:
             else:
                 inpainter_name = config_dict.get("inpainter", {}).get("inpainter", "lama")
                 try:
-                    inp_path = ModelDownloader.get_model_path_from_registry("inpainter", inpainter_name)
+                    inp_path = InpainterFactory.get_model_path_from_registry("inpainter", inpainter_name)
                     if inpainter_name != "none":
                         inpainter = InpainterFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback, **config_dict.get("inpainter", {}))
                 except ValueError:
@@ -50,7 +50,7 @@ class InpainterManager:
         if enable_upscaler:
             upscaler_name = config_dict.get("inpainter", {}).get("upscaler", "esrgan")
             try:
-                ups_path = ModelDownloader.get_model_path_from_registry("upscaler", upscaler_name)
+                ups_path = UpscalerFactory.get_model_path_from_registry("upscaler", upscaler_name)
                 upscaler = UpscalerFactory.create(upscaler_name)
                 upscaler.load_model(ups_path)
             except Exception as e:

@@ -28,7 +28,7 @@ class ESRGANUpscaler_Impl(BaseUpscaler):
 
     def _get_source_url_from_registry(self, key: str) -> str:
         from app.core.downloader import ModelDownloader
-        return ModelDownloader.get_source_url_from_registry("upscaler", key)
+        return UpscalerFactory.get_source_url_from_registry("upscaler", key)
 
     def _get_executable_path(self, key: str) -> str:
         exe_name = "waifu2x-ncnn-vulkan" if key == "waifu2x" else "realesrgan-ncnn-vulkan"

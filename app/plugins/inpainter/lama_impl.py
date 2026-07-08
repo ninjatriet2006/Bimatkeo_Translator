@@ -53,7 +53,7 @@ class LamaInpainter_Impl(BaseInpainter):
         key = "lama"
             
         if not os.path.exists(self.model_path):
-            source_url = ModelDownloader.get_source_url_from_registry("inpainter", key)
+            source_url = InpainterFactory.get_source_url_from_registry("inpainter", key)
             if source_url:
                 target_dir = os.path.dirname(self.model_path)
                 expected_files = [os.path.basename(self.model_path)]

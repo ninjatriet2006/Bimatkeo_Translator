@@ -45,13 +45,13 @@ class OCRInitializer:
             ocr_name = config_dict.get("offline_ocr", "paddle_onnx_rec")
 
             try:
-                det_path = ModelDownloader.get_model_path_from_registry("offline_detector", detector_name)
+                det_path = DetectorFactory.get_model_path_from_registry("offline_detector", detector_name)
                 detector = DetectorFactory.create(detector_name, model_path=det_path, log_callback=log_callback, **config_dict.get("detector", {}))
             except ValueError:
                 detector = DetectorFactory.create("dummy_detector", log_callback=log_callback)
                 
             try:
-                rec_path = ModelDownloader.get_model_path_from_registry("offline_ocr", ocr_name)
+                rec_path = RecognizerFactory.get_model_path_from_registry("offline_ocr", ocr_name)
                 recognizer = RecognizerFactory.create(ocr_name, model_path=rec_path, log_callback=log_callback, **config_dict.get("ocr", {}))
             except ValueError:
                 recognizer = RecognizerFactory.create("dummy_recognizer", log_callback=log_callback)

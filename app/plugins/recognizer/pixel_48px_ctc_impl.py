@@ -38,7 +38,7 @@ class Pixel48pxCTCRecognizerImpl(BaseTextRecognizer):
         dict_filename = "alphabet-all-v5.txt"
         
         if not os.path.exists(model_path) or not os.path.exists(os.path.join(target_dir, dict_filename)):
-            url = ModelDownloader.get_source_url_from_registry("offline_ocr", "48px_ctc")
+            url = RecognizerFactory.get_source_url_from_registry("offline_ocr", "48px_ctc")
             if url:
                 if log_callback: log_callback("INFO", f"Đang tiến hành tải tự động 48px CTC ONNX từ {url}...")
                 success = ModelDownloader.download_and_extract(

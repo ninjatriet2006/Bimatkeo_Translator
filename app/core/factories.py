@@ -24,6 +24,31 @@ def discover_plugins():
 
 class BaseFactory:
     _registry: Dict[str, Type[Any]]
+    _all_factories: list[Type['BaseFactory']] = []
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        BaseFactory._all_factories.append(cls)
+
+    @classmethod
+    def get_source_url_from_registry(cls, field: str, key: str) -> str:
+        for factory in cls._all_factories:
+            for item in factory.get_all_registered_models():
+                if item.get("key") == key:
+                    return item.get("source", "")
+        return ""
+
+    @classmethod
+    def get_model_path_from_registry(cls, field: str, key: str) -> str:
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        for factory in cls._all_factories:
+            for item in factory.get_all_registered_models():
+                if item.get("key") == key:
+                    path = item.get("check_file", "")
+                    if path:
+                        return os.path.join(project_root, path)
+        return ""
 
     @classmethod
     def register(cls, name: str):

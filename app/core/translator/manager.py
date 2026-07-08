@@ -50,7 +50,7 @@ class TranslatorManager:
                 
                 if category == 'Offline' or provider_name in ['nllb', 'm2m100']:
                     try:
-                        trans_path = ModelDownloader.get_model_path_from_registry("offline_translator", provider_name)
+                        trans_path = TranslatorFactory.get_model_path_from_registry("offline_translator", provider_name)
                         translator.load_weights(trans_path)
                     except ValueError:
                         if log_callback:
@@ -96,7 +96,7 @@ class TranslatorManager:
                     
                     if category == 'Offline' or provider_name in ['nllb', 'm2m100']:
                         try:
-                            trans_path = ModelDownloader.get_model_path_from_registry("offline_translator", provider_name)
+                            trans_path = TranslatorFactory.get_model_path_from_registry("offline_translator", provider_name)
                             editor_translator.load_weights(trans_path)
                         except ValueError:
                             if log_callback:
