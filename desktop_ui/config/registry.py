@@ -13,7 +13,7 @@ _exe_ext = ".exe" if _os_suffix == "win" else ""
 
 
 from typing import TYPE_CHECKING
-from app.core.factories import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory
+from app.core.factories import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory, DiffusionMainModelFactory, DiffusionBaseModelFactory
 
 FACTORY_MAP = {
     "offline_translator": TranslatorFactory,
@@ -25,6 +25,8 @@ FACTORY_MAP = {
     "upscaler": UpscalerFactory,
     "colorizer": ColorizerFactory,
     "renderer": RendererFactory,
+    "diffusion_main_model": DiffusionMainModelFactory,
+    "diffusion_model": DiffusionBaseModelFactory,
 }
 
 if TYPE_CHECKING:
@@ -77,7 +79,8 @@ class RegistryMixin(_RegistryMixinBase):
         from app.core.constants import REQUIRED_MODEL_FIELDS, GLOBAL_RESOURCES, MODEL_PRIORITY_KEYWORDS
         from app.core.factories import (
             TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory,
-            UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory
+            UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory,
+            DiffusionMainModelFactory, DiffusionBaseModelFactory
         )
         from app.plugins.translator.base_offline import BaseOfflineTranslator
         from app.plugins.translator.base_api import BaseAPITranslator
@@ -100,6 +103,8 @@ class RegistryMixin(_RegistryMixinBase):
             },
             "Image & Inpainter": {
                 "inpainter": InpainterFactory.get_all_registered_models(),
+                "diffusion_main_model": DiffusionMainModelFactory.get_all_registered_models(),
+                "diffusion_model": DiffusionBaseModelFactory.get_all_registered_models(),
                 "upscaler": UpscalerFactory.get_all_registered_models(),
                 "colorizer": ColorizerFactory.get_all_registered_models(),
             },

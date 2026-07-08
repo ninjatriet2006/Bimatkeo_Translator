@@ -10,7 +10,7 @@ INTEGRITY NOTES (For AI Agents):
 """
 
 from app.core.downloader import ModelDownloader
-from app.core.factories import InpainterFactory, DiffusionFactory, UpscalerFactory
+from app.core.factories import InpainterFactory, DiffusionMainModelFactory, UpscalerFactory
 
 class InpainterManager:
     @staticmethod
@@ -26,9 +26,9 @@ class InpainterManager:
             if enable_advanced_diffusion:
                 inpainter_name = config_dict.get("inpainter", {}).get("diffusion_model", "powerpaint_v1")
                 try:
-                    inp_path = ModelDownloader.get_model_path_from_registry("diffusion_model", inpainter_name)
+                    inp_path = ModelDownloader.get_model_path_from_registry("diffusion_main_model", inpainter_name)
                     if inpainter_name != "none":
-                        inpainter = DiffusionFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback, **config_dict.get("inpainter", {}))
+                        inpainter = DiffusionMainModelFactory.create(inpainter_name, model_path=inp_path, log_callback=log_callback, **config_dict.get("inpainter", {}))
                 except ValueError:
                     if log_callback:
                         log_callback("WARNING", f"Diffusion Model '{inpainter_name}' not found, falling back to None.")

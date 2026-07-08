@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 from typing import List, Any
 
-from app.core.interfaces import BaseDiffusionModel
-from app.core.factories import DiffusionFactory
+from app.core.factories import DiffusionMainModelFactory
+from app.core.interfaces import BaseDiffusionModel, BaseInpainter
 
 try:
     import torch
@@ -15,10 +15,15 @@ except ImportError:
     AutoPipelineForInpainting = None
     Image = None
 
-@DiffusionFactory.register("powerpaint_v1")
-class PowerPaintV1_Impl(BaseDiffusionModel):
+@DiffusionMainModelFactory.register("powerpaint_v1")
+class PowerPaintV1_Impl(BaseInpainter):
     MODELS = [
-        {'key': 'powerpaint_v1', 'label': 'powerpaint_v1'},
+        {
+            "key": "powerpaint_v1",
+            "label": "PowerPaint v1",
+            "check_file": os.path.join("models", "Diffusion", "Main_Models", "PowerPaint_v1", "PowerPaint_Brushnet", "diffusion_pytorch_model.safetensors"),
+            "source": "hf://Sanster/PowerPaint-V1-stable-diffusion-inpainting"
+        },
     ]
 
     REQUIRES_SD_BASE_MODEL = True

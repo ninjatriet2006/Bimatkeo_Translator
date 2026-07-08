@@ -144,7 +144,10 @@ class ColorizerFactory(BaseFactory):
 class CloudOCRFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}
 
-class DiffusionFactory(BaseFactory):
+class DiffusionMainModelFactory(BaseFactory):
+    _registry: Dict[str, Type[Any]] = {}
+
+class DiffusionBaseModelFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}
 
 discover_plugins()

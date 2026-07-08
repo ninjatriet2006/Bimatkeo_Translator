@@ -23,7 +23,8 @@ from app.core.translator.manager import TranslatorManager
 from app.core.translator.worker import TranslatorWorker
 
 from app.core.inpainter.manager import InpainterManager
-from app.core.inpainter.worker import InpaintWorker, UpscalerWorker
+from app.core.inpainter.inpaint_worker import InpaintWorker
+from app.core.inpainter.upscale_worker import UpscalerWorker
 
 from app.core.renderer.manager import RendererManager
 from app.core.renderer.worker import RenderWorker

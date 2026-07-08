@@ -1,39 +1,36 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.inpainter.verify
-- RESPONSIBILITY: Integrity check for local Inpainter models vs dynamic Factories.
+- MODULE: app.core.diffusion.verify
+- RESPONSIBILITY: Integrity check for local Diffusion models vs dynamic Factories.
 - CALLED BY: Independent scripts or manager.
 - CALLS TO: None
 - IN = OUT: Evaluates directories, returns validation results/warnings.
 =============================================================================
 """
 
-
 import sys, os
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-import os
-
-class InpainterVerifier:
+class DiffusionVerifier:
     def __init__(self):
         pass
 
     def run_verification(self, registry_path: str = "", models_base_path: str = "models"):
         """
-        Cross-checks downloaded local Inpainter models against the dynamic model factories.
+        Cross-checks downloaded local Diffusion models against the dynamic model factories.
         Reports Not Installed models (declared but missing on disk) 
         and orphaned models (on disk but not declared).
         """
-        print("[InpainterVerifier] Running integrity check on local Inpainter models...")
+        print("[DiffusionVerifier] Running integrity check on local Diffusion models...")
         
-        from app.core.factories import InpainterFactory
+        from app.core.factories import DiffusionMainModelFactory, DiffusionBaseModelFactory
 
         # 1. Collect all declared models
         declared_models = []
-        all_models = InpainterFactory.get_all_registered_models()
+        all_models = DiffusionMainModelFactory.get_all_registered_models() + DiffusionBaseModelFactory.get_all_registered_models()
         for model in all_models:
             check_file = model.get("check_file")
             if check_file and check_file != "none":
@@ -53,7 +50,7 @@ class InpainterVerifier:
         if missing_count == 0:
             print("     [OK] All declared models are present on disk.")
 
-        # 3. Check for orphaned models in models/Inpainter
+        # 3. Check for orphaned models in models/Diffusion
         print("  -> Checking for orphaned models (exist on disk but not declared)...")
         valid_paths = [os.path.normpath(m["check_file"]) for m in declared_models if m["check_file"].startswith("models")]
         orphan_count = 0
@@ -66,16 +63,21 @@ class InpainterVerifier:
                 item_path = os.path.normpath(os.path.join(base_dir, item))
                 if os.path.isdir(item_path):
                     # Check if any valid_path starts with this item_path
-                    is_valid = any(vp.startswith(item_path + os.sep) for vp in valid_paths)
+                    is_valid = any(vp.startswith(item_path + os.sep) or vp == item_path for vp in valid_paths)
                     if not is_valid:
-                        if item_path not in valid_paths:
-                            print(f"     [Orphaned Directory]: '{item_path}' is not associated with any registered model.")
-                            orphan_count += 1
+                        # Orphan directory found
+                        print(f"     [Orphaned Folder]: {item_path} (Can be safely deleted)")
+                        orphan_count += 1
 
-        check_orphans(os.path.join(models_base_path, "Inpainter"))
+        check_orphans(os.path.join(models_base_path, "Diffusion", "Main_Models"))
+        check_orphans(os.path.join(models_base_path, "Diffusion", "Base_Models"))
+        
         if orphan_count == 0:
-            print("     [OK] No orphaned directories found.")
+            print("     [OK] No orphaned models found.")
+            
+        print("[DiffusionVerifier] Verification complete.\n")
+
 
 if __name__ == "__main__":
-    verifier = InpainterVerifier()
+    verifier = DiffusionVerifier()
     verifier.run_verification()

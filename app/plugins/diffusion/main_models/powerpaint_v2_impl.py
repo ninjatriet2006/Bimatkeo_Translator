@@ -4,7 +4,7 @@ import cv2
 
 from typing import Any, List
 from app.core.interfaces import BaseDiffusionModel
-from app.core.factories import DiffusionFactory
+from app.core.factories import DiffusionMainModelFactory
 
 try:
     import torch
@@ -16,10 +16,10 @@ except ImportError:
     torch = None
     Image = None
 
-@DiffusionFactory.register("powerpaint_v2")
+@DiffusionMainModelFactory.register("powerpaint_v2")
 class PowerPaintV2_Impl(BaseDiffusionModel):
     MODELS = [
-        {'key': 'powerpaint_v2', 'label': 'Sanster/PowerPaint-v2 (BrushNet) (Max 512px)', 'check_file': 'models/Inpainter/PowerPaint_v2/PowerPaint_Brushnet/diffusion_pytorch_model.safetensors'},
+        {'key': 'powerpaint_v2', 'label': 'Sanster/PowerPaint-v2 (BrushNet) (Max 512px)', 'check_file': os.path.join("models", "Diffusion", "Main_Models", "PowerPaint_v2", "PowerPaint_Brushnet", "diffusion_pytorch_model.safetensors")},
     ]
 
     REQUIRES_SD_BASE_MODEL = True
