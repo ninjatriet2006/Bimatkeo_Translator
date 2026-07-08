@@ -33,9 +33,10 @@ def pad_img_to_modulo(img, mod):
 
 @InpainterFactory.register("lama")
 class LamaInpainter_Impl(BaseInpainter):
-    DISPLAY_NAME = {
-        "lama": "saic-mdal/lama (ONNX)"
-    }
+    MODELS = [
+        {'key': 'lama', 'check_file': 'models/Inpainter/Lama_ONNX/lama_fp32.onnx', 'source': 'hf://Carve/LaMa-ONNX@lama_fp32.onnx'},
+    ]
+
     def __init__(self):
         self.model_path = None
         self.is_loaded = False

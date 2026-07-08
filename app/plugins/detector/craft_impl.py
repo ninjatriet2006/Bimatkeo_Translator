@@ -6,6 +6,10 @@ from app.core.downloader import ModelDownloader
 
 @DetectorFactory.register("craft")
 class CRAFTDetectorImpl(BaseTextDetector):
+    MODELS = [
+        {'key': 'craft', 'check_file': 'models/Detector/CRAFT/craft_mlt_25k.pth'},
+    ]
+
     def __init__(self):
         self.model = None
         

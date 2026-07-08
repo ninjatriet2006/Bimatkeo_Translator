@@ -7,4 +7,4 @@ CAT_OTHER_ACTIONS = "--- OTHER ACTIONS ---"
 INSTALL_NEW_FONT = "🔍 Install New Font..."
 UPDATE_ALL_FONTS = "📥 Update All Fonts..."
 
-# URLs (Đã chuyển vào model_registry.yaml)
+# URLs (Đã chuyển vào app/core/constants.py)

@@ -3,6 +3,10 @@ from .base_api import BaseAPITranslator
 
 @TranslatorFactory.register("gemini")
 class GeminiTranslator(BaseAPITranslator):
+    MODELS = [
+        {'key': 'gemini', 'check_file': 'app/plugins/translator/gemini_impl.py', 'default_endpoint': 'https://generativelanguage.googleapis.com', 'endpoint_inference': ['generativelanguage']},
+    ]
+
     def _call_api(self, system_prompt: str, user_text: str) -> str:
         headers = {
             "Content-Type": "application/json"

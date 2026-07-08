@@ -22,10 +22,10 @@ def _get_registry_data():
     try:
         y = YAML(typ='safe')
         
-        # Load custom endpoints
-        with open(registry_path, "r", encoding="utf-8") as f:
-            reg_data = y.load(f) or {}
-            ai_translators = reg_data.get("fields", {}).get("ai_translator", [])
+        # Load custom endpoints via factories
+        from app.core.factories import TranslatorFactory
+        from app.plugins.translator.base_api import BaseAPITranslator
+        ai_translators = TranslatorFactory.get_all_registered_models(BaseAPITranslator)
             
         # Load SSOT model blacklist
         with open(schema_path, "r", encoding="utf-8") as f:

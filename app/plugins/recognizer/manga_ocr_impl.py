@@ -9,6 +9,10 @@ from app.core.downloader import ModelDownloader
 
 @RecognizerFactory.register("manga_ocr")
 class MangaOCRRecognizerImpl(BaseTextRecognizer):
+    MODELS = [
+        {'key': 'manga_ocr', 'label': 'manga_ocr'},
+    ]
+
     def __init__(self):
         self.processor = None
         self.model = None

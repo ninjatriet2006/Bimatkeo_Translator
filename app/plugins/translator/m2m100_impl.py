@@ -5,10 +5,10 @@ from .base_offline import BaseOfflineTranslator
 
 @TranslatorFactory.register("m2m100")
 class M2M100Translator(BaseOfflineTranslator):
-    DISPLAY_NAME = {
-        "m2m100": "facebook/m2m100_418M",
-        "m2m100_big": "facebook/m2m100_1.2B"
-    }
+    MODELS = [
+        {'key': 'm2m100', 'check_file': 'models/Offline Translator/M2M100/sentencepiece.model'},
+    ]
+
     
     def load_weights(self, model_path: str) -> None:
         if not model_path: return

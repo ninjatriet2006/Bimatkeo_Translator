@@ -6,9 +6,10 @@ from app.plugins.inpainter.lama_impl import LamaInpainter_Impl
 
 @InpainterFactory.register("manga")
 class MangaInpainter_Impl(LamaInpainter_Impl):
-    DISPLAY_NAME: Union[str, Dict[str, str]] = {
-        "manga": "mayocream/lama-manga (ONNX)"
-    }
+    MODELS = [
+        {'key': 'manga', 'label': 'mayocream/lama-manga (ONNX)', 'check_file': 'models/Inpainter/Manga_ONNX/erika.onnx'},
+        {'key': 'manga_inpaint_v3', 'label': 'dremaz/manga-inpaint-v3 (MPE)', 'check_file': 'models/Inpainter/Manga_Inpaint_V3/inpainting_lama_mpe.ckpt', 'source': 'hf://dremaz/manga-inpaint-v3@inpainting_lama_mpe.ckpt'},
+    ]
     
     def __init__(self):
         super().__init__()

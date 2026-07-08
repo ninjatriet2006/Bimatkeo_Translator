@@ -6,6 +6,10 @@ from app.core.downloader import ModelDownloader
 
 @RecognizerFactory.register("48px")
 class Pixel48pxRecognizerImpl(BaseTextRecognizer):
+    MODELS = [
+        {'key': '48px', 'check_file': 'models/OCR/48px/ocr_ar_48px.ckpt'},
+    ]
+
     def __init__(self):
         self.model = None
         

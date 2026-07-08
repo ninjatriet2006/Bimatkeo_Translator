@@ -15,23 +15,15 @@ class HFVerifier:
     def __init__(self):
         pass
 
-    def run_verification(self, registry_path: str, local_versions_path: str):
+    def run_verification(self, registry_path: str = "", local_versions_path: str = ".config/models/local_versions.yaml"):
         """
-        Cross-checks downloaded local_versions against the model_registry.
+        Cross-checks downloaded local_versions against the dynamic model factories.
         Reports orphaned local versions (models that were removed from the registry
         but still exist in local_versions).
         """
         print("[HuggingFaceVerifier] Running integrity check on local models...")
         from ruamel.yaml import YAML
         yaml = YAML(typ='safe')
-        
-        registry = {}
-        if os.path.exists(registry_path):
-            try:
-                with open(registry_path, "r", encoding="utf-8") as rf:
-                    registry = yaml.load(rf) or {}
-            except Exception as e:
-                print(f"  [!] Failed to load registry: {e}")
 
         local_versions = {}
         if os.path.exists(local_versions_path):
@@ -44,17 +36,29 @@ class HFVerifier:
         if not local_versions:
             return
 
-        # Build a set of all valid model keys from the registry
+        # Build a set of all valid model keys from the factories
         valid_model_keys = set()
-        fields = registry.get("fields", {})
-        for tab, categories in fields.items():
-            if isinstance(categories, dict):
-                for category, models in categories.items():
-                    if isinstance(models, list):
-                        for model in models:
-                            key = model.get("key")
-                            if key:
-                                valid_model_keys.add(key)
+        from app.core.factories import (
+            TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory,
+            UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory, DiffusionFactory
+        )
+        
+        all_models = (
+            TranslatorFactory.get_all_registered_models() +
+            DetectorFactory.get_all_registered_models() +
+            RecognizerFactory.get_all_registered_models() +
+            InpainterFactory.get_all_registered_models() +
+            UpscalerFactory.get_all_registered_models() +
+            ColorizerFactory.get_all_registered_models() +
+            RendererFactory.get_all_registered_models() +
+            CloudOCRFactory.get_all_registered_models() +
+            DiffusionFactory.get_all_registered_models()
+        )
+        
+        for model in all_models:
+            key = model.get("key")
+            if key:
+                valid_model_keys.add(key)
 
         # Check local versions against valid keys
         for category, models in local_versions.items():

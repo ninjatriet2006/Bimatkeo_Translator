@@ -2253,24 +2253,11 @@ class HandlersMixin:
                             self.finished.emit(False, f"Lỗi khi tải Base Model: {e}")
                             return
                     
-                    if not os.path.exists(registry_file):
-                        self.finished.emit(False, "Không tìm thấy file cấu hình model_registry.yaml.")
-                        return
-                        
-                    with open(registry_file, "r", encoding="utf-8") as sf:
-                        registry = yaml.load(sf)
-                        
-                    url = None
-                    if registry and "fields" in registry:
-                        for field_name, items in registry["fields"].items():
-                            for item in items:
-                                if item and isinstance(item, dict) and item.get("key") == model_name:
-                                    url = item.get("source")
-                                    break
-                            if url: break
-                            
+                    from app.core.downloader import ModelDownloader
+                    url = ModelDownloader.get_source_url_from_registry(key, model_name)
+                    
                     if not url:
-                        self.finished.emit(False, f"Không tìm thấy cấu hình nguồn tải (thuộc tính 'source') cho '{model_name}' trong model_registry.yaml.")
+                        self.finished.emit(False, f"Không tìm thấy cấu hình nguồn tải (thuộc tính 'source') cho '{model_name}'.")
                         return
                     
                     self.progress.emit(30, "Đang kiểm tra kết nối nguồn tải...")
@@ -2680,8 +2667,8 @@ class HandlersMixin:
             if key not in ["offline_translator", "ai_translator", "api_ocr"]:
                 combo.addItem("--- Select ---", "none")
                 
-            values_data = self.config_loader.full_registry.get("fields", {}).get(key, [])
-            values = [item.get("key") for item in values_data if item.get("key") and item.get("key") != "none"]
+            by_key = self.config_loader.model_registry.get(key, {})
+            values = [k for k in by_key.keys() if k and k != "none"]
             
             supports_langs = key in ["offline_translator", "ai_translator"]
             has_any_check_file = any(self.config_loader._DEFAULT_CHECKS.get(key, {}).get(v, {}).get("check_file") for v in values)

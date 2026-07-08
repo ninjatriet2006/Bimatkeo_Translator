@@ -9,6 +9,12 @@ from app.core.factories import RecognizerFactory
 
 @RecognizerFactory.register("paddle_onnx_rec")
 class PaddleONNXRecognizerImpl(BaseTextRecognizer):
+    MODELS = [
+        {'key': 'paddle_onnx_rec_v6_tiny', 'check_file': 'models/OCR/Paddle_ONNX_Rec/Tiny/inference.onnx', 'source': 'hf://PaddlePaddle/PP-OCRv6_tiny_rec_onnx@inference.onnx'},
+        {'key': 'paddle_onnx_rec_v6_small', 'check_file': 'models/OCR/Paddle_ONNX_Rec/Small/inference.onnx', 'source': 'hf://PaddlePaddle/PP-OCRv6_small_rec_onnx@inference.onnx'},
+        {'key': 'paddle_onnx_rec_v6_medium', 'check_file': 'models/OCR/Paddle_ONNX_Rec/Medium/inference.onnx', 'source': 'hf://PaddlePaddle/PP-OCRv6_medium_rec_onnx@inference.onnx'},
+    ]
+
     def __init__(self):
         self.session = None
         self.input_name = None
@@ -25,16 +31,10 @@ class PaddleONNXRecognizerImpl(BaseTextRecognizer):
             
             # Đọc từ file cấu hình nếu có
             try:
-                import yaml
-                registry_path = os.path.join(
-                    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-                    ".config", "models", "model_registry.yaml"
-                )
-                with open(registry_path, "r", encoding="utf-8") as f:
-                    registry_data = yaml.safe_load(f)
-                    configured_url = registry_data.get("global_settings", {}).get("resources", {}).get("paddle_en_dict")
-                    if configured_url:
-                        url = configured_url
+                from app.core.constants import GLOBAL_RESOURCES
+                configured_url = GLOBAL_RESOURCES.get("paddle_en_dict")
+                if configured_url:
+                    url = configured_url
             except Exception as e:
                 if log_callback: log_callback("WARNING", f"Không thể đọc cấu hình URL, sử dụng mặc định: {e}")
                 

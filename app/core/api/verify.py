@@ -23,17 +23,7 @@ class APIVerifier:
         print("[APIVerifier] Running integrity check on API module configs...")
         yaml = YAML(typ='safe')
         
-        # Verify Model Registry
-        if not os.path.exists(registry_path):
-            print(f"  [!] Missing model registry at {registry_path}")
-        else:
-            try:
-                with open(registry_path, "r", encoding="utf-8") as f:
-                    data = yaml.load(f)
-                    if not data or "fields" not in data:
-                        print("  [!] model_registry.yaml is missing 'fields' root key.")
-            except Exception as e:
-                print(f"  [!] Failed to parse model_registry.yaml: {e}")
+        # Verify Model Registry (REMOVED - migrated to dynamic factories)
 
         # Verify Schema Fallback
         if not os.path.exists(schema_path):

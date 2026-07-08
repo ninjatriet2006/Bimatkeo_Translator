@@ -18,9 +18,10 @@ except ImportError:
 
 @DiffusionFactory.register("powerpaint_v2")
 class PowerPaintV2_Impl(BaseDiffusionModel):
-    DISPLAY_NAME = {
-        "powerpaint_v2": "Sanster/PowerPaint-v2 (BrushNet) (Max 512px)"
-    }
+    MODELS = [
+        {'key': 'powerpaint_v2', 'label': 'Sanster/PowerPaint-v2 (BrushNet) (Max 512px)', 'check_file': 'models/Inpainter/PowerPaint_v2/PowerPaint_Brushnet/diffusion_pytorch_model.safetensors'},
+    ]
+
     REQUIRES_SD_BASE_MODEL = True
 
     def __init__(self):

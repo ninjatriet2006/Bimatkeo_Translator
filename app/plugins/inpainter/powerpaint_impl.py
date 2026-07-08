@@ -17,9 +17,10 @@ except ImportError:
 
 @DiffusionFactory.register("powerpaint_v1")
 class PowerPaintV1_Impl(BaseDiffusionModel):
-    DISPLAY_NAME = {
-        "powerpaint_v1": "Sanster/PowerPaint-v1 (Diffusers) (Max 512px)"
-    }
+    MODELS = [
+        {'key': 'powerpaint_v1', 'label': 'powerpaint_v1'},
+    ]
+
     REQUIRES_SD_BASE_MODEL = True
     
     def __init__(self):

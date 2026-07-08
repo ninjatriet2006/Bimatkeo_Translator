@@ -9,9 +9,10 @@ from app.core.factories import InpainterFactory
 
 @InpainterFactory.register("opencv")
 class OpenCVInpainter_Impl(BaseInpainter):
-    DISPLAY_NAME = {
-        "opencv": "OpenCV (INPAINT_TELEA)"
-    }
+    MODELS = [
+        {'key': 'opencv', 'label': 'opencv'},
+    ]
+
     REQUIRES_SD_BASE_MODEL = False
 
     def __init__(self):

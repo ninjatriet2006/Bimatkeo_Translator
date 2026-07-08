@@ -3,7 +3,10 @@ from .base_api import BaseAPITranslator
 
 @TranslatorFactory.register("felo")
 class FeloTranslator(BaseAPITranslator):
-    STATIC_MODELS = ["felo-search"]
+    MODELS = [
+        {'key': 'felo', 'check_file': 'app/plugins/translator/felo_impl.py', 'default_endpoint': 'https://api.felo.ai/v1', 'endpoint_inference': ['felo.ai']},
+    ]
+
     
     def __init__(self):
         super().__init__()

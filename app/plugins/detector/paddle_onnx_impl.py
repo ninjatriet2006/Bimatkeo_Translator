@@ -7,6 +7,12 @@ from app.core.factories import DetectorFactory
 
 @DetectorFactory.register("paddle_onnx")
 class PaddleONNXDetectorImpl(BaseTextDetector):
+    MODELS = [
+        {'key': 'paddle_onnx_v6_tiny', 'check_file': 'models/Detector/Paddle_ONNX/Tiny/inference.onnx', 'source': 'hf://PaddlePaddle/PP-OCRv6_tiny_det_onnx@inference.onnx'},
+        {'key': 'paddle_onnx_v6_small', 'check_file': 'models/Detector/Paddle_ONNX/Small/inference.onnx', 'source': 'hf://PaddlePaddle/PP-OCRv6_small_det_onnx@inference.onnx'},
+        {'key': 'paddle_onnx_v6_medium', 'check_file': 'models/Detector/Paddle_ONNX/Medium/inference.onnx', 'source': 'hf://PaddlePaddle/PP-OCRv6_medium_det_onnx@inference.onnx'},
+    ]
+
     def __init__(self):
         self.session = None
         self.input_name = None

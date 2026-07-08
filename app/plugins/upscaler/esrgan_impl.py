@@ -14,7 +14,12 @@ from app.core.downloader import ModelDownloader
 @UpscalerFactory.register("waifu2x")
 @UpscalerFactory.register("4xultrasharp")
 class ESRGANUpscaler_Impl(BaseUpscaler):
-    DISPLAY_NAME = "ncnn-vulkan Upscaler"
+    MODELS = [
+        {'key': 'esrgan', 'check_file': 'models/Upscaler/ESRGAN/esrgan-{os}/realesrgan-ncnn-vulkan{exe}', 'source': 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip'},
+        {'key': 'waifu2x', 'check_file': 'models/Upscaler/Waifu2x/waifu2x-{os}/waifu2x-ncnn-vulkan{exe}', 'source': 'https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20220728/waifu2x-ncnn-vulkan-20220728-ubuntu.zip'},
+        {'key': '4xultrasharp'},
+    ]
+
     def __init__(self):
         self.model_path = None
         self.is_loaded = False
@@ -22,19 +27,8 @@ class ESRGANUpscaler_Impl(BaseUpscaler):
         self.executable_path = None
 
     def _get_source_url_from_registry(self, key: str) -> str:
-        registry_path = os.path.join(".config", "models", "model_registry.yaml")
-        if not os.path.exists(registry_path):
-            return ""
-        try:
-            with open(registry_path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-            upscalers = data.get("fields", {}).get("upscaler", [])
-            for item in upscalers:
-                if item.get("key") == key:
-                    return item.get("source", "")
-        except Exception as e:
-            print(f"[Upscaler] Failed to parse registry: {e}")
-        return ""
+        from app.core.downloader import ModelDownloader
+        return ModelDownloader.get_source_url_from_registry("upscaler", key)
 
     def _get_executable_path(self, key: str) -> str:
         exe_name = "waifu2x-ncnn-vulkan" if key == "waifu2x" else "realesrgan-ncnn-vulkan"

@@ -9,7 +9,10 @@ from app.core.factories import RendererFactory
 
 @RendererFactory.register("pillow_renderer")
 class PillowRenderer_Impl(BaseRenderer):
-    DISPLAY_NAME = "Pillow Renderer"
+    MODELS = [
+        {'key': 'pillow_renderer'},
+    ]
+
     def __init__(self):
         self.font_path = None
         self.default_font = None

@@ -6,6 +6,10 @@ from app.core.downloader import ModelDownloader
 
 @DetectorFactory.register("dbconvnext")
 class DBConvNeXtDetectorImpl(BaseTextDetector):
+    MODELS = [
+        {'key': 'dbconvnext', 'check_file': 'models/Detector/DBConvNeXt/dbnet_convnext.ckpt'},
+    ]
+
     def __init__(self):
         self.model = None
         

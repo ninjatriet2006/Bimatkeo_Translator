@@ -50,44 +50,7 @@ class RegistryMixin(_RegistryMixinBase):
 
     REGISTRY_RELATIVE_PATH = os.path.join(".config", "models", "model_registry.yaml")
 
-    # Minimal seed used ONLY when the registry file is missing/unreadable.
-    _SEED_REGISTRY = {
-        "schema_version": 1,
-        "required_fields": ["offline_detector", "offline_ocr", "inpainter"],
-        "fields": {
-            "offline_translator": [
-                {"key": "m2m100", "check_file": "models/Offline Translator/M2M100/sentencepiece.model"},
-                {"key": "offline", "check_file": "models/Offline Translator/M2M100/sentencepiece.model"},
-            ],
-            "ai_translator": [
-                {"key": "gemini", "check_file": "app/translators/gemini.py", "check_module": "google.genai"},
-            ],
-            "offline_ocr": [
-                {"key": "mocr", "check_file": "app/ocr/mocr.py", "check_module": "manga_ocr"},
-            ],
-            "offline_detector": [
-                {"key": "default", "check_file": "models/Detector/CTD/detect-20241225.ckpt"},
-                {"key": "none"},
-            ],
-            "inpainter": [
-                {"key": "opencv", "check_file": "none"},
-                {"key": "default", "check_file": "models/Inpainter/Lama_Large/lama_large_512px.ckpt"},
-                {"key": "manga", "check_file": "models/Inpainter/Manga_ONNX/erika.onnx"},
-                {"key": "none"},
-            ],
-            "diffusion_model": [
-                {"key": "none"},
-            ],
-            "upscaler": [
-                {"key": "waifu2x", "check_file": "models/Upscaler/Waifu2x/waifu2x-{os}/waifu2x-ncnn-vulkan{exe}"},
-                {"key": "esrgan", "check_file": "models/Upscaler/ESRGAN/esrgan-{os}/realesrgan-ncnn-vulkan{exe}"},
-                {"key": "4xultrasharp", "check_file": "models/Upscaler/ESRGAN/esrgan-{os}/models/4x-UltraSharp.bin"},
-            ],
-            "colorizer": [
-                {"key": "none"},
-            ],
-        },
-    }
+    # _SEED_REGISTRY removed as it is no longer used in dynamic registration
 
     GROUP_NAMES = {
         "offline_translator": CAT_OFFLINE_MODELS,
@@ -104,61 +67,64 @@ class RegistryMixin(_RegistryMixinBase):
         return path.replace("{os}", _os_suffix).replace("{exe}", _exe_ext)
 
     def load_registry(self):
-        """Loads and validates the registry. Stores derived structures on self.
+        """Loads the registry dynamically from plugin factories. Stores derived structures on self.
 
         Sets:
             self.model_registry      -> {field: {key: entry_dict}}
             self.model_labels        -> {field: {key: label}}
             self.model_source_map    -> {key: source_url}
-        Never raises: on any failure it falls back to the seed.
         """
-        path = self._registry_path()
-        raw = None
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    raw = yaml.load(f)
-            except Exception as e:
-                print(f"[Registry] Failed to parse model_registry.yaml: {e}. Using seed.")
-                raw = None
-
-        if not isinstance(raw, dict) or not isinstance(raw.get("fields"), dict):
-            if raw is not None:
-                print("[Registry] model_registry.yaml malformed (missing 'fields'). Using seed.")
-            raw = self._SEED_REGISTRY
-            self._write_registry(raw)
-
-        import typing
-        self.full_registry = raw
-        fields = typing.cast(dict, raw.get("fields", {}))
+        from app.core.constants import REQUIRED_MODEL_FIELDS, GLOBAL_RESOURCES, MODEL_PRIORITY_KEYWORDS
+        from app.core.factories import (
+            TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory,
+            UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory
+        )
+        from app.plugins.translator.base_offline import BaseOfflineTranslator
+        from app.plugins.translator.base_api import BaseAPITranslator
         
-        # Flatten nested fields
+        self.required_model_fields = REQUIRED_MODEL_FIELDS
+        self.global_settings = {
+            "resources": GLOBAL_RESOURCES,
+            "model_priority_keywords": MODEL_PRIORITY_KEYWORDS
+        }
+        
+        UI_TAB_LAYOUT = {
+            "General & Translator": {
+                "offline_translator": TranslatorFactory.get_all_registered_models(BaseOfflineTranslator),
+                "ai_translator": TranslatorFactory.get_all_registered_models(BaseAPITranslator),
+            },
+            "Detector & OCR": {
+                "offline_detector": DetectorFactory.get_all_registered_models(),
+                "offline_ocr": RecognizerFactory.get_all_registered_models(),
+                "api_ocr": CloudOCRFactory.get_all_registered_models(),
+            },
+            "Image & Inpainter": {
+                "inpainter": InpainterFactory.get_all_registered_models(),
+                "upscaler": UpscalerFactory.get_all_registered_models(),
+                "colorizer": ColorizerFactory.get_all_registered_models(),
+            },
+            "Render & Output": {
+                "renderer": RendererFactory.get_all_registered_models(),
+            }
+        }
+
+        # Build full_registry for backward compatibility with UI handlers
+        self.full_registry = {
+            "fields": UI_TAB_LAYOUT,
+            "required_fields": self.required_model_fields,
+            "global_settings": self.global_settings
+        }
+        
         flattened_fields = {}
-        for k, v in fields.items():
-            if isinstance(v, dict) and not isinstance(v, list) and all(isinstance(val, list) for val in v.values()):
-                # We assume this is a nested tab, e.g., "General & Translator"
-                for inner_k, inner_v in v.items():
-                    flattened_fields[inner_k] = inner_v
-            else:
-                flattened_fields[k] = v
-                
+        for tab_name, categories in UI_TAB_LAYOUT.items():
+            for field, models in categories.items():
+                flattened_fields[field] = models
+
         self.all_model_fields = list(flattened_fields.keys())
-        self.required_model_fields = typing.cast(list, raw.get("required_fields", []))
-        self.global_settings = typing.cast(dict, raw.get("global_settings", {}))
 
         self.model_registry = self._validate_fields(flattened_fields)
         self._derive_all()
         return self.model_registry
-
-    def _write_registry(self, data):
-        path = self._registry_path()
-        try:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as f:
-                yaml.dump(data, f)
-            print("[Registry] Wrote seed model_registry.yaml (self-heal).")
-        except Exception as e:
-            print(f"[Registry] Could not write seed registry: {e}")
 
     def _validate_fields(self, fields):
         """Validates each block. Bad blocks are skipped with a warning, never crash."""

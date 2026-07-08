@@ -1,5 +1,27 @@
 from typing import Dict, Type, Any
 
+import importlib
+import pkgutil
+import os
+import sys
+
+def discover_plugins():
+    """Tự động tìm và import tất cả các plugins trong thư mục app/plugins để đăng ký vào Factory."""
+    plugins_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "plugins")
+    if not os.path.exists(plugins_dir):
+        return
+        
+    for root, dirs, files in os.walk(plugins_dir):
+        for file in files:
+            if file.endswith("_impl.py") and not file.startswith("__"):
+                rel_path = os.path.relpath(os.path.join(root, file), os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                module_name = "app." + rel_path.replace(os.sep, ".")[:-3]
+                try:
+                    if module_name not in sys.modules:
+                        importlib.import_module(module_name)
+                except Exception as e:
+                    print(f"[Factories] Failed to auto-discover plugin {module_name}: {e}")
+
 class BaseFactory:
     _registry: Dict[str, Type[Any]]
 
@@ -67,19 +89,26 @@ class BaseFactory:
     @classmethod
     def get_display_name(cls, name: str) -> str:
         impl_class = cls.get_class(name)
-        if impl_class:
-            disp = getattr(impl_class, 'DISPLAY_NAME', name)
-            if isinstance(disp, dict):
-                return disp.get(name, name)
-            return disp or name
+        if impl_class and hasattr(impl_class, 'MODELS'):
+            for model in getattr(impl_class, 'MODELS'):
+                if model.get('key') == name and 'label' in model:
+                    return model['label']
         return name
 
     @classmethod
-    def get_static_models(cls, name: str) -> list:
-        if hasattr(cls, '_registry') and name in cls._registry:
-            impl_class = cls._registry[name]
-            return getattr(impl_class, 'STATIC_MODELS', [])
-        return []
+    def get_all_registered_models(cls, base_class_filter=None) -> list[dict]:
+        """Trả về danh sách dictionary chứa siêu dữ liệu (metadata) của tất cả các models được khai báo trong plugin."""
+        models_dict = {}
+        if hasattr(cls, '_registry'):
+            for impl_class in cls._registry.values():
+                if base_class_filter and not issubclass(impl_class, base_class_filter):
+                    continue
+                if hasattr(impl_class, 'MODELS'):
+                    for model in getattr(impl_class, 'MODELS'):
+                        key = model.get('key')
+                        if key and key not in models_dict:
+                            models_dict[key] = model
+        return list(models_dict.values())
 
 class TranslatorFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}
@@ -117,3 +146,5 @@ class CloudOCRFactory(BaseFactory):
 
 class DiffusionFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}
+
+discover_plugins()

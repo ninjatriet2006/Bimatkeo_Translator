@@ -6,6 +6,10 @@ from app.core.downloader import ModelDownloader
 
 @DetectorFactory.register("ctd")
 class CTDetectorImpl(BaseTextDetector):
+    MODELS = [
+        {'key': 'ctd', 'label': 'ctd'},
+    ]
+
     def __init__(self):
         self.model = None
         

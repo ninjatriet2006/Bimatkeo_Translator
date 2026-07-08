@@ -6,6 +6,10 @@ from app.core.downloader import ModelDownloader
 
 @RecognizerFactory.register("32px")
 class Pixel32pxRecognizerImpl(BaseTextRecognizer):
+    MODELS = [
+        {'key': '32px', 'check_file': 'models/OCR/32px/alphabet-all-v7.txt'},
+    ]
+
     def __init__(self):
         self.model = None
         

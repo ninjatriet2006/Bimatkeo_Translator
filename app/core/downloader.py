@@ -12,40 +12,38 @@ class ModelDownloader:
     """
     
     @staticmethod
-    def get_source_url_from_registry(field: str, key: str) -> str:
-        import yaml
-        registry_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".config", "models", "model_registry.yaml")
-        if not os.path.exists(registry_path):
-            return ""
+    def _get_all_dynamic_models() -> list[dict]:
+        import importlib
         try:
-            with open(registry_path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-            items = data.get("fields", {}).get(field, [])
-            for item in items:
-                if item.get("key") == key:
-                    return item.get("source", "")
-        except Exception as e:
-            print(f"[Registry] Failed to parse registry: {e}")
+            # Import dynamically to avoid circular dependencies
+            factories = importlib.import_module('app.core.factories')
+            all_models = []
+            for f_name in ['TranslatorFactory', 'DetectorFactory', 'RecognizerFactory', 'InpainterFactory', 
+                           'RendererFactory', 'UpscalerFactory', 'CloudOCRFactory', 'DiffusionFactory']:
+                factory_cls = getattr(factories, f_name, None)
+                if factory_cls:
+                    all_models.extend(factory_cls.get_all_registered_models())
+            return all_models
+        except ImportError:
+            return []
+
+    @staticmethod
+    def get_source_url_from_registry(field: str, key: str) -> str:
+        all_models = ModelDownloader._get_all_dynamic_models()
+        for item in all_models:
+            if item.get("key") == key:
+                return item.get("source", "")
         return ""
 
     @staticmethod
     def get_model_path_from_registry(field: str, key: str) -> str:
-        import yaml
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        registry_path = os.path.join(project_root, ".config", "models", "model_registry.yaml")
-        if not os.path.exists(registry_path):
-            return ""
-        try:
-            with open(registry_path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-            items = data.get("fields", {}).get(field, [])
-            for item in items:
-                if item.get("key") == key:
-                    path = item.get("check_file", "")
-                    if path:
-                        return os.path.join(project_root, path)
-        except Exception as e:
-            print(f"[Registry] Failed to parse registry: {e}")
+        all_models = ModelDownloader._get_all_dynamic_models()
+        for item in all_models:
+            if item.get("key") == key:
+                path = item.get("check_file", "")
+                if path:
+                    return os.path.join(project_root, path)
         return ""
 
     @staticmethod
