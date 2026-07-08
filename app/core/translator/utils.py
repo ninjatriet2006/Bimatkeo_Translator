@@ -27,6 +27,8 @@ class PromptBuilder:
         if not os.path.exists(prompt_file):
             raise FileNotFoundError(f"Không tìm thấy file cấu hình system prompt tại: {prompt_file}")
 
+        role_desc = ""
+        json_rules = ""
         try:
             with open(prompt_file, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f)

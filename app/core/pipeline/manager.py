@@ -211,7 +211,7 @@ class Pipeline:
             )
 
             # Wait for all queues to empty
-            join_workers = [ocr_worker, trans_worker, inpaint_worker, render_worker]
+            join_workers: list[threading.Thread] = [ocr_worker, trans_worker, inpaint_worker, render_worker]
             if edit_worker:
                 join_workers.append(edit_worker)
             if upscale_worker:

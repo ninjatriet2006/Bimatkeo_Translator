@@ -3,8 +3,8 @@
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.api.manager
 - RESPONSIBILITY: Centralized management of AI Translator APIs and models.
-- CALLED BY: desktop_ui.mainwindow (job_runner, pool_dialog, handlers)
-- CALLS TO: app.core.api.fetcher, .models, .verify
+- CALLED BY: desktop_ui.main_window.job_runner, desktop_ui.main_window.pool_dialog, desktop_ui.main_window.handlers
+- CALLS TO: app.core.api.fetcher, app.core.api.models, app.core.api.verify
 - IN = OUT: Coordinator module, exposes fetcher and model utility methods.
 =============================================================================
 """

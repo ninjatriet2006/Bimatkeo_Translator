@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.langs.manager
 - RESPONSIBILITY: Centralized management of application localization logic.
 - CALLED BY: desktop_ui.config.loader
-- CALLS TO: app.core.langs.loader, .fallback, .ui_mapper
+- CALLS TO: app.core.langs.loader, app.core.langs.fallback, app.core.langs.ui_mapper
 - IN = OUT: Coordinator module, delegates concrete actions to submodules.
 =============================================================================
 """

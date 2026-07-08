@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.translator.translate
 - RESPONSIBILITY: Xử lý Stage 1 (Dịch thô) của quá trình dịch.
 - CALLED BY: app.core.pipeline.manager
-- CALLS TO: translator (step_translator API)
+- CALLS TO: app.core.interfaces.BaseTranslator
 - IN = OUT: Nhận PageContext từ q_trans, đẩy vào q_edit (nếu có Editor) hoặc gọi trans_done.set().
 =============================================================================
 """

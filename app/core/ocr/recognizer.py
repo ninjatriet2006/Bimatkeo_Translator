@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.recognizer
 - RESPONSIBILITY: Gọi mô hình OCR trên từng vùng ảnh đã crop để trích xuất text.
 - CALLED BY: app.core.ocr.local_runner
-- CALLS TO: BaseTextRecognizer
+- CALLS TO: app.core.interfaces.BaseTextRecognizer
 - IN = OUT: Nhận crop image -> trả về chuỗi text hoặc rỗng.
 =============================================================================
 """

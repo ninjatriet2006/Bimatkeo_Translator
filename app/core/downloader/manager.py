@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.downloader.manager
+- RESPONSIBILITY: Quản lý và thực thi các tác vụ tải xuống (download, verify, extract).
+- CALLED BY: app.core.downloader
+- CALLS TO: app.core.downloader.task, app.core.downloader.exceptions
+- IN = OUT: Nhận DownloadTask -> tải và giải nén -> trả về True/False.
+=============================================================================
+"""
 import os
 import urllib.request
 import zipfile

@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.rotator
 - RESPONSIBILITY: Tìm góc xoay tối ưu bằng cách thử nhận diện text ở các góc.
 - CALLED BY: app.core.ocr.local_runner
-- CALLS TO: BaseTextRecognizer, BaseTextDetector
+- CALLS TO: app.core.interfaces.BaseTextRecognizer, app.core.interfaces.BaseTextDetector
 - IN = OUT: Nhận Numpy array ảnh -> trả về góc xoay Int và ảnh đã xoay.
 =============================================================================
 """

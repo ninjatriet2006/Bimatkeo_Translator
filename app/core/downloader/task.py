@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.downloader.task
+- RESPONSIBILITY: Định nghĩa trạng thái và dữ liệu cho tác vụ tải xuống.
+- CALLED BY: app.core.downloader, app.core.downloader.manager
+- CALLS TO: None
+- IN = OUT: Định nghĩa enum TaskStatus và class DownloadTask.
+=============================================================================
+"""
 from enum import Enum
 from typing import List, Optional
 
@@ -12,7 +22,7 @@ class TaskStatus(Enum):
 
 class DownloadTask:
     """Mô tả một tác vụ tải xuống."""
-    def __init__(self, url: str, target_dir: str, expected_files: List[str] = None, 
+    def __init__(self, url: str, target_dir: str, expected_files: Optional[List[str]] = None, 
                  extract: bool = False, checksum: Optional[str] = None):
         self.url = url
         self.target_dir = target_dir
