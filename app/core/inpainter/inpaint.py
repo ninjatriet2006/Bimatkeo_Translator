@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.inpainter.inpaint
+- RESPONSIBILITY: Thực hiện tác vụ xóa chữ (Inpainting) trên ảnh.
+- CALLED BY: app.core.pipeline.manager
+- CALLS TO: Inpainter implementation
+- IN = OUT: Nhận PageContext từ q_inpaint, xử lý và đẩy sang q_upscale hoặc set inpaint_done.
+=============================================================================
+"""
 import threading
 import queue
 import gc

@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.renderer.render
+- RESPONSIBILITY: Render lại văn bản đã dịch lên hình ảnh (sau khi inpaint).
+- CALLED BY: app.core.pipeline.manager
+- CALLS TO: Renderer implementation
+- IN = OUT: Đợi tín hiệu trans_done và inpaint_done, sau đó render và đẩy sang q_out.
+=============================================================================
+"""
 import threading
 import queue
 from app.core.dto import PageContext

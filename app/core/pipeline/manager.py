@@ -20,7 +20,8 @@ from app.core.ocr.initializer import OCRInitializer
 from app.core.ocr.ocr import OCRWorker
 
 from app.core.translator.manager import TranslatorManager
-from app.core.translator.translate import TranslatorWorker
+from app.core.translator.translate import TranslateWorker
+from app.core.translator.edit import EditWorker
 
 from app.core.inpainter.manager import InpainterManager
 from app.core.inpainter.inpaint import InpaintWorker
@@ -88,6 +89,7 @@ class Pipeline:
             # Initialize Queues for Fork-Join
             q_in = queue.Queue()
             q_trans = queue.Queue()
+            q_edit = queue.Queue()
             q_inpaint = queue.Queue()
             q_upscale = queue.Queue()
             q_render = queue.Queue()
@@ -152,8 +154,9 @@ class Pipeline:
             elif enable_translator and translator:
                 chained_translators.append((translator, target_lang))
             
-            trans_worker = TranslatorWorker(
-                in_q=q_trans, 
+            trans_worker = TranslateWorker(
+                in_q=q_trans,
+                out_q=q_edit if editor_translator else None,
                 translator_or_chain=chained_translators, 
                 src_lang=config_dict.get("translator", {}).get("source_lang", "JPN"), 
                 tgt_lang=target_lang,
@@ -162,10 +165,18 @@ class Pipeline:
                 filter_texts=filter_texts,
                 no_text_lang_skip=config_dict.get("translator", {}).get("no_text_lang_skip", False),
                 max_request_length=int(config_dict.get("translator", {}).get("max_request_length", 2000)),
-                editor_translator=editor_translator,
                 context_window=int(config_dict.get("translator", {}).get("context_window", 10)),
                 stride_window=int(config_dict.get("translator", {}).get("stride_window", 5))
             )
+            
+            edit_worker = EditWorker(
+                in_q=q_edit,
+                editor_translator=editor_translator,
+                log_callback=log_callback,
+                max_request_length=int(config_dict.get("translator", {}).get("max_request_length", 2000)),
+                context_window=int(config_dict.get("translator", {}).get("context_window", 10)),
+                stride_window=int(config_dict.get("translator", {}).get("stride_window", 5))
+            ) if editor_translator else None
             
             inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback, out_q=q_upscale if enable_upscaler else None)
             upscale_worker = UpscalerWorker(q_upscale, upscaler, upscale_ratio, log_callback) if enable_upscaler else None
@@ -173,6 +184,8 @@ class Pipeline:
 
             # Start Workers
             workers: list[threading.Thread] = [ocr_worker, trans_worker, inpaint_worker, render_worker]
+            if edit_worker:
+                workers.append(edit_worker)
             if upscale_worker:
                 workers.append(upscale_worker)
             for w in workers:
@@ -198,7 +211,12 @@ class Pipeline:
             )
 
             # Wait for all queues to empty
-            for w in [ocr_worker, trans_worker, inpaint_worker, render_worker]:
+            join_workers = [ocr_worker, trans_worker, inpaint_worker, render_worker]
+            if edit_worker:
+                join_workers.append(edit_worker)
+            if upscale_worker:
+                join_workers.append(upscale_worker)
+            for w in join_workers:
                 w.join()
 
             if self._stopped_by_user:

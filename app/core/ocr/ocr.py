@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.ocr.ocr
+- RESPONSIBILITY: Đầu não xử lý OCR (Detector, Recognizer), tạo PageContext và đẩy cho các queue.
+- CALLED BY: app.core.pipeline.manager
+- CALLS TO: app.core.ocr.manager (OCRProcessor)
+- IN = OUT: Nhận từ q_in, tạo PageContext và fork sang q_trans, q_inpaint, q_render.
+=============================================================================
+"""
 import threading
 import queue
 from app.core.dto import PageContext
