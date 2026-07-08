@@ -1,9 +1,11 @@
 """
 =============================================================================
-[AI_ARCH_NOTE]: LANGUAGE LOADER
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.langs.loader
 - RESPONSIBILITY: Scans and loads .yaml localization files from .config/langs/.
-- DIRECTORY: `app/core/langs/`
-- DECOUPLES: Isolates the file I/O operations from business logic.
+- CALLED BY: app.core.langs.manager
+- CALLS TO: None
+- IN = OUT: Reads YAML files and returns Python dictionaries.
 =============================================================================
 """
 

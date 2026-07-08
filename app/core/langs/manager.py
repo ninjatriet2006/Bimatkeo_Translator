@@ -1,10 +1,11 @@
 """
 =============================================================================
-[AI_ARCH_NOTE]: LANGUAGE MANAGER
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.langs.manager
 - RESPONSIBILITY: Centralized management of application localization logic.
-- DIRECTORY: `app/core/langs/`
-- PURPOSE: Controller facade that coordinates loader, fallback, and ui_mapper.
-- DECOUPLES: Removes logic from Manager itself, delegating to specialized modules.
+- CALLED BY: desktop_ui.config.loader
+- CALLS TO: app.core.langs.loader, .fallback, .ui_mapper
+- IN = OUT: Coordinator module, delegates concrete actions to submodules.
 =============================================================================
 """
 
@@ -12,6 +13,7 @@ from typing import Dict, Any
 from .loader import LanguageLoader
 from .fallback import LanguageFallback
 from .ui_mapper import LanguageUIMapper
+from .verify import LanguageVerifier
 
 class LanguageManager:
     """
@@ -27,6 +29,10 @@ class LanguageManager:
         
         self.fallback = LanguageFallback(self.localization)
         self.ui_mapper = LanguageUIMapper(self.localization, self.fallback)
+        self.verifier = LanguageVerifier(self.localization)
+
+    def run_verification(self, raw_ui_map: dict):
+        self.verifier.run_verification(raw_ui_map)
 
     def get_lang_data(self, lang_id: str) -> dict:
         return self.fallback.get_lang_data(lang_id)

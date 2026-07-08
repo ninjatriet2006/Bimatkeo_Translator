@@ -1,10 +1,11 @@
 """
 =============================================================================
-[AI_ARCH_NOTE]: LANGUAGE FALLBACK HANDLER
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.langs.fallback
 - RESPONSIBILITY: Resolves app_language ID and provides robust fallback logic.
-- DIRECTORY: `app/core/langs/`
-- PURPOSE: Ensures a valid language dictionary is always available, even if
-  the user's config specifies a non-existent or legacy language name.
+- CALLED BY: app.core.langs.manager
+- CALLS TO: None
+- IN = OUT: Evaluates dictionaries to return valid language strings.
 =============================================================================
 """
 

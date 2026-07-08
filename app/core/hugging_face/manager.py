@@ -11,11 +11,17 @@
 
 from .downloader import HFDownloader
 from .version_checker import HFVersionChecker
+from .verify import HFVerifier
 
 class HuggingFaceManager:
     def __init__(self):
         self.downloader = HFDownloader()
         self.version_checker = HFVersionChecker()
+        self.verifier = HFVerifier()
+        
+    def run_verification(self, registry_path: str, local_versions_path: str):
+        """Runs integrity check on the HuggingFace module configs."""
+        self.verifier.run_verification(registry_path, local_versions_path)
         
     def check_version(self, repo_id: str) -> str:
         """

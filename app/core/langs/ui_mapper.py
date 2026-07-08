@@ -1,10 +1,11 @@
 """
 =============================================================================
-[AI_ARCH_NOTE]: LANGUAGE UI MAPPER
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.langs.ui_mapper
 - RESPONSIBILITY: Translates the raw UI map using localization dictionaries.
-- DIRECTORY: `app/core/langs/`
-- PURPOSE: Iterates through the UI definition and applies localized labels, 
-  tooltips, placeholders, and enum values.
+- CALLED BY: app.core.langs.manager
+- CALLS TO: None
+- IN = OUT: Injects translated strings into a nested dictionary structure.
 =============================================================================
 """
 
