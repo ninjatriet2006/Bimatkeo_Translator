@@ -291,7 +291,7 @@ class HandlersMixin:
         button.setText("...")
 
         def thread_target():
-            from app.core.api_utils import fetch_remote_ai_models
+            from app.core.api.manager import fetch_remote_ai_models
             try:
                 models = fetch_remote_ai_models(endpoint, key, ai_provider)
                 self.models_fetched_signal.emit(models, button)

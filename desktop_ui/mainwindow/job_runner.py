@@ -749,7 +749,7 @@ class JobRunnerMixin:
                                 endpoint = prof.get('endpoint', '')
                                 provider = prof.get('provider')
                                 if not provider:
-                                    from app.core.api_utils import infer_ai_provider
+                                    from app.core.api.manager import infer_ai_provider
                                     provider = infer_ai_provider(endpoint)
                                     
                                 translator_dict['pool_apis'].append({
@@ -772,7 +772,7 @@ class JobRunnerMixin:
                             translator_dict['ai_model'] = prof.get('model', '')
                             translator_dict['ai_api_key'] = prof.get('key', '')
                 
-                from app.core.api_utils import infer_ai_provider
+                from app.core.api.manager import infer_ai_provider
                 ep = translator_dict.get('ai_endpoint', '')
                 if ep:
                     inferred = infer_ai_provider(ep)

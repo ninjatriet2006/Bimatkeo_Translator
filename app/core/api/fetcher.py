@@ -1,64 +1,20 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.api.fetcher
+- RESPONSIBILITY: Handle remote API fetching and provider inference.
+- CALLED BY: app.core.api.manager
+- CALLS TO: urllib, app.core.api.config, app.core.api.models
+- IN = OUT: Performs network requests and returns lists of available models.
+=============================================================================
+"""
 import urllib.request
 import urllib.error
 import ssl
 import json
 import os
-
-def _get_registry_data():
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    registry_path = os.path.join(project_root, ".config", "models", "model_registry.yaml")
-    schema_path = os.path.join(project_root, "default_configs", "configs", "schema_fallback.yaml")
-    
-    global_blacklist = []
-    ai_translators = []
-    
-    try:
-        from ruamel.yaml import YAML
-        y = YAML()
-        
-        # Load custom endpoints
-        with open(registry_path, "r", encoding="utf-8") as f:
-            reg_data = y.load(f)
-            ai_translators = reg_data.get("fields", {}).get("ai_translator", [])
-            
-        # Load SSOT model blacklist
-        with open(schema_path, "r", encoding="utf-8") as f:
-            schema_data = y.load(f)
-            global_blacklist = schema_data.get("properties", {}).get("global_settings", {}).get("properties", {}).get("model_blacklist", {}).get("default", [])
-            
-    except Exception as e:
-        print(f"[api_utils] Warning: Failed to load registry/schema: {e}")
-        
-    return global_blacklist, ai_translators
-
-_MODEL_BLACKLIST, _AI_TRANSLATOR_REGISTRY = _get_registry_data()
-
-def is_blacklisted(model_name: str) -> bool:
-    name_lower = model_name.lower()
-    blacklist_keywords = _MODEL_BLACKLIST if _MODEL_BLACKLIST else [
-        "embedding", "tts", "whisper", "dall-e", "moderation", 
-        "classifier", "aqa", "sib", "babbage", "davinci", "ada"
-    ]
-    for kw in blacklist_keywords:
-        if kw in name_lower:
-            return True
-    return False
-
-def priority_sort_key(m_name: str):
-    m_lower = m_name.lower()
-    priorities = {}
-    high = priorities.get("high", ["gpt-4o", "o1", "o3", "deepseek-chat", "mixtral", "llama3"])
-    medium = priorities.get("medium", ["gpt-4", "deepseek", "llama"])
-    low = priorities.get("low", ["gpt-3.5"])
-    fallback_weight = priorities.get("fallback_weight", 5)
-
-    if any(x in m_lower for x in high): 
-        return (-10, m_lower)
-    if any(x in m_lower for x in medium): 
-        return (-5, m_lower)
-    if any(x in m_lower for x in low): 
-        return (0, m_lower)
-    return (fallback_weight, m_lower)
+from .config import _AI_TRANSLATOR_REGISTRY
+from .models import is_blacklisted, priority_sort_key
 
 def infer_ai_provider(endpoint: str) -> str:
     """Infers the AI provider based on the endpoint string."""
@@ -147,5 +103,3 @@ def fetch_remote_ai_models(endpoint: str, key: str, ai_provider: str) -> list[st
         if not models:
             raise ValueError("No suitable model IDs found in response.")
         return models
-
-

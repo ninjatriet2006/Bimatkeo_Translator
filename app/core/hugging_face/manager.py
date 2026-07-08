@@ -29,7 +29,7 @@ class HuggingFaceManager:
         """
         return self.version_checker.get_latest_version(repo_id)
         
-    def download(self, repo_id: str, model_dir: str, hf_specific_file: str = None, progress_callback=None):
+    def download(self, repo_id: str, model_dir: str, hf_specific_file: str | None = None, progress_callback=None):
         """
         Downloads a standard model.
         """

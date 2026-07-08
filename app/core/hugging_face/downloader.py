@@ -38,11 +38,10 @@ class HFDownloader:
                 "scheduler/*", 
                 "feature_extractor/*", 
                 "safety_checker/*.safetensors"
-            ],
-            resume_download=True
+            ]
         )
         
-    def download_model(self, repo_id: str, model_dir: str, hf_specific_file: str = None, progress_callback=None):
+    def download_model(self, repo_id: str, model_dir: str, hf_specific_file: str | None = None, progress_callback=None):
         """
         Downloads a model using direct HuggingFace API requests, allowing selective file downloads.
         """

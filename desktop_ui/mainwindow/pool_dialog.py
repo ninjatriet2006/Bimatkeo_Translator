@@ -192,7 +192,7 @@ class ManagePoolsDialog(QDialog):
         if self.service == "OCR":
             provider = "gemini_ocr" # OCR currently relies mostly on gemini models or custom, default to gemini_ocr
         else:
-            from app.core.api_utils import infer_ai_provider
+            from app.core.api.manager import infer_ai_provider
             provider = infer_ai_provider(endpoint)
         
         profile = {
@@ -268,14 +268,14 @@ class ManagePoolsDialog(QDialog):
     def _fetch_models(self):
         endpoint = self.new_api_endpoint.text().strip()
         key = self.new_api_key.text().strip()
-        from app.core.api_utils import infer_ai_provider
+        from app.core.api.manager import infer_ai_provider
         ai_provider = infer_ai_provider(endpoint)
         
         self.fetch_models_btn.setEnabled(False)
         self.fetch_models_btn.setText("...")
 
         def thread_target():
-            from app.core.api_utils import fetch_remote_ai_models
+            from app.core.api.manager import fetch_remote_ai_models
             try:
                 models = fetch_remote_ai_models(endpoint, key, ai_provider)
                 self.models_fetched_signal.emit(models)
