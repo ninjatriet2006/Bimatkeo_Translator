@@ -17,17 +17,17 @@ from app.core.pipeline.config_loader import PipelineConfigLoader
 from app.core.pipeline.io_manager import PipelineIOManager
 
 from app.core.ocr.initializer import OCRInitializer
-from app.core.ocr.worker import OCRWorker
+from app.core.ocr.ocr import OCRWorker
 
 from app.core.translator.manager import TranslatorManager
-from app.core.translator.worker import TranslatorWorker
+from app.core.translator.translate import TranslatorWorker
 
 from app.core.inpainter.manager import InpainterManager
-from app.core.inpainter.inpaint_worker import InpaintWorker
-from app.core.inpainter.upscale_worker import UpscalerWorker
+from app.core.inpainter.inpaint import InpaintWorker
+from app.core.inpainter.upscale import UpscalerWorker
 
 from app.core.renderer.manager import RendererManager
-from app.core.renderer.worker import RenderWorker
+from app.core.renderer.render import RenderWorker
 
 class Pipeline:
     """Handles the execution of the backend translation process via Fork-Join Queue Architecture."""
