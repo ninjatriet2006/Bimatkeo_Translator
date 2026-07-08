@@ -772,7 +772,7 @@ class HandlersMixin:
     def _update_max_length_label(self):
         """Updates the label of max_request_length dynamically based on plugin MAX_CHARS and system prompt."""
         from app.core.factories import TranslatorFactory
-        from app.core.translator_utils import PromptBuilder
+        from app.core.translator.utils import PromptBuilder
         
         # 1. Get the current translator plugin's MAX_CHARS
         translator_name = self._get_active_translator_name()

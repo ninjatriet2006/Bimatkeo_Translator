@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Union, cast
 
 from app.core.interfaces import BaseTranslator
 from app.core.factories import TranslatorFactory
-from app.core.translator_utils import PromptBuilder
+from app.core.translator.utils import PromptBuilder
 
 class BaseAPITranslator(BaseTranslator):
     """Base class for HTTP API translators."""

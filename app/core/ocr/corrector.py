@@ -1,3 +1,14 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.ocr.corrector
+- RESPONSIBILITY: Sử dụng Heuristics, Regex và Từ điển để sửa các lỗi OCR phổ biến.
+- CALLED BY: app.core.ocr.local_runner
+- CALLS TO: None
+- IN = OUT: Độc lập logic, nhận văn bản lỗi -> trả về văn bản đã sửa.
+=============================================================================
+"""
+
 import numpy as np
 import re
 
@@ -147,7 +158,7 @@ class OfflineOCRCorrector:
             # Nếu chưa cài pyspellchecker thì an toàn bỏ qua
             return text
 
-    def correct(self, original_texts: list[str], full_image: np.ndarray = None) -> list[str]:
+    def correct(self, original_texts: list[str], full_image: np.ndarray | None = None) -> list[str]:
         """
         Nhạc trưởng (Coordinator): Dẫn dắt từng dòng text đi qua quy trình Pipeline.
         """
