@@ -9,11 +9,19 @@ INTEGRITY NOTES (For AI Agents):
 =============================================================================
 """
 import os
+from .task import DownloadTask, TaskStatus
 
 class CacheChecker:
     """Kiểm tra xem các file yêu cầu đã tồn tại đầy đủ trong thư mục chưa."""
     
-    def check(self, expected_files: list, target_dir: str) -> bool:
-        if expected_files and all(os.path.exists(os.path.join(target_dir, f)) for f in expected_files):
+    def check(self, task: DownloadTask, log_callback=None) -> bool:
+        if task.expected_files and all(os.path.exists(os.path.join(task.target_dir, f)) for f in task.expected_files):
+            task.status = TaskStatus.SKIPPED
+            task.progress = 100
+            msg = f"Mô hình đã tồn tại đầy đủ tại {task.target_dir}. Bỏ qua tải."
+            if log_callback:
+                log_callback("INFO", msg)
+            else:
+                print(f"[LOG:INFO] {msg}")
             return True
         return False
