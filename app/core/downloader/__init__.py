@@ -33,7 +33,8 @@ class ModelDownloader:
             extract=extract, 
             checksum=checksum
         )
-        return DownloadManager.execute(task, log_callback=log_callback)
+        manager = DownloadManager()
+        return manager.execute(task, log_callback=log_callback)
 
 __all__ = [
     'ModelDownloader',

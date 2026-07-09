@@ -4,25 +4,30 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.downloader.manager
 - RESPONSIBILITY: Manages and executes download tasks (download, verify, extract).
 - CALLED BY: app.core.downloader
-- CALLS TO: app.core.downloader.task, app.core.downloader.exceptions
+- CALLS TO: app.core.downloader.task, app.core.downloader.exceptions, app.core.downloader.cache, app.core.downloader.download, app.core.downloader.checksum, app.core.downloader.extract
 - IN = OUT: Receives DownloadTask -> downloads and extracts -> returns True/False.
 =============================================================================
 """
 import os
-import urllib.request
-import zipfile
-import tarfile
-import hashlib
 from typing import Callable, Optional
 
 from .task import DownloadTask, TaskStatus
-from .exceptions import DownloadError, ChecksumMismatchError, ExtractionError
+from .exceptions import DownloadError, ChecksumMismatchError
+from .cache import CacheChecker
+from .download import FileDownloader
+from .checksum import ChecksumVerifier
+from .extract import FileExtractor
 
 class DownloadManager:
     """Quản lý và thực thi các tác vụ tải xuống."""
     
-    @staticmethod
-    def execute(task: DownloadTask, log_callback: Optional[Callable[[str, str], None]] = None) -> bool:
+    def __init__(self):
+        self.cache_checker = CacheChecker()
+        self.downloader = FileDownloader()
+        self.checksum_verifier = ChecksumVerifier()
+        self.extractor = FileExtractor()
+        
+    def execute(self, task: DownloadTask, log_callback: Optional[Callable[[str, str], None]] = None) -> bool:
         """Thực thi một tác vụ tải. Trả về True nếu thành công hoặc bỏ qua."""
         
         def _log(level: str, msg: str):
@@ -32,7 +37,7 @@ class DownloadManager:
                 print(f"[LOG:{level}] {msg}")
 
         # Kiểm tra nếu file đã tồn tại
-        if task.expected_files and all(os.path.exists(os.path.join(task.target_dir, f)) for f in task.expected_files):
+        if self.cache_checker.check(task.expected_files, task.target_dir):
             task.status = TaskStatus.SKIPPED
             task.progress = 100
             _log("INFO", f"Mô hình đã tồn tại đầy đủ tại {task.target_dir}. Bỏ qua tải.")
@@ -54,46 +59,30 @@ class DownloadManager:
         try:
             task.status = TaskStatus.DOWNLOADING
             _log("INFO", f"Bắt đầu tải mô hình từ: {task.url}")
-            urllib.request.urlretrieve(task.url, download_path, reporthook=_reporthook)
+            
+            self.downloader.download(task.url, download_path, progress_callback=_reporthook)
             _log("INFO", f"Tải hoàn tất: {task.filename}")
             
             # Verify Checksum
             if task.checksum:
                 task.status = TaskStatus.VERIFYING
                 _log("INFO", "Đang xác thực mã băm SHA256...")
-                hasher = hashlib.sha256()
-                with open(download_path, 'rb') as f:
-                    for chunk in iter(lambda: f.read(4096), b""):
-                        hasher.update(chunk)
-                if hasher.hexdigest() != task.checksum:
+                try:
+                    self.checksum_verifier.check(download_path, task.checksum)
+                    _log("INFO", "Xác thực mã băm thành công.")
+                except ChecksumMismatchError as e:
                     os.remove(download_path)
-                    raise ChecksumMismatchError("Sai lệch mã băm (Checksum Mismatch). File có thể bị hỏng!")
-                _log("INFO", "Xác thực mã băm thành công.")
+                    raise e
             
             # Extract
             if task.extract:
                 task.status = TaskStatus.EXTRACTING
-                if download_path.endswith('.zip'):
-                    _log("INFO", "Đang giải nén tệp tin zip...")
-                    try:
-                        with zipfile.ZipFile(download_path, 'r') as zip_ref:
-                            zip_ref.extractall(task.target_dir)
-                    except Exception as e:
-                        raise ExtractionError(f"Lỗi giải nén file zip: {e}")
-                    finally:
-                        os.remove(download_path)
+                _log("INFO", f"Đang giải nén tệp tin {task.filename}...")
+                try:
+                    self.extractor.extract(download_path, task.target_dir)
                     _log("INFO", "Giải nén hoàn tất.")
-                    
-                elif download_path.endswith('.tar') or download_path.endswith('.tar.gz'):
-                    _log("INFO", "Đang giải nén tệp tin tar...")
-                    try:
-                        with tarfile.open(download_path, 'r:*') as tar_ref:
-                            tar_ref.extractall(task.target_dir)
-                    except Exception as e:
-                        raise ExtractionError(f"Lỗi giải nén file tar: {e}")
-                    finally:
-                        os.remove(download_path)
-                    _log("INFO", "Giải nén hoàn tất.")
+                finally:
+                    os.remove(download_path)
             
             task.status = TaskStatus.COMPLETED
             return True
