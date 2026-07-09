@@ -44,7 +44,7 @@ class HFVerifier:
 
         # Build a set of all valid model keys from the factories
         valid_model_keys = set()
-        from app.core.factories import (
+        from app.core.shared_registry import (
             TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory,
             UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory, DiffusionFactory
         )

@@ -3,7 +3,7 @@
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.downloader
 - RESPONSIBILITY: Expose downloader components and backward-compatible ModelDownloader.
-- CALLED BY: app.core.factories, app.core.fonts.manager, app.core.hugging_face.downloader, app.core.inpainter.manager, desktop_ui.main_window.handlers
+- CALLED BY: app.core.shared_registry, app.core.fonts.manager, app.core.hugging_face.downloader, app.core.inpainter.manager, desktop_ui.main_window.handlers
 - CALLS TO: app.core.downloader.task, app.core.downloader.manager, app.core.downloader.exceptions
 - IN = OUT: Initialization module.
 =============================================================================

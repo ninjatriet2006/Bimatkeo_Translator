@@ -1,7 +1,7 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.shared.dto
+- MODULE: app.core.shared_context.dto
 - RESPONSIBILITY: Define Data Transfer Objects (DTO) shared across the application.
 - CALLED BY: Various
 - CALLS TO: None

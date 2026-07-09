@@ -23,7 +23,7 @@ def _get_registry_data():
         y = YAML(typ='safe')
         
         # Load custom endpoints via factories
-        from app.core.factories import TranslatorFactory
+        from app.core.shared_registry import TranslatorFactory
         from app.plugins.translator.base_api import BaseAPITranslator
         ai_translators = TranslatorFactory.get_all_registered_models(BaseAPITranslator)
             

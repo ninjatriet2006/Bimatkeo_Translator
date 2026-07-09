@@ -4,12 +4,12 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.translator.initializer
 - RESPONSIBILITY: Initializes and allocates Translator and Editor objects based on config.
 - CALLED BY: app.core.pipeline.manager
-- CALLS TO: app.core.factories (TranslatorFactory)
+- CALLS TO: app.core.shared_registry (TranslatorFactory)
 - IN = OUT: Receives config_dict -> returns instances of Translator and Editor.
 =============================================================================
 """
 
-from app.core.factories import TranslatorFactory
+from app.core.shared_registry import TranslatorFactory
 from app.core.downloader import ModelDownloader
 
 class TranslatorInitializer:

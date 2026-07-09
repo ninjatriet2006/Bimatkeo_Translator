@@ -1,17 +1,17 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.shared.context_reader
+- MODULE: app.core.shared_context.context_reader
 - RESPONSIBILITY: Pure functions for reading image data from PageContext (RAM/Disk).
 - CALLED BY: app.core.pipeline, app.core.ocr, app.core.inpainter, app.core.renderer
-- CALLS TO: app.core.shared.dto
+- CALLS TO: app.core.shared_context.dto
 - IN = OUT: Returns image arrays from context.
 =============================================================================
 """
 import cv2
 import numpy as np
 from typing import Optional
-from app.core.shared.dto import PageContext
+from app.core.shared_context.dto import PageContext
 
 def get_original_image(ctx: PageContext) -> Optional[np.ndarray]:
     """Lấy ảnh gốc từ RAM hoặc đọc từ đĩa nếu đang ở DISK mode."""

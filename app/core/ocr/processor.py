@@ -9,7 +9,7 @@ INTEGRITY NOTES (For AI Agents):
 =============================================================================
 """
 
-from app.core.shared.dto import PageContext
+from app.core.shared_context.dto import PageContext
 from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseCloudOCR
 from app.core.ocr.corrector import OfflineOCRCorrector
 from app.core.ocr.cloud_runner import CloudOCRRunner

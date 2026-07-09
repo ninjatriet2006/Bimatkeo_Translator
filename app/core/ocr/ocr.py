@@ -10,7 +10,7 @@ INTEGRITY NOTES (For AI Agents):
 """
 import threading
 import queue
-from app.core.shared.dto import PageContext
+from app.core.shared_context.dto import PageContext
 from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseCloudOCR
 from app.core.ocr.processor import OCRProcessor
 

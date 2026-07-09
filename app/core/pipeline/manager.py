@@ -30,7 +30,7 @@ class PipelineManager:
         """Stops the pipeline simulation."""
         return self.executor.stop(log_callback)
 
-    def _initialize_models(self, config_dict: dict, project_root: str, api_profiles: dict = None, log_callback=None):
+    def _initialize_models(self, config_dict: dict, project_root: str, api_profiles: dict | None = None, log_callback=None):
         """Khởi tạo toàn bộ các module trong Pipeline."""
         # Setup API profiles for translator
         if api_profiles is None:

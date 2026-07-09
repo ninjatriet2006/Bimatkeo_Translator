@@ -1,10 +1,10 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.shared.context_writer
+- MODULE: app.core.shared_context.context_writer
 - RESPONSIBILITY: Pure functions for mutating/writing image data in PageContext (RAM/Disk).
 - CALLED BY: app.core.ocr, app.core.inpainter, app.core.pipeline
-- CALLS TO: app.core.shared.dto
+- CALLS TO: app.core.shared_context.dto
 - IN = OUT: Modifies context in-place or writes to temporary disk storage.
 =============================================================================
 """
@@ -12,7 +12,7 @@ import os
 import cv2
 import numpy as np
 import pathlib
-from app.core.shared.dto import PageContext
+from app.core.shared_context.dto import PageContext
 
 def set_original_image(ctx: PageContext, image: np.ndarray):
     """Cập nhật ảnh gốc (thường dùng khi Auto-Rotate). Lưu xuống đĩa nếu ở DISK mode."""

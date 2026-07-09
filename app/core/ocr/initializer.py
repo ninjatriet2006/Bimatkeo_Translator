@@ -4,12 +4,12 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.initializer
 - RESPONSIBILITY: Initializes corresponding Factories based on configuration.
 - CALLED BY: app.core.pipeline.manager
-- CALLS TO: app.core.factories.CloudOCRFactory, app.core.factories.DetectorFactory, app.core.factories.RecognizerFactory
+- CALLS TO: app.core.shared_registry.CloudOCRFactory, app.core.shared_registry.DetectorFactory, app.core.shared_registry.RecognizerFactory
 - IN = OUT: Receives config_dict -> initializes and returns instances of CloudOCR, Detector, Recognizer.
 =============================================================================
 """
 
-from app.core.factories import CloudOCRFactory, DetectorFactory, RecognizerFactory
+from app.core.shared_registry import CloudOCRFactory, DetectorFactory, RecognizerFactory
 from app.core.downloader import ModelDownloader
 
 class OCRInitializer:

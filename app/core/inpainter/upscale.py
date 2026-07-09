@@ -11,9 +11,9 @@ INTEGRITY NOTES (For AI Agents):
 import threading
 import queue
 import gc
-from app.core.shared.dto import PageContext
-from app.core.shared.context_reader import get_original_image, get_inpainted_image, get_background_image
-from app.core.shared.context_writer import set_original_image, set_inpainted_image
+from app.core.shared_context.dto import PageContext
+from app.core.shared_context.context_reader import get_original_image, get_inpainted_image, get_background_image
+from app.core.shared_context.context_writer import set_original_image, set_inpainted_image
 from app.core.interfaces import BaseUpscaler
 
 try:

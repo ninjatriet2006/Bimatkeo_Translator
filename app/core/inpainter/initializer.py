@@ -4,13 +4,13 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.inpainter.initializer
 - RESPONSIBILITY: Reads config and loads corresponding models.
 - CALLED BY: app.core.pipeline.manager
-- CALLS TO: app.core.factories.InpainterFactory, app.core.factories.UpscalerFactory, app.core.downloader.manager
+- CALLS TO: app.core.shared_registry.InpainterFactory, app.core.shared_registry.UpscalerFactory, app.core.downloader.manager
 - IN = OUT: Receives config_dict -> returns instances of Inpainter and Upscaler.
 =============================================================================
 """
 
 from app.core.downloader import ModelDownloader
-from app.core.factories import InpainterFactory, DiffusionMainModelFactory, UpscalerFactory
+from app.core.shared_registry import InpainterFactory, DiffusionMainModelFactory, UpscalerFactory
 
 class InpainterInitializer:
     @staticmethod

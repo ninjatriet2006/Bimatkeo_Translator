@@ -4,15 +4,15 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.pipeline.producer
 - RESPONSIBILITY: Loads input files into the pipeline queue (q_in).
 - CALLED BY: app.core.pipeline.executor
-- CALLS TO: app.core.shared.dto, app.core.shared.context_writer
+- CALLS TO: app.core.shared_context.dto, app.core.shared_context.context_writer
 - IN = OUT: Converts files on disk to PageContext objects in memory.
 =============================================================================
 """
 import os
 import cv2
 import queue
-from app.core.shared.dto import PageContext
-from app.core.shared.context_writer import set_original_image
+from app.core.shared_context.dto import PageContext
+from app.core.shared_context.context_writer import set_original_image
 
 def produce(all_files: list, source_dir: str, output_path: str, config_dict: dict, log_callback, q_in: queue.Queue, stop_check_callback=None):
     """

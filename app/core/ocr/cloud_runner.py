@@ -9,8 +9,8 @@ INTEGRITY NOTES (For AI Agents):
 =============================================================================
 """
 
-from app.core.shared.dto import PageContext
-from app.core.shared.context_reader import get_original_image, get_inpainted_image, get_background_image
+from app.core.shared_context.dto import PageContext
+from app.core.shared_context.context_reader import get_original_image, get_inpainted_image, get_background_image
 from app.core.interfaces import BaseCloudOCR
 from app.core.ocr.filter import OCRFilter
 from app.core.ocr.geometry import sort_comic_text_boxes, merge_nearby_boxes_and_texts

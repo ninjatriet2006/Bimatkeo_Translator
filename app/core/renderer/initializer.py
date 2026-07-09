@@ -4,12 +4,12 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.renderer.initializer
 - RESPONSIBILITY: Initializes RendererFactory and loads fonts based on configuration.
 - CALLED BY: app.core.pipeline.manager
-- CALLS TO: app.core.factories (RendererFactory)
+- CALLS TO: app.core.shared_registry (RendererFactory)
 - IN = OUT: Receives config_dict -> returns Renderer instance.
 =============================================================================
 """
 
-from app.core.factories import RendererFactory
+from app.core.shared_registry import RendererFactory
 
 class RendererInitializer:
     @staticmethod
