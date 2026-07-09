@@ -192,7 +192,7 @@ class HandlersMixin:
 
     def _update_inpainter_visibility(self):
         """Toggles the visibility of SD Base Model based on the selected Inpainter."""
-        from app.core.factories import InpainterFactory, DiffusionFactory
+        from app.core.factories import InpainterFactory, DiffusionMainModelFactory
         from PySide6.QtCore import QTimer
         
         enable_advanced_diffusion = self._get_value_from_widget('enable_advanced_diffusion', self.setting_widgets.get('enable_advanced_diffusion'))
@@ -208,7 +208,7 @@ class HandlersMixin:
         if enable_advanced_diffusion:
             diffusion_model = self._get_value_from_widget('diffusion_model', self.setting_widgets.get('diffusion_model'))
             if diffusion_model:
-                impl_class = DiffusionFactory.get_class(diffusion_model)
+                impl_class = DiffusionMainModelFactory.get_class(diffusion_model)
                 if impl_class:
                     if getattr(impl_class, 'REQUIRES_SD_BASE_MODEL', False):
                         show_sd_base = True

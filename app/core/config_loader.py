@@ -5,7 +5,7 @@ import sys
 import re
 
 from .utils import get_python_executable
-from .base_config import BaseConfigLoader
+from .base import BaseConfigLoader
 
 class ConfigLoader(BaseConfigLoader):
     def __init__(self, project_base_dir):

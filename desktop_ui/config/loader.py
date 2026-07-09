@@ -10,7 +10,7 @@ _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platfo
 _exe_ext = ".exe" if _os_suffix == "win" else ""
 
 from app.core.utils import get_python_executable
-from app.core.base_config import BaseConfigLoader
+from app.core.base import BaseConfigLoader
 
 from typing import Callable
 
@@ -151,3 +151,7 @@ their respective tab.
     def get_env_var(self, name):
         """Returns the value of an environment variable."""
         return os.environ.get(name)
+
+    def get_lang_data(self, lang_id: str) -> dict:
+        """Proxy method for backward compatibility with UI."""
+        return self.language_manager.get_lang_data(lang_id)

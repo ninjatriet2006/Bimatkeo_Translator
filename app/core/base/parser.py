@@ -1,9 +1,9 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.base_config.parser
+- MODULE: app.core.base.parser
 - RESPONSIBILITY: Phân tích cấu trúc (parse) các schema config và factory defaults.
-- CALLED BY: app.core.base_config.base_loader
+- CALLED BY: app.core.base.base_loader
 - CALLS TO: None
 - IN = OUT: Nhận schema dict -> trả về các giá trị hoặc flat properties.
 =============================================================================

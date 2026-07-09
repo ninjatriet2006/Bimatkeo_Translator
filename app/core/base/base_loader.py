@@ -1,10 +1,10 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.base_config.base_loader
+- MODULE: app.core.base.base_loader
 - RESPONSIBILITY: Định nghĩa lớp BaseConfigLoader cung cấp các tiện ích xử lý schema và file config.
-- CALLED BY: app.core.base_config, app.core.config_loader, desktop_ui.config.loader
-- CALLS TO: app.core.base_config.io, app.core.base_config.schema_loader, app.core.base_config.parser
+- CALLED BY: app.core.base, app.core.config_loader, desktop_ui.config.loader
+- CALLS TO: app.core.base.io, app.core.base.schema_loader, app.core.base.parser
 - IN = OUT: Định nghĩa class BaseConfigLoader abstract.
 =============================================================================
 """

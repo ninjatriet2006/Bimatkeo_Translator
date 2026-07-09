@@ -1,10 +1,10 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.base_config
-- RESPONSIBILITY: Expose core base_config components.
+- MODULE: app.core.base
+- RESPONSIBILITY: Expose core base components.
 - CALLED BY: app.core.config_loader, desktop_ui.config.loader
-- CALLS TO: app.core.base_config.base_loader, app.core.base_config.io, app.core.base_config.parser, app.core.base_config.schema_loader
+- CALLS TO: app.core.base.base_loader, app.core.base.io, app.core.base.parser, app.core.base.schema_loader
 - IN = OUT: Initialization module.
 =============================================================================
 """

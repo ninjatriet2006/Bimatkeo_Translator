@@ -1,9 +1,9 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.base_config.io
+- MODULE: app.core.base.io
 - RESPONSIBILITY: Chịu trách nhiệm đọc và ghi các file YAML.
-- CALLED BY: app.core.base_config.base_loader, app.core.base_config.schema_loader
+- CALLED BY: app.core.base.base_loader, app.core.base.schema_loader
 - CALLS TO: ruamel.yaml
 - IN = OUT: Xử lý I/O với YAML file.
 =============================================================================
