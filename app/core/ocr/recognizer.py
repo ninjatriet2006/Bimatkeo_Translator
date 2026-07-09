@@ -10,7 +10,7 @@ INTEGRITY NOTES (For AI Agents):
 """
 
 import numpy as np
-from app.core.interfaces import BaseTextRecognizer
+from app.core.ocr.interfaces import BaseTextRecognizer
 
 class OCRRecognizer:
     """Xử lý quá trình nhận diện chữ từ ảnh đã crop."""

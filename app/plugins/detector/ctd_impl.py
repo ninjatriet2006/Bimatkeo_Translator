@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from app.core.interfaces import BaseTextDetector
-from app.core.factories import DetectorFactory
+from app.core.ocr.interfaces import BaseTextDetector
+from app.core.shared_registry import DetectorFactory
 from app.core.downloader import ModelDownloader
 
 @DetectorFactory.register("ctd")

@@ -11,7 +11,9 @@ INTEGRITY NOTES (For AI Agents):
 import threading
 import queue
 from app.core.shared_context.dto import PageContext
-from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseCloudOCR
+from app.core.ocr.interfaces import BaseTextDetector
+from app.core.ocr.interfaces import BaseTextRecognizer
+from app.core.ocr.interfaces import BaseCloudOCR
 from app.core.ocr.processor import OCRProcessor
 
 class OCRWorker(threading.Thread):

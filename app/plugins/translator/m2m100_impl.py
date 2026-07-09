@@ -1,6 +1,6 @@
 from typing import List
 import os
-from app.core.factories import TranslatorFactory
+from app.core.shared_registry import TranslatorFactory
 from .base_offline import BaseOfflineTranslator
 
 @TranslatorFactory.register("m2m100")

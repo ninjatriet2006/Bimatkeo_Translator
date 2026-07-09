@@ -12,7 +12,7 @@ import threading
 import queue
 from app.core.shared_context.dto import PageContext
 from app.core.shared_context.context_reader import get_original_image, get_inpainted_image, get_background_image
-from app.core.interfaces import BaseRenderer
+from app.core.renderer.interfaces import BaseRenderer
 
 class RenderWorker(threading.Thread):
     def __init__(self, in_q: queue.Queue, out_q: queue.Queue, renderer: BaseRenderer | None, log_callback=None):

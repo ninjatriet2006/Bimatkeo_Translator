@@ -192,7 +192,7 @@ class HandlersMixin:
 
     def _update_inpainter_visibility(self):
         """Toggles the visibility of SD Base Model based on the selected Inpainter."""
-        from app.core.factories import InpainterFactory, DiffusionMainModelFactory
+        from app.core.shared_registry import InpainterFactory, DiffusionMainModelFactory
         from PySide6.QtCore import QTimer
         
         enable_advanced_diffusion = self._get_value_from_widget('enable_advanced_diffusion', self.setting_widgets.get('enable_advanced_diffusion'))
@@ -357,7 +357,7 @@ class HandlersMixin:
         button.setText("...")
 
         def thread_target():
-            from app.core.factories import TranslatorFactory
+            from app.core.shared_registry import TranslatorFactory
             try:
                 # Import API plugins so they register into the Factory
                 import app.plugins.translator.openai_impl
@@ -771,7 +771,7 @@ class HandlersMixin:
 
     def _update_max_length_label(self):
         """Updates the label of max_request_length dynamically based on plugin MAX_CHARS and system prompt."""
-        from app.core.factories import TranslatorFactory
+        from app.core.shared_registry import TranslatorFactory
         from app.core.translator.utils import PromptBuilder
         
         # 1. Get the current translator plugin's MAX_CHARS
@@ -820,7 +820,7 @@ class HandlersMixin:
     def _is_translator_supported_for_target(self, translator_name: str, target_code: str) -> bool:
         """Kiểm tra xem mô hình dịch thuật có hỗ trợ ngôn ngữ đích không."""
         from .. import main_window as mw
-        from app.core.factories import TranslatorFactory
+        from app.core.shared_registry import TranslatorFactory
         if translator_name in ["none", "original"]:
             return True
         capabilities = TranslatorFactory.get_capabilities(translator_name)
@@ -1058,7 +1058,7 @@ class HandlersMixin:
         if translator_name and " (Not Setup)" in translator_name:
             translator_name = translator_name.split(" (Not Setup)")[0]
 
-        from app.core.factories import TranslatorFactory
+        from app.core.shared_registry import TranslatorFactory
         capabilities = TranslatorFactory.get_capabilities(translator_name)
         supported_codes = set()
 

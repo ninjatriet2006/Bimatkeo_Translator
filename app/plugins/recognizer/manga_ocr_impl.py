@@ -3,8 +3,8 @@ import numpy as np
 from PIL import Image
 import cv2
 
-from app.core.interfaces import BaseTextRecognizer
-from app.core.factories import RecognizerFactory
+from app.core.ocr.interfaces import BaseTextRecognizer
+from app.core.shared_registry import RecognizerFactory
 from app.core.downloader import ModelDownloader
 
 @RecognizerFactory.register("manga_ocr")

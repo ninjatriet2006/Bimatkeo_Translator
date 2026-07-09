@@ -13,7 +13,7 @@ _exe_ext = ".exe" if _os_suffix == "win" else ""
 
 
 from typing import TYPE_CHECKING
-from app.core.factories import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory, DiffusionMainModelFactory, DiffusionBaseModelFactory
+from app.core.shared_registry import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory, DiffusionMainModelFactory, DiffusionBaseModelFactory
 
 FACTORY_MAP = {
     "offline_translator": TranslatorFactory,
@@ -77,7 +77,7 @@ class RegistryMixin(_RegistryMixinBase):
             self.model_source_map    -> {key: source_url}
         """
         from app.core.shared.constants import REQUIRED_MODEL_FIELDS, GLOBAL_RESOURCES, MODEL_PRIORITY_KEYWORDS
-        from app.core.factories import (
+        from app.core.shared_registry import (
             TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory,
             UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory,
             DiffusionMainModelFactory, DiffusionBaseModelFactory

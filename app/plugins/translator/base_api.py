@@ -4,8 +4,8 @@ import urllib.request
 import urllib.error
 from typing import List, Dict, Any, Union, cast
 
-from app.core.interfaces import BaseTranslator
-from app.core.factories import TranslatorFactory
+from app.core.translator.interfaces import BaseTranslator
+from app.core.shared_registry import TranslatorFactory
 from app.core.translator.utils import PromptBuilder
 
 class BaseAPITranslator(BaseTranslator):

@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 from typing import List
 
-from app.core.interfaces import BaseInpainter
-from app.core.factories import InpainterFactory
+from app.core.inpainter.interfaces import BaseInpainter
+from app.core.shared_registry import InpainterFactory
 from app.core.downloader import ModelDownloader
 
 try:

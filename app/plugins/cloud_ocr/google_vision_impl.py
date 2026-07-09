@@ -5,8 +5,8 @@ import urllib.error
 import numpy as np
 import cv2 # type: ignore
 
-from app.core.interfaces import BaseCloudOCR
-from app.core.factories import CloudOCRFactory
+from app.core.ocr.interfaces import BaseCloudOCR
+from app.core.shared_registry import CloudOCRFactory
 
 @CloudOCRFactory.register("google_ocr")
 class GoogleVisionImpl(BaseCloudOCR):

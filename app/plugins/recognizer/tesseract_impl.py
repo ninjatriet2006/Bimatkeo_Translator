@@ -1,8 +1,8 @@
 import numpy as np
 import cv2
 
-from app.core.interfaces import BaseTextRecognizer
-from app.core.factories import RecognizerFactory
+from app.core.ocr.interfaces import BaseTextRecognizer
+from app.core.shared_registry import RecognizerFactory
 
 def create_tesseract_class(lang_code: str):
     """Factory method to dynamically generate a Tesseract Recognizer class for a specific language code."""

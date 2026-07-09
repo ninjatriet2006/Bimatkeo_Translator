@@ -2,7 +2,7 @@
 Plugin khai báo metadata cho Diffusion Base Models (sd_1_5, sd_nsfw).
 Các base model này chỉ là trọng số, không có class thực thi.
 """
-from app.core.factories import DiffusionBaseModelFactory
+from app.core.shared_registry import DiffusionBaseModelFactory
 import os
 
 @DiffusionBaseModelFactory.register("sd_1_5")

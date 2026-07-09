@@ -22,7 +22,7 @@ class ConfigLoaderBase(BaseConfigLoader):
     # self._DEFAULT_CHECKS as an instance attribute). This class-level value is
     # only a safe empty fallback so attribute access never raises if the
     # registry hasn't loaded yet. Do NOT add model definitions here -- the
-    # single source of truth is dynamic Plugin Factories (app.core.factories).
+    # single source of truth is dynamic Plugin Factories (app.core.shared_registry).
     _DEFAULT_CHECKS = {}
 
     def __init__(self, project_base_dir):

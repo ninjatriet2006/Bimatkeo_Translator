@@ -11,7 +11,8 @@ INTEGRITY NOTES (For AI Agents):
 
 import cv2
 import numpy as np
-from app.core.interfaces import BaseTextDetector, BaseTextRecognizer
+from app.core.ocr.interfaces import BaseTextDetector
+from app.core.ocr.interfaces import BaseTextRecognizer
 
 class OCRRotator:
     """Tự động phát hiện góc xoay của trang truyện để sửa lỗi chụp ngược/nghiêng 90 độ."""

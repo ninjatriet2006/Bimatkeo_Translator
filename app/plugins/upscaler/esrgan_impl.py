@@ -6,8 +6,8 @@ import subprocess
 import tempfile
 import sys
 
-from app.core.interfaces import BaseUpscaler
-from app.core.factories import UpscalerFactory
+from app.core.inpainter.interfaces import BaseUpscaler
+from app.core.shared_registry import UpscalerFactory
 from app.core.downloader import ModelDownloader
 
 @UpscalerFactory.register("esrgan")

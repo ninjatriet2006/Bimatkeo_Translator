@@ -1,8 +1,8 @@
 import os
 from typing import List, Union
 
-from app.core.interfaces import BaseTranslator
-from app.core.factories import TranslatorFactory
+from app.core.translator.interfaces import BaseTranslator
+from app.core.shared_registry import TranslatorFactory
 
 try:
     from transformers import AutoTokenizer, AutoModelForSeq2SeqLM  # type: ignore

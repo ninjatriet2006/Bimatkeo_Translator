@@ -3,8 +3,8 @@ import sys
 import cv2
 
 from typing import Any, List
-from app.core.interfaces import BaseDiffusionModel
-from app.core.factories import DiffusionMainModelFactory
+from app.core.diffusion.interfaces import BaseDiffusionModel
+from app.core.shared_registry import DiffusionMainModelFactory
 
 try:
     import torch

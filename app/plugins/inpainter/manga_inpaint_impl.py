@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Union
 
-from app.core.factories import InpainterFactory
+from app.core.shared_registry import InpainterFactory
 from app.plugins.inpainter.lama_impl import LamaInpainter_Impl
 
 @InpainterFactory.register("manga")

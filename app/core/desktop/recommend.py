@@ -1,11 +1,11 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.hardware_utils
-- RESPONSIBILITY: Utility functions for hardware detection and resource limits.
-- CALLED BY: app.core.base.manager, desktop_ui.config.loader
+- MODULE: app.core.desktop.recommend
+- RESPONSIBILITY: Utility functions for desktop-specific hardware detection and configuration recommendations.
+- CALLED BY: desktop_ui.mainwindow.widget_builders
 - CALLS TO: None
-- IN = OUT: Returns values used to tune memory usage based on hardware.
+- IN = OUT: Returns values used to tune desktop UI defaults based on hardware.
 =============================================================================
 """
 import os

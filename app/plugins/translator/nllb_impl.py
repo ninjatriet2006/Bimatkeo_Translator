@@ -1,5 +1,5 @@
 from typing import List
-from app.core.factories import TranslatorFactory
+from app.core.shared_registry import TranslatorFactory
 from .base_offline import BaseOfflineTranslator
 
 @TranslatorFactory.register("nllb")

@@ -4,8 +4,8 @@ from typing import List, Tuple
 from PIL import Image
 import numpy as np
 
-from app.core.interfaces import BaseInpainter
-from app.core.factories import InpainterFactory
+from app.core.inpainter.interfaces import BaseInpainter
+from app.core.shared_registry import InpainterFactory
 
 @InpainterFactory.register("opencv")
 class OpenCVInpainter_Impl(BaseInpainter):

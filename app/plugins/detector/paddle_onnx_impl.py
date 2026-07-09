@@ -2,8 +2,8 @@ import os
 import cv2
 import numpy as np
 import logging
-from app.core.interfaces import BaseTextDetector
-from app.core.factories import DetectorFactory
+from app.core.ocr.interfaces import BaseTextDetector
+from app.core.shared_registry import DetectorFactory
 
 @DetectorFactory.register("paddle_onnx")
 class PaddleONNXDetectorImpl(BaseTextDetector):

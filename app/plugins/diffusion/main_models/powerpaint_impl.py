@@ -3,8 +3,9 @@ import cv2
 import numpy as np
 from typing import List, Any
 
-from app.core.factories import DiffusionMainModelFactory
-from app.core.interfaces import BaseDiffusionModel, BaseInpainter
+from app.core.shared_registry import DiffusionMainModelFactory
+from app.core.diffusion.interfaces import BaseDiffusionModel
+from app.core.inpainter.interfaces import BaseInpainter
 
 try:
     import torch

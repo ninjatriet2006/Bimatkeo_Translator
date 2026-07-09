@@ -1,7 +1,7 @@
 """
 Plugin khai báo metadata cho Colorizer Models.
 """
-from app.core.factories import ColorizerFactory
+from app.core.shared_registry import ColorizerFactory
 import os
 
 @ColorizerFactory.register("mc2")

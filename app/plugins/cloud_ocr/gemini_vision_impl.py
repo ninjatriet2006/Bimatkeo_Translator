@@ -6,8 +6,8 @@ import numpy as np
 import cv2 # type: ignore
 from typing import List, Dict
 
-from app.core.interfaces import BaseCloudOCR
-from app.core.factories import CloudOCRFactory
+from app.core.ocr.interfaces import BaseCloudOCR
+from app.core.shared_registry import CloudOCRFactory
 
 @CloudOCRFactory.register("gemini_ocr")
 class GeminiVisionImpl(BaseCloudOCR):

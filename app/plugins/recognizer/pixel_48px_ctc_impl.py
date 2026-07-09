@@ -2,8 +2,8 @@ import os
 import cv2
 import numpy as np
 import math
-from app.core.interfaces import BaseTextRecognizer
-from app.core.factories import RecognizerFactory
+from app.core.ocr.interfaces import BaseTextRecognizer
+from app.core.shared_registry import RecognizerFactory
 from app.core.downloader import ModelDownloader
 
 @RecognizerFactory.register("48px_ctc")

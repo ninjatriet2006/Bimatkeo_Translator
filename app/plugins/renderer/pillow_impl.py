@@ -4,8 +4,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from typing import List, Any
 
-from app.core.interfaces import BaseRenderer
-from app.core.factories import RendererFactory
+from app.core.renderer.interfaces import BaseRenderer
+from app.core.shared_registry import RendererFactory
 
 @RendererFactory.register("pillow_renderer")
 class PillowRenderer_Impl(BaseRenderer):

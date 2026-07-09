@@ -4,8 +4,8 @@ import numpy as np
 import urllib.request
 import logging
 import math
-from app.core.interfaces import BaseTextRecognizer
-from app.core.factories import RecognizerFactory
+from app.core.ocr.interfaces import BaseTextRecognizer
+from app.core.shared_registry import RecognizerFactory
 
 @RecognizerFactory.register("paddle_onnx_rec")
 class PaddleONNXRecognizerImpl(BaseTextRecognizer):
