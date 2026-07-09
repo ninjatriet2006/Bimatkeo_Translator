@@ -1,11 +1,11 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.utils
-- RESPONSIBILITY: General purpose utility functions for core components.
-- CALLED BY: Various
+- MODULE: app.core.base.env
+- RESPONSIBILITY: General purpose environment utility functions for base infrastructure.
+- CALLED BY: app.core.base.manager, desktop_ui.config.loader
 - CALLS TO: None
-- IN = OUT: Pure functions, primarily for pathing and simple transforms.
+- IN = OUT: Pure functions for pathing and execution environments.
 =============================================================================
 """
 import os

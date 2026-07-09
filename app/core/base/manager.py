@@ -14,7 +14,7 @@ import subprocess
 import sys
 import re
 
-from app.core.utils import get_python_executable
+from app.core.base.env import get_python_executable
 from app.core.base.base_loader import BaseConfigLoader
 
 class ConfigManager(BaseConfigLoader):

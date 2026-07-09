@@ -20,7 +20,7 @@ class DiffusionVerifier:
 
     def run_verification(self, registry_path: str = "", models_base_path: str = "models"):
         from app.core.shared_registry import DiffusionMainModelFactory, DiffusionBaseModelFactory
-        from app.core.verify_utils import run_models_verification
+        from app.core.shared_registry.verify import run_models_verification
         run_models_verification(
             verifier_name="DiffusionVerifier",
             factories=[DiffusionMainModelFactory, DiffusionBaseModelFactory],

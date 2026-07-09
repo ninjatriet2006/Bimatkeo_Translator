@@ -9,7 +9,7 @@ yaml.default_flow_style = False
 _os_suffix = "win" if sys.platform.startswith('win') else ("macos" if sys.platform.startswith('darwin') else "linux")
 _exe_ext = ".exe" if _os_suffix == "win" else ""
 
-from app.core.utils import get_python_executable
+from app.core.base.env import get_python_executable
 from app.core.base import BaseConfigLoader
 
 from typing import Callable

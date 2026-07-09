@@ -1,7 +1,7 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.shared_context.constants
+- MODULE: app.core.shared_registry.constants
 - RESPONSIBILITY: Contains system-wide constants, previously defined in YAML.
 - CALLED BY: app.plugins.recognizer.paddle_onnx_rec_impl, desktop_ui.config.registry
 - CALLS TO: None

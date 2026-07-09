@@ -31,7 +31,7 @@ class PaddleONNXRecognizerImpl(BaseTextRecognizer):
             
             # Đọc từ file cấu hình nếu có
             try:
-                from app.core.shared.constants import GLOBAL_RESOURCES
+                from app.core.shared_registry.constants import GLOBAL_RESOURCES
                 configured_url = GLOBAL_RESOURCES.get("paddle_en_dict")
                 if configured_url:
                     url = configured_url
