@@ -1,5 +1,5 @@
 from app.core.shared_registry import TranslatorFactory
-from .base_api import BaseAPITranslator
+from app.core.translator.base_api import BaseAPITranslator
 
 @TranslatorFactory.register("felo")
 class FeloTranslator(BaseAPITranslator):

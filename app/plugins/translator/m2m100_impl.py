@@ -1,7 +1,8 @@
 from typing import List
 import os
 from app.core.shared_registry import TranslatorFactory
-from .base_offline import BaseOfflineTranslator
+from app.core.downloader import ModelDownloader
+from app.core.translator.base_offline import BaseOfflineTranslator
 
 @TranslatorFactory.register("m2m100")
 class M2M100Translator(BaseOfflineTranslator):

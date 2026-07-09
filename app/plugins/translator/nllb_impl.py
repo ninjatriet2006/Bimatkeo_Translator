@@ -1,6 +1,7 @@
 from typing import List
 from app.core.shared_registry import TranslatorFactory
-from .base_offline import BaseOfflineTranslator
+from app.core.downloader import ModelDownloader
+from app.core.translator.base_offline import BaseOfflineTranslator
 
 @TranslatorFactory.register("nllb")
 class NLLBTranslator(BaseOfflineTranslator):
