@@ -1,7 +1,7 @@
 """
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
-- MODULE: app.core.inpainter.manager
+- MODULE: app.core.inpainter.initializer
 - RESPONSIBILITY: Reads config and loads corresponding models.
 - CALLED BY: app.core.pipeline.manager
 - CALLS TO: app.core.factories.InpainterFactory, app.core.factories.UpscalerFactory, app.core.downloader.manager
@@ -12,7 +12,7 @@ INTEGRITY NOTES (For AI Agents):
 from app.core.downloader import ModelDownloader
 from app.core.factories import InpainterFactory, DiffusionMainModelFactory, UpscalerFactory
 
-class InpainterManager:
+class InpainterInitializer:
     @staticmethod
     def initialize(config_dict: dict, log_callback=None):
         """

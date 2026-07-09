@@ -11,16 +11,16 @@ INTEGRITY NOTES (For AI Agents):
 
 import os
 from app.core.pipeline.config_loader import load_all_configs
-from app.core.pipeline.executor import PipelineExecutor
 from app.core.ocr.initializer import OCRInitializer
-from app.core.translator.manager import TranslatorManager
-from app.core.inpainter.manager import InpainterManager
-from app.core.renderer.manager import RendererManager
+from app.core.translator.initializer import TranslatorInitializer
+from app.core.inpainter.initializer import InpainterInitializer
+from app.core.renderer.initializer import RendererInitializer
 
 class PipelineManager:
-    """Orchestrates the setup of models and delegates execution to PipelineExecutor."""
-
+    """Quản lý luồng chính của ứng dụng."""
+    
     def __init__(self, app, python_executable, temp_dir):
+        from .executor import PipelineExecutor
         self.executor = PipelineExecutor(app, python_executable, temp_dir)
 
     def is_stopped(self):
@@ -30,11 +30,18 @@ class PipelineManager:
         """Stops the pipeline simulation."""
         return self.executor.stop(log_callback)
 
-    def _initialize_models(self, config_dict, project_root, api_profiles, log_callback):
+    def _initialize_models(self, config_dict: dict, project_root: str, log_callback=None):
+        """Khởi tạo toàn bộ các module trong Pipeline."""
+        # Setup API profiles for translator
+        api_profiles = {}
+        if "api_profiles" in config_dict:
+            for prof in config_dict["api_profiles"]:
+                api_profiles[prof.get("name")] = prof
+
         cloud_ocr, detector, recognizer = OCRInitializer.initialize(config_dict, log_callback)
-        chained_translators, editor_translator = TranslatorManager.initialize(config_dict, project_root, api_profiles, log_callback)
-        inpainter, upscaler, enable_upscaler, upscale_ratio = InpainterManager.initialize(config_dict, log_callback)
-        renderer = RendererManager.initialize(config_dict, log_callback)
+        chained_translators, editor_translator = TranslatorInitializer.initialize(config_dict, project_root, api_profiles, log_callback)
+        inpainter, upscaler, enable_upscaler, upscale_ratio = InpainterInitializer.initialize(config_dict, log_callback)
+        renderer = RendererInitializer.initialize(config_dict, log_callback)
 
         return {
             "ocr": (cloud_ocr, detector, recognizer),

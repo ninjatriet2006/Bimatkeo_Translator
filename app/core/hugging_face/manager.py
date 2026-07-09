@@ -12,12 +12,14 @@ INTEGRITY NOTES (For AI Agents):
 from .downloader import HFDownloader
 from .version_checker import HFVersionChecker
 from .verify import HFVerifier
+from .config_updater import HFConfigUpdater
 
 class HuggingFaceManager:
     def __init__(self):
         self.downloader = HFDownloader()
         self.version_checker = HFVersionChecker()
         self.verifier = HFVerifier()
+        self.config_updater = HFConfigUpdater()
         
     def run_verification(self, registry_path: str, local_versions_path: str):
         """Runs integrity check on the HuggingFace module configs."""
@@ -45,21 +47,4 @@ class HuggingFaceManager:
         """
         Records the downloaded version in local_versions.yaml.
         """
-        import os
-        from ruamel.yaml import YAML
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        yaml.default_flow_style = False
-        
-        local_versions = {}
-        if os.path.exists(local_versions_file):
-            with open(local_versions_file, "r", encoding="utf-8") as lf:
-                local_versions = yaml.load(lf) or {}
-                
-        if key not in local_versions:
-            local_versions[key] = {}
-            
-        local_versions[key][model_name] = version
-        
-        with open(local_versions_file, "w", encoding="utf-8") as lf:
-            yaml.dump(local_versions, lf)
+        self.config_updater.update_local_version(local_versions_file, key, model_name, version)
