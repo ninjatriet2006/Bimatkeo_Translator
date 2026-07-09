@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.base.schema_loader
-- RESPONSIBILITY: Tải schema backend từ cache hoặc sinh schema mới qua CLI.
+- RESPONSIBILITY: Loads backend schema from cache or generates new schema via CLI.
 - CALLED BY: app.core.base.base_loader
 - CALLS TO: app.core.base.io
-- IN = OUT: Cung cấp dictionary schema cấu hình.
+- IN = OUT: Provides configuration schema dictionary.
 =============================================================================
 """
 import os

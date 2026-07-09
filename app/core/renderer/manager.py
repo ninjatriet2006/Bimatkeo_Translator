@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.renderer.manager
-- RESPONSIBILITY: Khởi tạo RendererFactory và tải font chữ dựa trên cấu hình.
+- RESPONSIBILITY: Initializes RendererFactory and loads fonts based on configuration.
 - CALLED BY: app.core.pipeline.manager
 - CALLS TO: app.core.factories (RendererFactory)
-- IN = OUT: Nhận config_dict -> trả về instance của Renderer.
+- IN = OUT: Receives config_dict -> returns Renderer instance.
 =============================================================================
 """
 

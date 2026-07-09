@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.inpainter.manager
-- RESPONSIBILITY: Đọc config và tải model tương ứng.
+- RESPONSIBILITY: Reads config and loads corresponding models.
 - CALLED BY: app.core.pipeline.manager
 - CALLS TO: app.core.factories.InpainterFactory, app.core.factories.UpscalerFactory, app.core.downloader.manager
-- IN = OUT: Nhận config_dict -> trả về instance của Inpainter và Upscaler.
+- IN = OUT: Receives config_dict -> returns instances of Inpainter and Upscaler.
 =============================================================================
 """
 

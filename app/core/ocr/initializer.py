@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.initializer
-- RESPONSIBILITY: Khởi tạo các Factory tương ứng dựa trên cấu hình (config).
+- RESPONSIBILITY: Initializes corresponding Factories based on configuration.
 - CALLED BY: app.core.pipeline.manager
 - CALLS TO: app.core.factories.CloudOCRFactory, app.core.factories.DetectorFactory, app.core.factories.RecognizerFactory
-- IN = OUT: Nhận config_dict -> khởi tạo và trả về instance của CloudOCR, Detector, Recognizer.
+- IN = OUT: Receives config_dict -> initializes and returns instances of CloudOCR, Detector, Recognizer.
 =============================================================================
 """
 

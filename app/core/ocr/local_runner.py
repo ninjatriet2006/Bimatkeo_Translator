@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.local_runner
-- RESPONSIBILITY: Phối hợp các công cụ OCR Local để trích xuất chữ.
+- RESPONSIBILITY: Coordinates Local OCR tools to extract text.
 - CALLED BY: app.core.ocr.manager
 - CALLS TO: app.core.ocr.preprocessor, app.core.ocr.detector, app.core.ocr.rotator, app.core.ocr.cropper, app.core.ocr.recognizer, app.core.ocr.corrector, app.core.ocr.filter, app.core.ocr.geometry
-- IN = OUT: Nhận PageContext -> xử lý -> ghi kết quả vào PageContext.
+- IN = OUT: Receives PageContext -> processes -> writes results to PageContext.
 =============================================================================
 """
 

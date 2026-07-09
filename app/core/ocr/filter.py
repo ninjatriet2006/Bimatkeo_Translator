@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.filter
-- RESPONSIBILITY: Lọc bỏ các BBox quá bé, Text quá ngắn hoặc chứa từ cấm.
+- RESPONSIBILITY: Filters out BBoxes that are too small, text too short or containing banned words.
 - CALLED BY: app.core.ocr.cloud_runner, app.core.ocr.local_runner
 - CALLS TO: None
-- IN = OUT: Nhận danh sách bboxes, texts -> trả về bboxes, texts đã loại bỏ rác.
+- IN = OUT: Receives list of bboxes, texts -> returns cleaned bboxes, texts.
 =============================================================================
 """
 

@@ -2,7 +2,7 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.constants
-- RESPONSIBILITY: Chứa các hằng số dùng chung toàn hệ thống, từng được định nghĩa trong YAML.
+- RESPONSIBILITY: Contains system-wide constants, previously defined in YAML.
 - CALLED BY: app.plugins.recognizer.paddle_onnx_rec_impl, desktop_ui.config.registry
 - CALLS TO: None
 =============================================================================

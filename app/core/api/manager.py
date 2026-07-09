@@ -17,7 +17,7 @@ class APIManager:
     """
     Facade for all API related operations.
     """
-    def __init__(self, project_base_dir: str = None):
+    def __init__(self, project_base_dir: str | None = None):
         self.project_base_dir = project_base_dir or os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         self.verifier = APIVerifier()
 

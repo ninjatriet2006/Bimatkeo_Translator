@@ -2,7 +2,7 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.downloader.exceptions
-- RESPONSIBILITY: Định nghĩa các lỗi (exceptions) đặc thù cho việc tải xuống.
+- RESPONSIBILITY: Defines specific exceptions for downloading.
 - CALLED BY: app.core.downloader, app.core.downloader.manager
 - CALLS TO: None
 - IN = OUT: Custom exception classes.

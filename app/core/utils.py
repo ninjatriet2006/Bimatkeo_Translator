@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.utils
+- RESPONSIBILITY: General purpose utility functions for core components.
+- CALLED BY: Various
+- CALLS TO: None
+- IN = OUT: Pure functions, primarily for pathing and simple transforms.
+=============================================================================
+"""
 import os
 import sys
 

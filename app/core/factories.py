@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.factories
+- RESPONSIBILITY: Provide dynamic registries and instantiation for core modules.
+- CALLED BY: Various
+- CALLS TO: None
+- IN = OUT: Maps string IDs to actual class implementations.
+=============================================================================
+"""
 from typing import Dict, Type, Any
 
 import importlib

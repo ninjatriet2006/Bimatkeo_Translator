@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.translator.utils
-- RESPONSIBILITY: Xây dựng System Prompt chuẩn JSON cho Translator.
+- RESPONSIBILITY: Builds standard JSON System Prompt for Translator.
 - CALLED BY: app.core.translator
 - CALLS TO: None
-- IN = OUT: Đọc file cấu hình system_prompt.yaml và sinh ra string.
+- IN = OUT: Reads system_prompt.yaml config and outputs string.
 =============================================================================
 """
 import os

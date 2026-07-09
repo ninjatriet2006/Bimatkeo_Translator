@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.pipeline.config_loader
+- RESPONSIBILITY: Loads pipeline-specific configurations.
+- CALLED BY: app.core.pipeline.manager
+- CALLS TO: None
+- IN = OUT: Parses pipeline yaml to settings dictionary.
+=============================================================================
+"""
 import os
 import yaml
 

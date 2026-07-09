@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.downloader.task
-- RESPONSIBILITY: Định nghĩa trạng thái và dữ liệu cho tác vụ tải xuống.
+- RESPONSIBILITY: Defines states and data for download tasks.
 - CALLED BY: app.core.downloader, app.core.downloader.manager
 - CALLS TO: None
-- IN = OUT: Định nghĩa enum TaskStatus và class DownloadTask.
+- IN = OUT: Defines TaskStatus enum and DownloadTask class.
 =============================================================================
 """
 from enum import Enum

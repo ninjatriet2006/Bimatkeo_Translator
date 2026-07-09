@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.cropper
-- RESPONSIBILITY: Cắt vùng ảnh chứa chữ dựa trên BBox hoặc Polygon, xử lý xoay ma trận.
+- RESPONSIBILITY: Crops text regions based on BBox or Polygon, handles matrix rotation.
 - CALLED BY: app.core.ocr.local_runner
 - CALLS TO: None
-- IN = OUT: Nhận ảnh gốc, box, poly -> trả về ảnh con đã cắt (crop).
+- IN = OUT: Receives original image, box, poly -> returns cropped sub-image.
 =============================================================================
 """
 

@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.translator.manager
-- RESPONSIBILITY: Khởi tạo và cấp phát các object Translator và Editor dựa theo config.
+- RESPONSIBILITY: Initializes and allocates Translator and Editor objects based on config.
 - CALLED BY: app.core.pipeline.manager
 - CALLS TO: app.core.factories (TranslatorFactory)
-- IN = OUT: Nhận config_dict -> trả về instance của Translator và Editor.
+- IN = OUT: Receives config_dict -> returns instances of Translator and Editor.
 =============================================================================
 """
 

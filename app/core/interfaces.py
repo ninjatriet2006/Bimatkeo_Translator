@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.interfaces
+- RESPONSIBILITY: Base interfaces and abstract classes for the system.
+- CALLED BY: Various
+- CALLS TO: None
+- IN = OUT: Enforces architectural contracts without implementing logic.
+=============================================================================
+"""
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import List, Union, Dict

@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.rotator
-- RESPONSIBILITY: Tìm góc xoay tối ưu bằng cách thử nhận diện text ở các góc.
+- RESPONSIBILITY: Finds optimal rotation angle by attempting text recognition at various angles.
 - CALLED BY: app.core.ocr.local_runner
 - CALLS TO: app.core.interfaces.BaseTextRecognizer, app.core.interfaces.BaseTextDetector
-- IN = OUT: Nhận Numpy array ảnh -> trả về góc xoay Int và ảnh đã xoay.
+- IN = OUT: Receives Numpy array image -> returns integer angle and rotated image.
 =============================================================================
 """
 

@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.config_loader
+- RESPONSIBILITY: Central application configuration management.
+- CALLED BY: main.py
+- CALLS TO: app.core.base.base_loader
+- IN = OUT: Main entry point for loading settings, delegating to base config.
+=============================================================================
+"""
 import os
 import json
 import subprocess

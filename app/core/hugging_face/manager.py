@@ -1,11 +1,11 @@
 """
-========================================================================
-[AI_ARCH_NOTE]: HUGGINGFACE MANAGER
-- Purpose: Orchestrates version checking and downloading for HuggingFace models.
-- Structure: High-level methods connecting VersionChecker and Downloader.
-- Consumed by: UI update workers (handlers.py).
-- Modified by: Developers
-- Critical Rules: None.
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.hugging_face.manager
+- RESPONSIBILITY: Central orchestrator for HuggingFace models.
+- CALLED BY: desktop_ui.mainwindow.handlers
+- CALLS TO: app.core.hugging_face.version_checker, app.core.hugging_face.downloader
+- IN = OUT: Orchestrates VersionChecker and Downloader.
 ========================================================================
 """
 

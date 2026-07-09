@@ -1,11 +1,11 @@
 """
-========================================================================
-[AI_ARCH_NOTE]: HUGGINGFACE DOWNLOADER
-- Purpose: Handles the actual downloading of models from HuggingFace via snapshot_download or direct API.
-- Structure: Methods for downloading with progress tracking.
-- Consumed by: manager.py
-- Modified by: Developers
-- Critical Rules: Must emit progress signals for the UI.
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.hugging_face.downloader
+- RESPONSIBILITY: Handles the actual downloading of models from HuggingFace via snapshot_download or direct API.
+- CALLED BY: app.core.hugging_face.manager
+- CALLS TO: huggingface_hub
+- IN = OUT: Downloads models with progress tracking. Must emit progress signals for the UI.
 ========================================================================
 """
 import os

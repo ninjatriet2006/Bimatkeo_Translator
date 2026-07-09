@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.cloud_runner
-- RESPONSIBILITY: Gọi API đám mây, lọc, sắp xếp, gộp bong bóng chữ.
+- RESPONSIBILITY: Calls Cloud API, filters, sorts, merges text bubbles.
 - CALLED BY: app.core.ocr.manager
 - CALLS TO: app.core.interfaces.BaseCloudOCR, app.core.ocr.filter, app.core.ocr.geometry
-- IN = OUT: Nhận PageContext -> xử lý Cloud OCR -> ghi kết quả vào PageContext.
+- IN = OUT: Receives PageContext -> processes Cloud OCR -> writes results to PageContext.
 =============================================================================
 """
 

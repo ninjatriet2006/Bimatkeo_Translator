@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.corrector
-- RESPONSIBILITY: Sử dụng Heuristics, Regex và Từ điển để sửa các lỗi OCR phổ biến.
+- RESPONSIBILITY: Uses Heuristics, Regex and Dictionary to fix common OCR errors.
 - CALLED BY: app.core.ocr.local_runner
 - CALLS TO: None
-- IN = OUT: Độc lập logic, nhận văn bản lỗi -> trả về văn bản đã sửa.
+- IN = OUT: Independent logic, receives erroneous text -> returns corrected text.
 =============================================================================
 """
 

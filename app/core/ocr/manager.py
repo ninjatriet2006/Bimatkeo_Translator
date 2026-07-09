@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.manager
-- RESPONSIBILITY: Đóng vai trò Facade (Delegator) điều phối quy trình nhận diện chữ.
+- RESPONSIBILITY: Acts as Facade (Delegator) coordinating the text recognition process.
 - CALLED BY: app.core.ocr.worker
 - CALLS TO: app.core.ocr.cloud_runner, app.core.ocr.local_runner
-- IN = OUT: Nhận PageContext -> gọi Runner tương ứng xử lý -> hoàn tất quá trình.
+- IN = OUT: Receives PageContext -> calls corresponding Runner -> completes process.
 =============================================================================
 """
 

@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.pipeline.manager
-- RESPONSIBILITY: Liên kết các Manager, thiết lập Fork-Join Queue, chạy Producer và Consumer.
-- CALLED BY: main.py hoặc entrypoint
+- RESPONSIBILITY: Links Managers, sets up Fork-Join Queue, runs Producer and Consumer.
+- CALLED BY: main.py or entrypoint
 - CALLS TO: app.core.ocr.initializer, app.core.translator.manager, app.core.inpainter.manager, app.core.renderer.manager
-- IN = OUT: Nhận cấu hình hệ thống -> sinh ra các Worker Threads -> chạy song song.
+- IN = OUT: Receives system config -> generates Worker Threads -> runs in parallel.
 =============================================================================
 """
 

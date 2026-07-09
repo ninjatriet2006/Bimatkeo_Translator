@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.inpainter.upscale
-- RESPONSIBILITY: Thực hiện phóng to ảnh nền (Upscale) sau khi đã inpaint xong.
+- RESPONSIBILITY: Performs background upscaling after inpainting is complete.
 - CALLED BY: app.core.pipeline.manager
 - CALLS TO: Upscaler implementation
-- IN = OUT: Nhận PageContext từ q_upscale, xử lý và gọi inpaint_done.set().
+- IN = OUT: Receives PageContext from q_upscale, processes and calls inpaint_done.set().
 =============================================================================
 """
 import threading

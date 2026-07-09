@@ -1,11 +1,11 @@
 """
-========================================================================
-[AI_ARCH_NOTE]: HUGGINGFACE MODULE INIT
-- Purpose: Public API for the hugging_face module.
-- Structure: Exposes main functions from the manager, downloader, and version_checker.
-- Consumed by: app/core/pipeline.py, desktop_ui/mainwindow/handlers.py
-- Modified by: Developers
-- Critical Rules: Keep exports minimal. Do not expose internal implementation details.
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.hugging_face.__init__
+- RESPONSIBILITY: Public API for the hugging_face module.
+- CALLED BY: app.core.pipeline.manager, desktop_ui.mainwindow.handlers
+- CALLS TO: app.core.hugging_face.manager, app.core.hugging_face.downloader, app.core.hugging_face.version_checker
+- IN = OUT: Exposes main functions. Keep exports minimal. Do not expose internal implementation details.
 ========================================================================
 """
 from .manager import HuggingFaceManager

@@ -2,17 +2,17 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.verify_utils
-- RESPONSIBILITY: Cung cấp logic kiểm tra tính toàn vẹn chung cho các model (missing, orphaned).
+- RESPONSIBILITY: Provides common integrity check logic for models (missing, orphaned).
 - CALLED BY: app.core.diffusion.verify, app.core.inpainter.verify, app.core.ocr.verify, app.core.translator.verify, app.core.renderer.verify
 - CALLS TO: None
-- IN = OUT: Hàm run_models_verification nhận Factories -> in kết quả ra console.
+- IN = OUT: run_models_verification receives Factories -> prints results to console.
 =============================================================================
 """
 
 import os
 from typing import List, Any
 
-def run_models_verification(verifier_name: str, factories: List[Any], orphan_check_dirs: List[str] = None, models_base_path: str = "models"):
+def run_models_verification(verifier_name: str, factories: List[Any], orphan_check_dirs: List[str] | None = None, models_base_path: str = "models"):
     """
     Cross-checks downloaded local models against the dynamic model factories.
     Reports Not Installed models (in registry but not on disk) 

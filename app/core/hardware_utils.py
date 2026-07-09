@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.hardware_utils
+- RESPONSIBILITY: Utility functions for hardware detection and resource limits.
+- CALLED BY: app.core.config_loader, desktop_ui.config.loader
+- CALLS TO: None
+- IN = OUT: Returns values used to tune memory usage based on hardware.
+=============================================================================
+"""
 import os
 
 def get_recommended_size() -> int:

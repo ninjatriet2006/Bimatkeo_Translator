@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.geometry
-- RESPONSIBILITY: Sắp xếp luồng đọc (Box Sorting) và gộp bong bóng chữ gần nhau (Box Merging).
+- RESPONSIBILITY: Sorts reading flow (Box Sorting) and merges nearby text bubbles (Box Merging).
 - CALLED BY: app.core.ocr.cloud_runner, app.core.ocr.local_runner
 - CALLS TO: None
-- IN = OUT: Nhận bboxes -> sắp xếp / gộp -> trả về bboxes mới.
+- IN = OUT: Receives bboxes -> sorts / merges -> returns new bboxes.
 =============================================================================
 """
 

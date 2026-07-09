@@ -1,11 +1,11 @@
 """
-========================================================================
-[AI_ARCH_NOTE]: HUGGINGFACE VERSION CHECKER
-- Purpose: Queries HuggingFace API to get the latest Git Tag Version, Last Modified Date, or Commit Hash.
-- Structure: Methods returning a formatted version string.
-- Consumed by: manager.py
-- Modified by: Developers
-- Critical Rules: Do not hardcode 'hf_latest'. Must fetch real metadata.
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.hugging_face.version_checker
+- RESPONSIBILITY: Queries HuggingFace API to get the latest Git Tag Version, Last Modified Date, or Commit Hash.
+- CALLED BY: app.core.hugging_face.manager
+- CALLS TO: None
+- IN = OUT: Returns a formatted version string. Do not hardcode 'hf_latest'. Must fetch real metadata.
 ========================================================================
 """
 import urllib.request

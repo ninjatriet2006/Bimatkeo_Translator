@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.pipeline.io_manager
+- RESPONSIBILITY: Handles I/O operations for pipeline state.
+- CALLED BY: app.core.pipeline.manager
+- CALLS TO: None
+- IN = OUT: Manages reading and writing task data to/from disk.
+=============================================================================
+"""
 import os
 import cv2
 import json

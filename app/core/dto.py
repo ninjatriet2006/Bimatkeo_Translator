@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.dto
+- RESPONSIBILITY: Define Data Transfer Objects (DTO) shared across the application.
+- CALLED BY: Various
+- CALLS TO: None
+- IN = OUT: Stores structured data to prevent deep coupling.
+=============================================================================
+"""
 from dataclasses import dataclass, field
 import threading
 import numpy as np

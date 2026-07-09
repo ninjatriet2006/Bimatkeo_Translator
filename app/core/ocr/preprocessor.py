@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.preprocessor
-- RESPONSIBILITY: Chuẩn bị ảnh chất lượng tốt nhất (Invert, Gamma) trước khi đưa vào Detector.
+- RESPONSIBILITY: Prepares highest quality image (Invert, Gamma) before feeding to Detector.
 - CALLED BY: app.core.ocr.local_runner
 - CALLS TO: None
-- IN = OUT: Nhận ảnh gốc (numpy) -> trả về ảnh đã tiền xử lý.
+- IN = OUT: Receives raw image (numpy) -> returns preprocessed image.
 =============================================================================
 """
 
