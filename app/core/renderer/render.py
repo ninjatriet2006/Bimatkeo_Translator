@@ -10,7 +10,8 @@ INTEGRITY NOTES (For AI Agents):
 """
 import threading
 import queue
-from app.core.dto import PageContext
+from app.core.shared.dto import PageContext
+from app.core.shared.context_reader import get_original_image, get_inpainted_image, get_background_image
 from app.core.interfaces import BaseRenderer
 
 class RenderWorker(threading.Thread):
@@ -38,7 +39,7 @@ class RenderWorker(threading.Thread):
                 self.log_callback("RENDER", f"Rendering {ctx.page_id}...")
 
             if self.renderer:
-                bg_image = ctx.get_background_image()
+                bg_image = get_background_image(ctx)
                         
                 texts = ctx.translated_texts if ctx.translated_texts else ctx.original_texts
                 
@@ -53,7 +54,7 @@ class RenderWorker(threading.Thread):
                 else:
                     ctx.rendered_image = bg_image.copy() if bg_image is not None else None
             else:
-                bg_image = ctx.get_background_image()
+                bg_image = get_background_image(ctx)
                 ctx.rendered_image = bg_image.copy() if bg_image is not None else None
 
             self.out_q.put(ctx)

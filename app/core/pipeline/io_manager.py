@@ -12,7 +12,8 @@ import os
 import cv2
 import json
 import queue
-from app.core.dto import PageContext
+from app.core.shared.dto import PageContext
+from app.core.shared.context_reader import get_original_image, get_inpainted_image, get_background_image
 
 class PipelineIOManager:
     @staticmethod
@@ -125,12 +126,12 @@ class PipelineIOManager:
                 
                 if config_dict.get('is_single_file', False):
                     # Save Inpainted Image
-                    inpaint_img = ctx.get_inpainted_image()
+                    inpaint_img = get_inpainted_image(ctx)
                     if inpaint_img is not None:
                         cv2.imwrite(os.path.join(output_path, "test_inpainter.png"), inpaint_img)
                     
                     # Save BBoxes Image (Detector)
-                    orig_img = ctx.get_original_image()
+                    orig_img = get_original_image(ctx)
                     if orig_img is not None and ctx.bboxes:
                         det_img = orig_img.copy()
                         for box in ctx.bboxes:

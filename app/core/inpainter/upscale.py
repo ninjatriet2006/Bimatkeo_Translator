@@ -11,7 +11,9 @@ INTEGRITY NOTES (For AI Agents):
 import threading
 import queue
 import gc
-from app.core.dto import PageContext
+from app.core.shared.dto import PageContext
+from app.core.shared.context_reader import get_original_image, get_inpainted_image, get_background_image
+from app.core.shared.context_writer import set_original_image, set_inpainted_image
 from app.core.interfaces import BaseUpscaler
 
 try:
@@ -46,11 +48,11 @@ class UpscalerWorker(threading.Thread):
             if self.upscaler and self.ratio > 1:
                 try:
                     # Resolve background image (either inpainted or original)
-                    bg_image = ctx.get_background_image()
+                    bg_image = get_background_image(ctx)
                             
                     if bg_image is not None:
                         upscaled = self.upscaler.upscale(bg_image, self.ratio)
-                        ctx.set_inpainted_image(upscaled)
+                        set_inpainted_image(ctx, upscaled)
                         # Update bounding boxes
                         if ctx.bboxes:
                             ctx.bboxes = [[coord * self.ratio for coord in box] for box in ctx.bboxes]

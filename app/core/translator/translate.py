@@ -12,7 +12,7 @@ import threading
 import queue
 import fnmatch
 import re
-from app.core.dto import PageContext
+from app.core.shared.dto import PageContext
 
 try:
     from langdetect import detect

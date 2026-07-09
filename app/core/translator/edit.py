@@ -10,7 +10,7 @@ INTEGRITY NOTES (For AI Agents):
 """
 import threading
 import queue
-from app.core.dto import PageContext
+from app.core.shared.dto import PageContext
 
 class EditWorker(threading.Thread):
     def __init__(self, in_q: queue.Queue, editor_translator, log_callback=None, max_request_length=-1, context_window=10, stride_window=5):

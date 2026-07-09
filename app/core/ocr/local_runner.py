@@ -9,7 +9,9 @@ INTEGRITY NOTES (For AI Agents):
 =============================================================================
 """
 
-from app.core.dto import PageContext
+from app.core.shared.dto import PageContext
+from app.core.shared.context_reader import get_original_image, get_inpainted_image, get_background_image
+from app.core.shared.context_writer import set_original_image, set_inpainted_image
 from app.core.interfaces import BaseTextDetector, BaseTextRecognizer
 
 from app.core.ocr.preprocessor import OCRPreprocessor
@@ -30,7 +32,7 @@ class LocalOCRRunner:
         self.log_callback = log_callback
 
     def run(self, ctx: PageContext):
-        image = ctx.get_original_image()
+        image = get_original_image(ctx)
         if image is None:
             return
 
@@ -49,7 +51,7 @@ class LocalOCRRunner:
                 image = OCRRotator.apply_rotation(image, best_angle)
                 det_image = OCRRotator.apply_rotation(det_image, best_angle)
                 h, w = image.shape[:2]
-                ctx.set_original_image(image)
+                set_original_image(ctx, image)
                 
         # 3. Detection
         raw_bboxes, raw_polygons = self.detector.detect(det_image)

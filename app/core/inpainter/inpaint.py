@@ -11,7 +11,9 @@ INTEGRITY NOTES (For AI Agents):
 import threading
 import queue
 import gc
-from app.core.dto import PageContext
+from app.core.shared.dto import PageContext
+from app.core.shared.context_reader import get_original_image, get_inpainted_image, get_background_image
+from app.core.shared.context_writer import set_original_image, set_inpainted_image
 from app.core.interfaces import BaseInpainter
 
 try:
@@ -44,16 +46,16 @@ class InpaintWorker(threading.Thread):
                 self.log_callback("INPAINT", f"Inpainting {ctx.page_id}...")
 
             if self.inpainter and (ctx.raw_bboxes or ctx.bboxes):
-                image = ctx.get_original_image()
+                image = get_original_image(ctx)
                     
                 if image is not None:
                     try:
                         boxes_to_inpaint = ctx.raw_bboxes if ctx.raw_bboxes is not None else ctx.bboxes
                         if boxes_to_inpaint is not None:
                             inpainted = self.inpainter.inpaint(image, boxes_to_inpaint)
-                            ctx.set_inpainted_image(inpainted)
+                            set_inpainted_image(ctx, inpainted)
                         else:
-                            ctx.set_inpainted_image(image.copy())
+                            set_inpainted_image(ctx, image.copy())
                     except Exception as e:
                         if self.log_callback:
                             self.log_callback("ERROR", f"Inpaint Error on {ctx.page_id}: {e}")
