@@ -8,6 +8,7 @@ INTEGRITY NOTES (For AI Agents):
 - IN = OUT: Package marker and export registry.
 =============================================================================
 """
-from app.core.pipeline.manager import Pipeline
+from app.core.pipeline.manager import PipelineManager
+from app.core.pipeline.executor import PipelineExecutor
 
-__all__ = ["Pipeline"]
+__all__ = ["PipelineManager", "PipelineExecutor"]

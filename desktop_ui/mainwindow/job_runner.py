@@ -19,7 +19,7 @@ from PySide6.QtGui import QPixmap, QColor
 from PIL import Image
 
 def _pipeline_process_worker(job_or_path, output_path, config_dict, is_verbose, output_format, log_queue, result_queue, hitl_tx_queue, hitl_rx_queue, temp_dir, python_exec, is_single_test=False):
-    from app.core.pipeline import Pipeline
+    from app.core.pipeline.manager import PipelineManager
     import threading
     
     waiting_ctxs = {}
@@ -28,7 +28,7 @@ def _pipeline_process_worker(job_or_path, output_path, config_dict, is_verbose, 
         log_queue.put((level, message))
         
     try:
-        pipeline = Pipeline(None, python_exec, temp_dir)
+        pipeline = PipelineManager(None, python_exec, temp_dir)
         if is_single_test:
             success = pipeline.run_single_image_test(job_or_path, output_path, config_dict, log_callback, is_verbose)
         else:
