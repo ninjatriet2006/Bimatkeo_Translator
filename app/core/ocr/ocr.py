@@ -3,8 +3,8 @@
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.ocr
 - RESPONSIBILITY: Brain of OCR processing (Detector, Recognizer), creates PageContext and pushes to queues.
-- CALLED BY: app.core.pipeline.manager
-- CALLS TO: app.core.ocr.manager (OCRProcessor)
+- CALLED BY: app.core.pipeline.executor
+- CALLS TO: app.core.ocr.processor (OCRProcessor)
 - IN = OUT: Receives from q_in, creates PageContext and forks to q_trans, q_inpaint, q_render.
 =============================================================================
 """
@@ -12,7 +12,7 @@ import threading
 import queue
 from app.core.shared.dto import PageContext
 from app.core.interfaces import BaseTextDetector, BaseTextRecognizer, BaseCloudOCR
-from app.core.ocr.manager import OCRProcessor
+from app.core.ocr.processor import OCRProcessor
 
 class OCRWorker(threading.Thread):
     def __init__(self, in_q: queue.Queue, out_q_trans: queue.Queue, out_q_inpaint: queue.Queue, out_q_render: queue.Queue, detector: BaseTextDetector | None, recognizer: BaseTextRecognizer | None, log_callback=None, cloud_ocr: BaseCloudOCR | None = None, ocr_config: dict | None = None, render_config: dict | None = None):

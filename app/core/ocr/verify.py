@@ -3,7 +3,7 @@
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.verify
 - RESPONSIBILITY: Integrity check for local OCR models vs Model Registry.
-- CALLED BY: app.core.ocr.manager (or independent scripts)
+- CALLED BY: app.core.ocr.processor (or independent scripts)
 - CALLS TO: app.core.verify_utils
 - IN = OUT: Evaluates directories, returns validation results/warnings.
 =============================================================================

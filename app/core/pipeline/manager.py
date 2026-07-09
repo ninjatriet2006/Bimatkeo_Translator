@@ -30,13 +30,14 @@ class PipelineManager:
         """Stops the pipeline simulation."""
         return self.executor.stop(log_callback)
 
-    def _initialize_models(self, config_dict: dict, project_root: str, log_callback=None):
+    def _initialize_models(self, config_dict: dict, project_root: str, api_profiles: dict = None, log_callback=None):
         """Khởi tạo toàn bộ các module trong Pipeline."""
         # Setup API profiles for translator
-        api_profiles = {}
-        if "api_profiles" in config_dict:
-            for prof in config_dict["api_profiles"]:
-                api_profiles[prof.get("name")] = prof
+        if api_profiles is None:
+            api_profiles = {}
+            if "api_profiles" in config_dict:
+                for prof in config_dict["api_profiles"]:
+                    api_profiles[prof.get("name")] = prof
 
         cloud_ocr, detector, recognizer = OCRInitializer.initialize(config_dict, log_callback)
         chained_translators, editor_translator = TranslatorInitializer.initialize(config_dict, project_root, api_profiles, log_callback)
