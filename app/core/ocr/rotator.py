@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.rotator
 - RESPONSIBILITY: Finds optimal rotation angle by attempting text recognition at various angles.
 - CALLED BY: app.core.ocr.local_runner
-- CALLS TO: app.core.interfaces.BaseTextRecognizer, app.core.interfaces.BaseTextDetector
+- CALLS TO: app.core.ocr.interfaces.BaseTextRecognizer, app.core.ocr.interfaces.BaseTextDetector
 - IN = OUT: Receives Numpy array image -> returns integer angle and rotated image.
 =============================================================================
 """

@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.translator.edit
 - RESPONSIBILITY: Handles Stage 2 (Proofreading / Double check) of the translation process.
 - CALLED BY: app.core.pipeline.manager
-- CALLS TO: app.core.interfaces.BaseTranslator
+- CALLS TO: app.core.translator.interfaces.BaseTranslator
 - IN = OUT: Receives PageContext from q_edit, calls trans_done.set() when complete.
 =============================================================================
 """

@@ -13,7 +13,7 @@ import os
 class MetadataMixin:
     @classmethod
     def get_source_url_from_registry(cls, field: str, key: str) -> str:
-        for factory in cls._all_factories:
+        for factory in cls._all_factories: # type: ignore
             for item in factory.get_all_registered_models():
                 if item.get("key") == key:
                     return item.get("source", "")
@@ -22,7 +22,7 @@ class MetadataMixin:
     @classmethod
     def get_model_path_from_registry(cls, field: str, key: str) -> str:
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        for factory in cls._all_factories:
+        for factory in cls._all_factories: # type: ignore
             for item in factory.get_all_registered_models():
                 if item.get("key") == key:
                     path = item.get("check_file", "")
@@ -32,7 +32,7 @@ class MetadataMixin:
 
     @classmethod
     def get_display_name(cls, name: str) -> str:
-        impl_class = cls.get_class(name)
+        impl_class = cls.get_class(name) # type: ignore
         if impl_class and hasattr(impl_class, 'MODELS'):
             for model in getattr(impl_class, 'MODELS'):
                 if model.get('key') == name and 'label' in model:

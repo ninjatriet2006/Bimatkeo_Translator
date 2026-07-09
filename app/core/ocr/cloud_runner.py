@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.ocr.cloud_runner
 - RESPONSIBILITY: Calls Cloud API, filters, sorts, merges text bubbles.
 - CALLED BY: app.core.ocr.processor
-- CALLS TO: app.core.interfaces.BaseCloudOCR, app.core.ocr.filter, app.core.ocr.geometry
+- CALLS TO: app.core.ocr.interfaces.BaseCloudOCR, app.core.ocr.filter, app.core.ocr.geometry
 - IN = OUT: Receives PageContext -> processes Cloud OCR -> writes results to PageContext.
 =============================================================================
 """

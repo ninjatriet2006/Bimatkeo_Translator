@@ -14,7 +14,7 @@ class BuilderMixin:
     @classmethod
     def create(cls, name: str, model_path: str = "", **kwargs) -> Any:
         """Tạo và trả về instance của lớp triển khai."""
-        impl_class = cls.get_class(name)
+        impl_class = cls.get_class(name) # type: ignore
                         
         if impl_class is None:
             raise ValueError(f"Mô hình '{name}' chưa được đăng ký vào Factory.")

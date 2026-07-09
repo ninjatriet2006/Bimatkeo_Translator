@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.translator.translate
 - RESPONSIBILITY: Handles Stage 1 (Rough translation) of the translation process.
 - CALLED BY: app.core.pipeline.manager
-- CALLS TO: app.core.interfaces.BaseTranslator
+- CALLS TO: app.core.translator.interfaces.BaseTranslator
 - IN = OUT: Receives PageContext from q_trans, pushes to q_edit (if Editor exists) or calls trans_done.set().
 =============================================================================
 """
