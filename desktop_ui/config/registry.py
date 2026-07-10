@@ -82,8 +82,8 @@ class RegistryMixin(_RegistryMixinBase):
             UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory,
             DiffusionMainModelFactory, DiffusionBaseModelFactory
         )
-        from app.plugins.translator.base_offline import BaseOfflineTranslator
-        from app.plugins.translator.base_api import BaseAPITranslator
+        from app.core.translator.base_offline import BaseOfflineTranslator
+        from app.core.translator.base_api import BaseAPITranslator
         
         self.required_model_fields = REQUIRED_MODEL_FIELDS
         self.global_settings = {
