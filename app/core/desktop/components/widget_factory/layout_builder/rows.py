@@ -11,8 +11,12 @@ INTEGRITY NOTES (For AI Agents):
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt
 
+from typing import Any
+
 class RowsBuilderMixin:
-    def create_setting_row(self, info: dict, context_key: str = None) -> QWidget:
+    mw: Any
+    setup_dynamic_action_buttons: Any
+    def create_setting_row(self, info: dict, context_key: str | None = None) -> QWidget:
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
         row_layout.setContentsMargins(0, 0, 0, 0)

@@ -64,8 +64,8 @@ class UIDropdownManager:
                 return True
         return False
 
-    def filter_translator_dropdowns(self, target_lang_name: str, context_key: str = None):
-        import app.core.main_window as mw_module
+    def filter_translator_dropdowns(self, target_lang_name: str, context_key: str | None = None):
+        import app.core.desktop.main_window as mw_module
         if not target_lang_name:
             return
 
@@ -201,7 +201,7 @@ class UIDropdownManager:
         self.mw._update_translator_tooltip(active_translator)
 
     def filter_chain_step_translator_dropdown(self, target_lang_name: str, translator_combo: QComboBox):
-        import app.core.main_window as mw_module
+        import app.core.desktop.main_window as mw_module
         if not target_lang_name:
             return
         
@@ -241,7 +241,7 @@ class UIDropdownManager:
             
             item_index = translator_combo.count()
             translator_combo.addItem(group_name)
-            translator_combo.model().item(item_index).setEnabled(False)
+            translator_combo.model().item(item_index).setEnabled(False)  # type: ignore
             
             for t, label, is_unsupported in setup_items:
                 translator_combo.addItem(label, t)
@@ -261,7 +261,7 @@ class UIDropdownManager:
                 break
         if not restored and translator_combo.count() > 0:
             for i in range(translator_combo.count()):
-                if translator_combo.model().item(i).isEnabled():
+                if translator_combo.model().item(i).isEnabled():  # type: ignore
                     translator_combo.setCurrentIndex(i)
                     break
         translator_combo.blockSignals(False)
@@ -274,7 +274,7 @@ class UIDropdownManager:
         self.filter_translator_dropdowns(target_lang_name)
 
     def filter_language_dropdown(self, translator_name: str, lang_combo: QComboBox):
-        import app.core.main_window as mw_module
+        import app.core.desktop.main_window as mw_module
         if not lang_combo:
             return
 

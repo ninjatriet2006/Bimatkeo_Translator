@@ -11,8 +11,11 @@ INTEGRITY NOTES (For AI Agents):
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QFrame, QLabel
 
 from app.core.desktop.components.widgets_helper import SearchableComboBox
+from typing import Any
 
 class ExtraWidgetsBuilderMixin:
+    mw: Any
+
     def create_font_scale_widget(self) -> QWidget:
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)

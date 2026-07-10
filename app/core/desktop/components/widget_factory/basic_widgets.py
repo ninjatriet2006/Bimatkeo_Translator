@@ -51,7 +51,7 @@ class BasicWidgetFactory:
             if value_label:
                 value_label.setText(value_format.format(display_value))
 
-        slider.update_label_func = update_label
+        setattr(slider, "update_label_func", update_label)
         slider.valueChanged.connect(update_label)
 
         default_value = info.get("default")

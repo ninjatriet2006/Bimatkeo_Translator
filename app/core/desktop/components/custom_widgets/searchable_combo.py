@@ -24,10 +24,12 @@ class SearchableComboPopup(QWidget):
         self.combo = combo
         
         self.main_win = None
-        for widget in QApplication.instance().topLevelWidgets():
-            if isinstance(widget, QMainWindow):
-                self.main_win = widget
-                break
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            for widget in app.topLevelWidgets():
+                if isinstance(widget, QMainWindow):
+                    self.main_win = widget
+                    break
         
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -53,10 +55,11 @@ class SearchableComboPopup(QWidget):
     def _apply_popup_theme(self):
         app = QApplication.instance()
         main_win = None
-        for widget in app.topLevelWidgets():
-            if isinstance(widget, QMainWindow):
-                main_win = widget
-                break
+        if isinstance(app, QApplication):
+            for widget in app.topLevelWidgets():
+                if isinstance(widget, QMainWindow):
+                    main_win = widget
+                    break
         
         if main_win and getattr(main_win, 'theme_colors', None):
             colors = main_win.theme_colors

@@ -43,7 +43,7 @@ class ComplexWidgetFactory:
             combo_box.setCurrentText(str(value))
 
     def create_combobox(self, info: dict) -> QComboBox:
-        import app.core.main_window as mw_module
+        import app.core.desktop.main_window as mw_module
         combo_box = SearchableComboBox()
         values = info.get("values", [])
         key = info.get("key")
@@ -82,7 +82,7 @@ class ComplexWidgetFactory:
                 for group_name, translators in mw_module.TRANSLATOR_GROUPS.items():
                     item_index = combo_box.count()
                     combo_box.addItem(group_name)
-                    combo_box.model().item(item_index).setEnabled(False)
+                    combo_box.model().item(item_index).setEnabled(False)  # type: ignore
                     field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
                     for t in translators:
                         exists = self.mw.config_loader.check_model_existence(t, field=field_name)

@@ -265,7 +265,7 @@ class SpecializedWidgetFactory:
         return container
 
     def create_chain_step_widget(self) -> QWidget:
-        import app.core.main_window as mw_module
+        import app.core.desktop.main_window as mw_module
         step_widget = QWidget()
         layout = QHBoxLayout(step_widget)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -281,8 +281,8 @@ class SpecializedWidgetFactory:
         layout.addWidget(QLabel("with:"))
         layout.addWidget(translator_combo)
 
-        step_widget.translator_combo = translator_combo
-        step_widget.lang_combo = lang_combo
+        setattr(step_widget, "translator_combo", translator_combo)
+        setattr(step_widget, "lang_combo", lang_combo)
 
         lang_combo.currentTextChanged.connect(
             lambda text, tc=translator_combo: self.mw._filter_chain_step_translator_dropdown(text, tc)
@@ -317,7 +317,7 @@ class SpecializedWidgetFactory:
         self.mw.chain_list_widget.updateGeometry()
 
     def get_translator_chain_string(self) -> str:
-        import app.core.main_window as mw_module
+        import app.core.desktop.main_window as mw_module
         if not hasattr(self.mw, 'chain_list_widget'):
             return ""
 
@@ -340,7 +340,7 @@ class SpecializedWidgetFactory:
         return ";".join(steps)
 
     def rebuild_chain_from_string(self, chain_string: str):
-        import app.core.main_window as mw_module
+        import app.core.desktop.main_window as mw_module
         self.mw.chain_list_widget.clear()
         if not chain_string:
             return
@@ -361,10 +361,10 @@ class SpecializedWidgetFactory:
 
                 lang_name = code_to_lang_name.get(lang_code, "")
                 if lang_name:
-                    step_widget.lang_combo.setCurrentText(lang_name)
+                    getattr(step_widget, "lang_combo").setCurrentText(lang_name)
                 
                 # Manual inline combobox setting
-                combo_box = step_widget.translator_combo
+                combo_box = getattr(step_widget, "translator_combo")
                 index = -1
                 for i in range(combo_box.count()):
                     if combo_box.itemData(i) == translator_name:
@@ -373,7 +373,7 @@ class SpecializedWidgetFactory:
                 if index != -1:
                     combo_box.setCurrentIndex(index)
                 else:
-                    combo_box.setCurrentText(str(translator_name))
+                    combo_box.setCurrentText(translator_name)
 
         self.mw.chain_list_widget.updateGeometry()
 

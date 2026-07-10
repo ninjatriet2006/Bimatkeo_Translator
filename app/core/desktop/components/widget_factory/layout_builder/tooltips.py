@@ -9,9 +9,12 @@ INTEGRITY NOTES (For AI Agents):
 =============================================================================
 """
 
+from typing import Any
+
 class TooltipsBuilderMixin:
+    mw: Any
     def update_translator_tooltip(self, translator_name: str):
-        import app.core.main_window as mw_module
+        import app.core.desktop.main_window as mw_module
         category = self.mw._get_active_translator_category()
         key = 'offline_translator' if category == 'offline' else 'ai_translator'
         translator_combo = self.mw.setting_widgets.get(key)
@@ -34,8 +37,8 @@ class TooltipsBuilderMixin:
             lines = []
             for source_code, target_codes in capabilities.items():
                 source_name = code_to_name.get(source_code, source_code)
-                target_names = [code_to_name.get(tc, tc) for tc in target_codes]
-                lines.append(f"<b>From {source_name}:</b><br>  → {', '.join(target_names)}")
+                target_names = [str(code_to_name.get(tc, tc)) for tc in target_codes]
+                lines.append(f"<b>From {str(source_name)}:</b><br>  → {', '.join(target_names)}")
             tooltip_html += "<br>".join(lines)
 
         translator_combo.setToolTip(tooltip_html)

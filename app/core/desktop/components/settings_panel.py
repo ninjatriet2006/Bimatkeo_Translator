@@ -33,7 +33,7 @@ class WidgetBuildersMixin:
     def _build_dynamic_tab_content(self, tab_name: str, settings_list: list) -> QWidget:
         return self.layout_builder.build_dynamic_tab_content(tab_name, settings_list)
 
-    def _create_setting_row(self, info: dict, context_key: str = None) -> QWidget:
+    def _create_setting_row(self, info: dict, context_key: str | None = None) -> QWidget:
         return self.layout_builder.create_setting_row(info, context_key)
 
     def _setup_dynamic_action_buttons(self, key: str, combo_box, right_layout):

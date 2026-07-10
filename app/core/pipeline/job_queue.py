@@ -20,7 +20,7 @@ class QueueManager:
 
     def add_job(self):
         initial_dir = getattr(self.mw, 'last_selected_directory', self.mw.project_base_dir)
-        folder_path = QFileDialog.getExistingDirectory(self.mw, "Select Manga/Image Folder", initial_dir)
+        folder_path = QFileDialog.getExistingDirectory(self.mw, "Select Manga/Image Folder", initial_dir or "")
 
         if folder_path:
             self.mw.last_selected_directory = folder_path
@@ -28,7 +28,7 @@ class QueueManager:
 
     def add_file_job(self):
         initial_dir = getattr(self.mw, 'last_selected_directory', self.mw.project_base_dir)
-        file_paths, _ = QFileDialog.getOpenFileNames(self.mw, "Select Image or Text Files", initial_dir, "Supported Files (*.png *.jpg *.jpeg *.webp *.bmp *.txt);;Text Files (*.txt);;Image Files (*.png *.jpg *.jpeg *.webp *.bmp);;All Files (*)")
+        file_paths, _ = QFileDialog.getOpenFileNames(self.mw, "Select Image or Text Files", initial_dir or "", "Supported Files (*.png *.jpg *.jpeg *.webp *.bmp *.txt);;Text Files (*.txt);;Image Files (*.png *.jpg *.jpeg *.webp *.bmp);;All Files (*)")
 
         if file_paths:
             self.mw.last_selected_directory = os.path.dirname(file_paths[0])
@@ -136,8 +136,8 @@ class QueueManager:
             display_text = f"{i}. {job_type_tag} {status_icon} {job['name']}"
             item = QListWidgetItem(display_text)
             
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            check_state = Qt.Checked if job.get('status') == 'Ready' else Qt.Unchecked
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            check_state = Qt.CheckState.Checked if job.get('status') == 'Ready' else Qt.CheckState.Unchecked
             item.setCheckState(check_state)
             
             item.setData(Qt.ItemDataRole.UserRole, job['id'])
@@ -149,7 +149,7 @@ class QueueManager:
         job_id = item.data(Qt.ItemDataRole.UserRole)
         job = next((j for j in self.mw.job_queue if j['id'] == job_id), None)
         if job:
-            is_checked = item.checkState() == Qt.Checked
+            is_checked = item.checkState() == Qt.CheckState.Checked
             job['status'] = 'Ready' if is_checked else 'Awaiting Config'
 
     def update_history_list_ui(self):
@@ -204,8 +204,9 @@ class QueueManager:
         for widget in self.mw.setting_widgets.values():
             if widget:
                 widget.blockSignals(True)
-                if isinstance(widget, QWidget) and widget.findChild(QSlider):
-                    widget.findChild(QSlider).blockSignals(True)
+                slider = widget.findChild(QSlider) if isinstance(widget, QWidget) else None
+                if slider:
+                    slider.blockSignals(True)
 
         for key, value in self.mw.current_settings.items():
             widget = self.mw.setting_widgets.get(key)
@@ -225,8 +226,9 @@ class QueueManager:
         for widget in self.mw.setting_widgets.values():
             if widget:
                 widget.blockSignals(False)
-                if isinstance(widget, QWidget) and widget.findChild(QSlider):
-                    widget.findChild(QSlider).blockSignals(False)
+                slider = widget.findChild(QSlider) if isinstance(widget, QWidget) else None
+                if slider:
+                    slider.blockSignals(False)
                     
         if hasattr(self.mw, '_update_translator_visibility'):
             self.mw._update_translator_visibility()

@@ -1,4 +1,5 @@
 import os
+from typing import Any
 from PySide6.QtWidgets import QWidget, QComboBox, QCheckBox, QLineEdit, QButtonGroup, QSlider, QMessageBox
 from PySide6.QtCore import Qt, QByteArray
 
@@ -6,7 +7,7 @@ class SettingsSyncManager:
     def __init__(self, main_window):
         self.mw = main_window
 
-    def connect_widget_signal(self, key: str, widget: QWidget, context_key: str = None):
+    def connect_widget_signal(self, key: str, widget: QWidget, context_key: str | None = None):
         info = self.mw.config_loader.full_config_data.get(key, {})
         widget_type = info.get("widget")
 
@@ -44,8 +45,9 @@ class SettingsSyncManager:
                 service = info.get("service", "Translator")
                 combo.currentTextChanged.connect(handler)
                 combo.currentTextChanged.connect(lambda text, s=service: self.mw._on_api_profile_changed_generic(text, s))
-                if combo.lineEdit():
-                    combo.lineEdit().returnPressed.connect(combo.showPopup)
+                le = combo.lineEdit()
+                if le:
+                    le.returnPressed.connect(combo.showPopup)
         elif widget_type == "pool_profile_selector":
             combo = widget.findChild(QComboBox)
             if combo:
@@ -64,7 +66,7 @@ class SettingsSyncManager:
             if entry:
                 entry.editingFinished.connect(handler)
 
-    def on_setting_changed(self, key: str, context_key: str = None):
+    def on_setting_changed(self, key: str, context_key: str | None = None):
         if context_key:
             widget = self.mw.task_widgets[context_key].get(key)
             new_value = self.mw._get_value_from_widget(key, widget)
@@ -132,8 +134,8 @@ class SettingsSyncManager:
                 self.mw.config_loader.save_oldsession_config()
                 self.mw._rebuild_settings_tab()
 
-    def get_value_from_widget(self, key: str, widget: QWidget) -> any:
-        import app.core.main_window as mw_module
+    def get_value_from_widget(self, key: str, widget: QWidget) -> Any:
+        import app.core.desktop.main_window as mw_module
         if not widget:
             return None
 
@@ -160,16 +162,18 @@ class SettingsSyncManager:
             return widget.text()
         elif widget_type in ["segmented_button", "grid_segmented_button"]:
             button_group = widget.findChild(QButtonGroup)
-            if button_group and button_group.checkedButton():
-                internal_id = button_group.checkedButton().property("internal_id")
-                value = internal_id if internal_id is not None else button_group.checkedButton().text()
-                
-                if key == "upscale_ratio":
-                    if value == "Disabled":
-                        return None
-                    else:
-                        return int(value.replace("x", ""))
-                return value
+            if button_group:
+                checked_btn = button_group.checkedButton()
+                if checked_btn:
+                    internal_id = checked_btn.property("internal_id")
+                    value = internal_id if internal_id is not None else checked_btn.text()
+                    
+                    if key == "upscale_ratio":
+                        if value == "Disabled":
+                            return None
+                        else:
+                            return int(value.replace("x", ""))
+                    return value
             return None
         elif widget_type in ["api_profile_selector", "ai_model_selector", "combobox_fonts"]:
             combo = widget.findChild(QComboBox) if not isinstance(widget, QComboBox) else widget
@@ -205,8 +209,8 @@ class SettingsSyncManager:
             return None
         return None
 
-    def set_widget_value(self, key: str, value: any, widget: QWidget):
-        import app.core.main_window as mw_module
+    def set_widget_value(self, key: str, value: Any, widget: QWidget):
+        import app.core.desktop.main_window as mw_module
         if not widget or value is None:
             return
 
