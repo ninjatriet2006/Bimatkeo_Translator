@@ -3,7 +3,7 @@
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.recommend
 - RESPONSIBILITY: Utility functions for desktop-specific hardware detection and configuration recommendations.
-- CALLED BY: desktop_ui.mainwindow.widget_builders
+- CALLED BY: app.core.desktop.components.settings_panel
 - CALLS TO: None
 - IN = OUT: Returns values used to tune desktop UI defaults based on hardware.
 =============================================================================
