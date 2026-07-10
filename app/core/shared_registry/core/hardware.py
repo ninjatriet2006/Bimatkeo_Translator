@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.shared_registry.core.hardware
+- RESPONSIBILITY: Generate hardware fingerprint and optimize registry.
+- CALLED BY: app.core.desktop.config.registry
+- CALLS TO: platform module, registry.sweep_settings
+- IN = OUT: Machine optimization.
+=============================================================================
+"""
 import sys
 import platform
 

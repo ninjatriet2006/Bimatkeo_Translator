@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.components.custom_widgets.dynamic_height_list
+- RESPONSIBILITY: Provide a list widget that dynamically adjusts its height.
+- CALLED BY: UI classes in app.core.desktop
+- CALLS TO: PySide6.QtWidgets.QListWidget
+- IN = OUT: Instantiates a custom Qt widget.
+=============================================================================
+"""
 from PySide6.QtWidgets import QListWidget
 from PySide6.QtCore import Qt, QSize, QEvent
 

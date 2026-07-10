@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.pipeline_runner.preview_tester
+- RESPONSIBILITY: Run a translation preview on a single page.
+- CALLED BY: app.core.desktop.logic.job_runner
+- CALLS TO: app.core.desktop.logic.pipeline_runner.process_worker
+- IN = OUT: Generates a translated image for preview display.
+=============================================================================
+"""
 import os
 import shutil
 import threading

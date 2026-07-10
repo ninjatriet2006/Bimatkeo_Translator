@@ -8,8 +8,8 @@ Responsibilities:
 """
 from PySide6.QtWidgets import QMessageBox, QComboBox
 from ..config.mapping import get_profile_mapping
-from ..storage.reader import load_api_profiles
-from ..storage.writer import save_api_profiles
+from app.core.api_profile.storage.reader import load_api_profiles
+from app.core.api_profile.storage.writer import save_api_profiles
 
 def delete_api_profile_generic(main_window, service: str):
     mapping = get_profile_mapping(service)

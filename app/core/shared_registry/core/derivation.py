@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.shared_registry.core.derivation
+- RESPONSIBILITY: Derive checks, groups, labels, capabilities from registry.
+- CALLED BY: app.core.desktop.config.registry
+- CALLS TO: app.core.shared_registry
+- IN = OUT: Mutates internal states for derived metadata.
+=============================================================================
+"""
 from app.core.shared_registry import TranslatorFactory
 from app.core.desktop.constants import CAT_OTHER_ACTIONS
 

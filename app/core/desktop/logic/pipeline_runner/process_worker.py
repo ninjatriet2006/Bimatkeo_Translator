@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.pipeline_runner.process_worker
+- RESPONSIBILITY: Run translation tasks in isolated processes.
+- CALLED BY: app.core.desktop.logic.pipeline_runner.thread_manager
+- CALLS TO: multiprocessing, queue
+- IN = OUT: Receives pages to translate, returns translated components.
+=============================================================================
+"""
 import time
 import multiprocessing
 import queue

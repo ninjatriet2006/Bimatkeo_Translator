@@ -8,8 +8,8 @@ Responsibilities:
 from PySide6.QtCore import QObject
 
 from .storage.paths import get_api_profiles_file_path
-from .storage.reader import load_api_profiles
-from .storage.writer import save_api_profiles
+from app.core.api_profile.storage.reader import load_api_profiles
+from app.core.api_profile.storage.writer import save_api_profiles
 from .config.mapping import get_profile_mapping
 
 from .actions.save_action import save_api_profile_generic

@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QButtonGroup, QPushButton, QComboBox, QGridLayout
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
-from .widgets_helper import SearchableComboBox
+from app.core.desktop.components.widgets_helper import SearchableComboBox
 from app.core.desktop.constants import CAT_OFFLINE_MODELS, CAT_API_BASED
 
 class ComplexWidgetFactory:

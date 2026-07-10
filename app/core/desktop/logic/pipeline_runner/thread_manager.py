@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.pipeline_runner.thread_manager
+- RESPONSIBILITY: Manage translation threads and background processes.
+- CALLED BY: app.core.desktop.logic.job_runner
+- CALLS TO: app.core.desktop.logic.pipeline_runner.process_worker
+- IN = OUT: Dispatches tasks to worker threads/processes.
+=============================================================================
+"""
 import os
 import shutil
 import threading

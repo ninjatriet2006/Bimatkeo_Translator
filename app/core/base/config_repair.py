@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.base.config_repair
+- RESPONSIBILITY: Repair configuration files, ensure .config directory exists and is valid.
+- CALLED BY: app.core.desktop.config_loader
+- CALLS TO: os, ruamel.yaml, app.core.desktop.constants
+- IN = OUT: Check configuration and heal them in place.
+=============================================================================
+"""
 # type: ignore
 import os
 from ruamel.yaml import YAML

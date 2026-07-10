@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.components.custom_widgets.searchable_combo
+- RESPONSIBILITY: Provide combo boxes with search functionality.
+- CALLED BY: UI classes in app.core.desktop
+- CALLS TO: PySide6.QtWidgets.QComboBox
+- IN = OUT: Instantiates a custom Qt widget.
+=============================================================================
+"""
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout,
     QListWidget, QListWidgetItem,

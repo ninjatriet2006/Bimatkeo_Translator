@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.shared_registry.core.loader
+- RESPONSIBILITY: Load registry configuration from YAML and resolve OS placeholders.
+- CALLED BY: app.core.desktop.config.registry
+- CALLS TO: app.core.shared_registry
+- IN = OUT: Returns model registry dict and updates registry mixin.
+=============================================================================
+"""
 import os
 import sys
 from app.core.shared_registry.constants import REQUIRED_MODEL_FIELDS, GLOBAL_RESOURCES, MODEL_PRIORITY_KEYWORDS

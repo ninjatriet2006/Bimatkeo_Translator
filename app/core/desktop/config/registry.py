@@ -1,10 +1,10 @@
 import os
 from typing import TYPE_CHECKING
 from app.core.desktop.constants import CAT_OFFLINE_MODELS, CAT_API_BASED, CAT_OTHER_ACTIONS
-from app.core.desktop.config.registry_core.loader import RegistryLoader
-from app.core.desktop.config.registry_core.derivation import RegistryDerivation
-from app.core.desktop.config.registry_core.utils import RegistryUtils
-from app.core.desktop.config.registry_core.hardware import RegistryHardware
+from app.core.shared_registry.core.loader import RegistryLoader
+from app.core.shared_registry.core.derivation import RegistryDerivation
+from app.core.shared_registry.core.utils import RegistryUtils
+from app.core.shared_registry.core.hardware import RegistryHardware
 
 if TYPE_CHECKING:
     class _RegistryMixinBase:

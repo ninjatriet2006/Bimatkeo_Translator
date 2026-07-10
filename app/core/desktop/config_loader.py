@@ -7,7 +7,7 @@
 
 from .config.loader import ConfigLoaderBase
 from .config.schema import SchemaMixin
-from .config.repair import RepairMixin
+from app.core.base.config_repair import RepairMixin
 from .config.capabilities import CapabilitiesMixin
 from .config.registry import RegistryMixin
 

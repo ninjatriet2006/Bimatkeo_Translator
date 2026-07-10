@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.pipeline.job_queue
+- RESPONSIBILITY: Manage job queues and calculate total pages.
+- CALLED BY: app.core.desktop.logic.job_runner
+- CALLS TO: None (Internal data management)
+- IN = OUT: Manipulates list of tuples representing translation jobs.
+=============================================================================
+"""
 import os
 import copy
 import time

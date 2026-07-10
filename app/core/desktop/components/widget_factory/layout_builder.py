@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
 
-from .widgets_helper import SearchableComboBox
+from app.core.desktop.components.widgets_helper import SearchableComboBox
 from app.core.desktop.components.ui_utils import build_grouped_settings_tabs
 
 class LayoutBuilderFactory:

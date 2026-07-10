@@ -7,7 +7,7 @@ Responsibilities:
 - Trigger visibility updates.
 """
 from ..config.mapping import get_profile_mapping
-from ..storage.reader import load_api_profiles
+from app.core.api_profile.storage.reader import load_api_profiles
 from .clear_action import clear_api_widgets_generic
 
 def on_api_profile_changed_generic(main_window, profile_name: str, service: str):

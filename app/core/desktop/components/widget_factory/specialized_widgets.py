@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
 
-from .widgets_helper import DynamicHeightListWidget, NoScrollComboBox, SearchableComboBox
+from app.core.desktop.components.widgets_helper import DynamicHeightListWidget, NoScrollComboBox, SearchableComboBox
 from app.core.desktop.constants import INSTALL_NEW_FONT, UPDATE_ALL_FONTS
 
 class SpecializedWidgetFactory:

@@ -1,5 +1,5 @@
 from app.core.desktop.logic.pipeline_runner.drag_drop_handler import DragDropHandler
-from app.core.desktop.logic.pipeline_runner.queue_manager import QueueManager
+from app.core.pipeline.job_queue import QueueManager
 from app.core.desktop.logic.pipeline_runner.thread_manager import ThreadManager
 from app.core.desktop.logic.pipeline_runner.process_worker import ProcessWorker
 from app.core.desktop.logic.pipeline_runner.preview_tester import PreviewTester

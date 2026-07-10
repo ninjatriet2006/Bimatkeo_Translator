@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.shared_registry.core.utils
+- RESPONSIBILITY: Provide registry utilities (sweep settings, resolve labels).
+- CALLED BY: app.core.desktop.config.registry
+- CALLS TO: app.core.shared_registry
+- IN = OUT: Pure utility functions and dict sweeping.
+=============================================================================
+"""
 import random
 from app.core.shared_registry import TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory, UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory, DiffusionMainModelFactory, DiffusionBaseModelFactory
 

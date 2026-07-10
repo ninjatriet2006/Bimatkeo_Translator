@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.components.custom_widgets.font_install_dialog
+- RESPONSIBILITY: Provide a dialog for searching and installing fonts.
+- CALLED BY: app.core.desktop.logic.fonts.actions.install_action
+- CALLS TO: PySide6.QtWidgets.QDialog
+- IN = OUT: Instantiates a custom Qt dialog.
+=============================================================================
+"""
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QListWidget, QListWidgetItem,

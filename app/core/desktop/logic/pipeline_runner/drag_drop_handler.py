@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.pipeline_runner.drag_drop_handler
+- RESPONSIBILITY: Handle drag and drop file events.
+- CALLED BY: app.core.desktop.logic.job_runner
+- CALLS TO: app.core.desktop.logic.pipeline_runner.queue_manager
+- IN = OUT: Validates files and routes them to queue.
+=============================================================================
+"""
 import os
 
 class DragDropHandler:
