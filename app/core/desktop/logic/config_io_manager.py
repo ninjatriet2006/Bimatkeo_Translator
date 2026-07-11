@@ -16,7 +16,7 @@ def get_yaml_config_path(project_base_dir: str, filename: str) -> str:
     os.makedirs(base_dir, exist_ok=True)
     return os.path.join(base_dir, filename)
 
-def save_yaml_config(project_base_dir: str, filename: str, data: dict, wrap_key: str = None):
+def save_yaml_config(project_base_dir: str, filename: str, data: dict, wrap_key: str | None = None):
     yaml = YAML()
     yaml.preserve_quotes = True
     yaml.default_flow_style = False
