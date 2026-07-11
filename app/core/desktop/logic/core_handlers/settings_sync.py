@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.logic.core_handlers.settings_sync
 - RESPONSIBILITY: Proxy setting synchronization and widget value tracking.
 - CALLED BY: app.core.desktop.logic.core_handlers.__init__ (as Mixin)
-- CALLS TO: app.core.desktop.logic.settings.sync.SettingsSyncManager, PySide6.QtWidgets
+- CALLS TO: app.core.desktop.logic.settings_sync_manager.SettingsSyncManager, PySide6.QtWidgets
 - IN = OUT: Instantiates SettingsSyncManager lazily and forwards config get/set.
 =============================================================================
 """
@@ -15,7 +15,7 @@ class SettingsSyncHandlersMixin:
     @property
     def settings_sync_manager(self):
         if not hasattr(self, '_settings_sync_manager_obj'):
-            from app.core.desktop.logic.settings.sync import SettingsSyncManager
+            from app.core.desktop.logic.settings_sync_manager import SettingsSyncManager
             self._settings_sync_manager_obj = SettingsSyncManager(self)
         return self._settings_sync_manager_obj
 

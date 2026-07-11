@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.settings_sync_manager
+- RESPONSIBILITY: Synchronize UI widget values with backend configuration data.
+- CALLED BY: app.core.desktop.logic.core_handlers.settings_sync
+- CALLS TO: PySide6.QtWidgets
+- IN = OUT: Reads widget states to save config, or sets widget states from loaded config.
+=============================================================================
+"""
 import os
 from typing import Any
 from PySide6.QtWidgets import QWidget, QComboBox, QCheckBox, QLineEdit, QButtonGroup, QSlider, QMessageBox

@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.logic.core_handlers.job_queue
-- RESPONSIBILITY: Proxy UI interactions for the Job Queue.
+- RESPONSIBILITY: Proxy UI operations related to the job queue list.
 - CALLED BY: app.core.desktop.logic.core_handlers.__init__ (as Mixin)
-- CALLS TO: app.core.desktop.logic.job_queue.ui_manager.JobQueueUIManager
-- IN = OUT: Instantiates JobQueueUIManager lazily and forwards context menu events.
+- CALLS TO: app.core.desktop.logic.job_queue_manager.JobQueueUIManager
+- IN = OUT: Instantiates JobQueueUIManager lazily and forwards UI events.
 =============================================================================
 """
 
@@ -13,7 +13,7 @@ class JobQueueHandlersMixin:
     @property
     def job_queue_ui_manager(self):
         if not hasattr(self, '_job_queue_ui_manager_obj'):
-            from app.core.desktop.logic.job_queue.ui_manager import JobQueueUIManager
+            from app.core.desktop.logic.job_queue_manager import JobQueueUIManager
             self._job_queue_ui_manager_obj = JobQueueUIManager(self)
         return self._job_queue_ui_manager_obj
 

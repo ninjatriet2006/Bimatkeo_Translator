@@ -1,9 +1,12 @@
 """
-[INTEGRITY NOTES]
-Purpose: Route events from dynamic buttons (Tick, Download, Search, Delete) to appropriate managers.
-Responsibilities:
-- Determine visibility and tooltips for dynamic buttons based on context.
-- Route clicks to FontUIManager, ModelSoftwareUpdater, or ConfigSyncManager.
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.dynamic_button_router
+- RESPONSIBILITY: Route events from dynamic buttons to appropriate managers.
+- CALLED BY: app.core.desktop.logic.core_handlers.dynamic_buttons
+- CALLS TO: app.core.desktop.logic.fonts.ui_manager, app.core.desktop.logic.offline_models.updater
+- IN = OUT: Maps button UI clicks and state updates to backend operations.
+=============================================================================
 """
 from app.core.desktop.constants import INSTALL_NEW_FONT, UPDATE_ALL_FONTS
 

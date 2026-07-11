@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.ui_dropdown_manager
+- RESPONSIBILITY: Handle dropdown dynamic lists (e.g., model combo boxes) and UI length labels.
+- CALLED BY: app.core.desktop.logic.core_handlers.ui_dropdowns
+- CALLS TO: PySide6.QtWidgets, PySide6.QtGui
+- IN = OUT: Manipulates QComboBox items based on current settings and natural sorting.
+=============================================================================
+"""
 from PySide6.QtWidgets import QComboBox
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt

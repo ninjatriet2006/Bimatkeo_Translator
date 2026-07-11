@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.theme_manager
+- RESPONSIBILITY: Apply application UI themes (Dark/Light).
+- CALLED BY: app.core.desktop.logic.core_handlers.themes
+- CALLS TO: PySide6.QtWidgets, PySide6.QtGui
+- IN = OUT: Reads QSS files from config and applies them to QApplication.
+=============================================================================
+"""
 import os
 import string
 

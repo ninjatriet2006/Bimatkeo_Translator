@@ -2,18 +2,19 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.logic.core_handlers.themes
-- RESPONSIBILITY: Proxy theme loading and application.
+- RESPONSIBILITY: Proxy theme operations.
 - CALLED BY: app.core.desktop.logic.core_handlers.__init__ (as Mixin)
-- CALLS TO: app.core.desktop.logic.themes.manager.ThemeManager
-- IN = OUT: Instantiates ThemeManager lazily and applies selected themes.
+- CALLS TO: app.core.desktop.logic.theme_manager.ThemeManager
+- IN = OUT: Instantiates ThemeManager lazily and forwards theme changes.
 =============================================================================
 """
+import os
 
 class ThemeHandlersMixin:
     @property
     def theme_manager(self):
         if not hasattr(self, '_theme_manager_obj'):
-            from app.core.desktop.logic.themes.manager import ThemeManager
+            from app.core.desktop.logic.theme_manager import ThemeManager
             self._theme_manager_obj = ThemeManager(self)
         return self._theme_manager_obj
 

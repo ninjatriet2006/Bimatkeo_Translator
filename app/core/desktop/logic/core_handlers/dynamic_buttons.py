@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.logic.core_handlers.dynamic_buttons
 - RESPONSIBILITY: Proxy routing for dynamic UI buttons.
 - CALLED BY: app.core.desktop.logic.core_handlers.__init__ (as Mixin)
-- CALLS TO: app.core.desktop.logic.dynamic_buttons.router.DynamicButtonRouter
+- CALLS TO: app.core.desktop.logic.dynamic_button_router.DynamicButtonRouter
 - IN = OUT: Instantiates DynamicButtonRouter lazily and routes button clicks.
 =============================================================================
 """
@@ -13,7 +13,7 @@ class DynamicButtonsHandlersMixin:
     @property
     def dynamic_button_router(self):
         if not hasattr(self, '_dynamic_button_router_obj'):
-            from app.core.desktop.logic.dynamic_buttons.router import DynamicButtonRouter
+            from app.core.desktop.logic.dynamic_button_router import DynamicButtonRouter
             self._dynamic_button_router_obj = DynamicButtonRouter(
                 self, 
                 self.font_ui_manager,  # type: ignore

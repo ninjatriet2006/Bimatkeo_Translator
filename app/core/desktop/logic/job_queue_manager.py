@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.job_queue_manager
+- RESPONSIBILITY: Handle context menu logic for the job queue list.
+- CALLED BY: app.core.desktop.logic.core_handlers.job_queue
+- CALLS TO: PySide6.QtWidgets
+- IN = OUT: Maps UI right-click events to file operations or clipboard actions.
+=============================================================================
+"""
 import os
 from PySide6.QtWidgets import QMenu
 from PySide6.QtCore import Qt

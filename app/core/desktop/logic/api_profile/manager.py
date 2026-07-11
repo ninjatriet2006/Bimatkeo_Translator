@@ -1,16 +1,18 @@
 """
-[INTEGRITY NOTES]
-Purpose: Facade class to maintain backward compatibility.
-Responsibilities:
-- Expose methods that delegate to specific modular functions.
-- Interface exactly matches the old `ApiProfileManager`.
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.api_profile.manager
+- RESPONSIBILITY: Manage API Profiles logic (save, load, delete) and provide widget mappings.
+- CALLED BY: app.core.desktop.logic.core_handlers.api_profile
+- CALLS TO: app.core.api_profile.storage.*, app.core.desktop.logic.api_profile.actions
+- IN = OUT: Routes generic profile operations to specific implementations.
+=============================================================================
 """
 from PySide6.QtCore import QObject
 
 from app.core.api_profile.storage.paths import get_api_profiles_file_path
 from app.core.api_profile.storage.reader import load_api_profiles
 from app.core.api_profile.storage.writer import save_api_profiles
-from .config.mapping import get_profile_mapping
 
 from app.core.desktop.logic.api_profile.actions import save_api_profile_generic
 from app.core.desktop.logic.api_profile.actions import delete_api_profile_generic
@@ -32,7 +34,11 @@ class ApiProfileManager(QObject):
         save_api_profiles(self.main_window, profiles)
 
     def get_profile_mapping(self, service: str) -> dict:
-        return get_profile_mapping(service)
+        mappings = {
+            "OCR": {'name': 'ocr_api_name', 'provider': 'api_ocr', 'endpoint': 'ocr_api_endpoint', 'model': 'ocr_api_model', 'key': 'ocr_api_key'},
+            "Translator": {'name': 'api_name', 'provider': 'ai_translator', 'endpoint': 'ai_endpoint', 'model': 'ai_model', 'key': 'ai_key', 'max_retries': 'max_retries'},
+        }
+        return mappings.get(service, mappings["Translator"])
 
     def save_api_profile_generic(self, service: str):
         save_api_profile_generic(self.main_window, service)

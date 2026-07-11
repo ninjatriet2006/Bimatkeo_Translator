@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.logic.core_handlers.ui_dropdowns
-- RESPONSIBILITY: Proxy UI dropdown filtering and length label updates.
+- RESPONSIBILITY: Proxy UI dropdown updates.
 - CALLED BY: app.core.desktop.logic.core_handlers.__init__ (as Mixin)
-- CALLS TO: app.core.desktop.logic.ui_updates.dropdowns.UIDropdownManager
-- IN = OUT: Instantiates UIDropdownManager lazily and forwards filtering logic.
+- CALLS TO: app.core.desktop.logic.ui_dropdown_manager.UIDropdownManager
+- IN = OUT: Instantiates UIDropdownManager lazily and forwards update requests.
 =============================================================================
 """
 from PySide6.QtWidgets import QComboBox
@@ -14,7 +14,7 @@ class UIDropdownsHandlersMixin:
     @property
     def ui_dropdown_manager(self):
         if not hasattr(self, '_ui_dropdown_manager_obj'):
-            from app.core.desktop.logic.ui_updates.dropdowns import UIDropdownManager
+            from app.core.desktop.logic.ui_dropdown_manager import UIDropdownManager
             self._ui_dropdown_manager_obj = UIDropdownManager(self)
         return self._ui_dropdown_manager_obj
 

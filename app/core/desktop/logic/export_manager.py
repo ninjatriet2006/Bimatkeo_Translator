@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.export_manager
+- RESPONSIBILITY: Handle exporting various test results (detector, inpainter, render, etc.)
+- CALLED BY: app.core.desktop.logic.core_handlers.export
+- CALLS TO: PySide6.QtWidgets, os, shutil, json, csv
+- IN = OUT: Reads test output states and copies them to user-selected paths.
+=============================================================================
+"""
 import os
 import shutil
 import json
