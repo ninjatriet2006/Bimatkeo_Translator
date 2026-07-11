@@ -7,15 +7,15 @@ Responsibilities:
 """
 from PySide6.QtCore import QObject
 
-from .storage.paths import get_api_profiles_file_path
+from app.core.api_profile.storage.paths import get_api_profiles_file_path
 from app.core.api_profile.storage.reader import load_api_profiles
 from app.core.api_profile.storage.writer import save_api_profiles
 from .config.mapping import get_profile_mapping
 
-from .actions.save_action import save_api_profile_generic
-from .actions.delete_action import delete_api_profile_generic
-from .actions.clear_action import clear_api_widgets_generic
-from .actions.change_action import on_api_profile_changed_generic
+from app.core.desktop.logic.api_profile.actions import save_api_profile_generic
+from app.core.desktop.logic.api_profile.actions import delete_api_profile_generic
+from app.core.desktop.logic.api_profile.actions import clear_api_widgets_generic
+from app.core.desktop.logic.api_profile.actions import on_api_profile_changed_generic
 
 class ApiProfileManager(QObject):
     def __init__(self, main_window):

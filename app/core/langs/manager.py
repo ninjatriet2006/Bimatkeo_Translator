@@ -42,3 +42,29 @@ class LanguageManager:
 
     def apply_language_to_ui_map(self, raw_ui_map: dict, lang_id: str) -> dict:
         return self.ui_mapper.apply_language_to_ui_map(raw_ui_map, lang_id)
+
+    def get_string(self, lang_id: str, string_id: str, **kwargs) -> str:
+        """
+        Retrieves a translated string by its ID. Supports parameter formatting via **kwargs.
+        """
+        lang_data = self.get_lang_data(lang_id)
+        if not lang_data:
+            return string_id
+
+        messages = lang_data.get("messages", {})
+        ui_strings = lang_data.get("ui_strings", {})
+
+        translated_text = messages.get(string_id)
+        if translated_text is None:
+            translated_text = ui_strings.get(string_id)
+
+        if translated_text is None:
+            return string_id
+
+        if kwargs:
+            try:
+                translated_text = translated_text.format(**kwargs)
+            except Exception as e:
+                print(f"[LanguageManager] Formatting error for ID '{string_id}': {e}")
+
+        return translated_text

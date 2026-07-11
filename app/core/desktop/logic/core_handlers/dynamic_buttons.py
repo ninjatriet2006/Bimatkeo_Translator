@@ -16,9 +16,9 @@ class DynamicButtonsHandlersMixin:
             from app.core.desktop.logic.dynamic_buttons.router import DynamicButtonRouter
             self._dynamic_button_router_obj = DynamicButtonRouter(
                 self, 
-                self.font_ui_manager, 
-                self.model_software_updater, 
-                self.config_sync_manager
+                self.font_ui_manager,  # type: ignore
+                self.model_software_updater,  # type: ignore
+                self.config_sync_manager  # type: ignore
             )
         return self._dynamic_button_router_obj
 

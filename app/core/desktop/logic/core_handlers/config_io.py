@@ -12,8 +12,8 @@ INTEGRITY NOTES (For AI Agents):
 class ConfigIOHandlersMixin:
     def _get_yaml_config_path(self, filename: str) -> str:
         from app.core.desktop.logic.config_io.paths import get_yaml_config_path
-        return get_yaml_config_path(self.project_base_dir, filename)
+        return get_yaml_config_path(self.project_base_dir, filename)  # type: ignore
 
-    def _save_yaml_config(self, filename: str, data: dict, wrap_key: str = None):
-        from app.core.desktop.logic.config_io.yaml_io import save_yaml_config
-        save_yaml_config(self.project_base_dir, filename, data, wrap_key)
+    def _save_yaml_config(self, filename: str, data: dict, wrap_key: str | None = None):
+        from app.core.desktop.logic.config_io.writer import save_yaml_config
+        save_yaml_config(self.project_base_dir, filename, data, wrap_key)  # type: ignore

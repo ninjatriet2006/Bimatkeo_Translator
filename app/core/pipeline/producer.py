@@ -39,12 +39,12 @@ def produce(all_files: list, source_dir: str, output_path: str, config_dict: dic
         output_file = os.path.join(output_path, output_filename)
         if os.path.exists(output_file):
             if log_callback:
-                log_callback("INFO", f"[{index + 1}/{len(all_files)}] Bỏ qua file đã hoàn thành (Resume): {filename}")
+                log_callback("INFO", f"[{index + 1}/{len(all_files)}] msg_pipeline_skip_resume|filename={filename}")
             continue
 
         if is_text_only or filename.lower().endswith('.txt'):
             if log_callback:
-                log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp file text: {filename}")
+                log_callback("INFO", f"[{index + 1}/{len(all_files)}] msg_pipeline_produce_text|filename={filename}")
             with open(img_path, 'r', encoding='utf-8') as f:
                 lines = [line.strip() for line in f if line.strip()]
             ctx = PageContext(page_id=filename, original_texts=lines)
@@ -53,16 +53,16 @@ def produce(all_files: list, source_dir: str, output_path: str, config_dict: dic
             memory_mode = config_dict.get("memory_mode", "RAM")
             if memory_mode == "DISK":
                 if log_callback:
-                    log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp ảnh (DISK Mode): {filename}")
+                    log_callback("INFO", f"[{index + 1}/{len(all_files)}] msg_pipeline_produce_image_disk|filename={filename}")
                 ctx = PageContext(page_id=filename, original_image_path=img_path)
                 q_in.put(ctx)
             else:
                 if log_callback:
-                    log_callback("INFO", f"[{index + 1}/{len(all_files)}] Nạp ảnh lên RAM: {filename}")
+                    log_callback("INFO", f"[{index + 1}/{len(all_files)}] msg_pipeline_produce_image|filename={filename}")
                 img_array = cv2.imread(img_path)
                 if img_array is None:
                     if log_callback:
-                        log_callback("WARNING", f"Không thể đọc ảnh: {filename}")
+                        log_callback("WARNING", f"msg_pipeline_produce_error|filename={filename}")
                     continue
                 ctx = PageContext(page_id=filename)
                 set_original_image(ctx, img_array)

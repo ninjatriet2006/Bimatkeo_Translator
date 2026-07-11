@@ -41,13 +41,14 @@ class PipelineExecutor:
         """Stops the pipeline simulation."""
         self._stopped_by_user = True
         if log_callback:
-            log_callback("PIPELINE", "Pipeline stopped by user.")
+            log_callback("PIPELINE", "msg_pipeline_stopped")
         return True
 
     def run(self, job, output_path, config_dict, log_callback, models_bundle, is_verbose=False, output_format='png', mtpe_callback=None):
         """Runs the real multi-threaded pipeline."""
         source_path = job['source_path']
-        log_callback("PIPELINE", f"Starting Modular Pipeline for job '{os.path.basename(source_path)}'.")
+        job_name = os.path.basename(source_path)
+        log_callback("PIPELINE", f"msg_pipeline_starting|job_name={job_name}")
         self._stopped_by_user = False
 
         if os.path.isfile(source_path):
@@ -62,7 +63,7 @@ class PipelineExecutor:
             ])
 
         if not all_files:
-            log_callback("WARNING", "No files found in the source directory.")
+            log_callback("WARNING", "msg_pipeline_no_files")
             return True
 
         # Unpack models
@@ -160,14 +161,14 @@ class PipelineExecutor:
                 w.join()
 
             if self._stopped_by_user:
-                log_callback("WARNING", "Pipeline run stopped by user.")
+                log_callback("WARNING", "msg_pipeline_stopped")
                 return False
 
-            log_callback("PIPELINE", f"Job '{os.path.basename(source_path)}' completed successfully.")
+            log_callback("PIPELINE", f"msg_pipeline_completed|job_name={job_name}")
             return True
             
         except Exception as e:
-            log_callback("ERROR", f"Error executing pipeline: {e}")
+            log_callback("ERROR", f"msg_pipeline_error|error={e}")
             import traceback
             traceback.print_exc()
             return False

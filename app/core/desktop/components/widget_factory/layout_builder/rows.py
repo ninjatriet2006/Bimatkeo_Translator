@@ -121,7 +121,7 @@ class RowsBuilderMixin:
             elif widget_type not in ["combobox_fonts", "entry_with_button", "translator_chain_builder", "api_key_manager", "api_profile_selector", "pool_profile_selector", "ai_model_selector"]:
                 if info.get('recommendation'):
                     try:
-                        from app.core.desktop.recommend import get_recommended_size
+                        from app.core.desktop.logic.recommend import get_recommended_size
                         rec_size = get_recommended_size()
                         rec_label = QLabel(f"(Recommend: {rec_size})")
                         rec_label.setStyleSheet("color: #4CAF50; font-size: 11px; font-style: italic;")

@@ -48,14 +48,14 @@ def consume(output_path: str, config_dict: dict, log_callback, q_out: queue.Queu
                 else:
                     f.write("\n".join(ctx.original_texts or []))
             if log_callback:
-                log_callback("SUCCESS", f"Đã lưu kết quả text: {output_filename}")
+                log_callback("SUCCESS", f"msg_pipeline_consume_text|filename={output_filename}")
         else:
             output_filename = os.path.splitext(ctx.page_id)[0] + f".{output_format}"
             output_file = os.path.join(output_path, output_filename)
             if ctx.rendered_image is not None:
                 cv2.imwrite(output_file, ctx.rendered_image)
                 if log_callback:
-                    log_callback("SUCCESS", f"Đã lưu kết quả: {output_filename}")
+                    log_callback("SUCCESS", f"msg_pipeline_consume_image|filename={output_filename}")
                 
             # NEW: Dump intermediate states if running as a single test
             with open(os.path.join(output_path, f"test_data_{os.path.basename(ctx.page_id)}.json"), "w", encoding="utf-8") as f:

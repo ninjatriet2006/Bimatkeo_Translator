@@ -347,7 +347,7 @@ class ThreadManager:
         if hasattr(self.mw, 'current_process') and self.mw.current_process and self.mw.current_process.is_alive():
             self.mw.current_process.terminate()
 
-    def toggle_ui_state(self, is_running: bool, running_job_id: str = None):
+    def toggle_ui_state(self, is_running: bool, running_job_id: str | None = None):
         self.mw.is_running_pipeline = is_running
         if hasattr(self.mw, 'start_button'):
             self.mw.start_button.setEnabled(not is_running)

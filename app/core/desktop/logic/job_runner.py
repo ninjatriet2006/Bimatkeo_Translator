@@ -110,7 +110,7 @@ class JobRunnerMixin:
     def _stop_pipeline(self):
         return self.thread_manager.stop_pipeline()
 
-    def _toggle_ui_state(self, is_running: bool, running_job_id: str = None):
+    def _toggle_ui_state(self, is_running: bool, running_job_id: str | None = None):
         return self.thread_manager.toggle_ui_state(is_running, running_job_id)
 
     def _set_settings_panel_enabled(self, is_enabled: bool):

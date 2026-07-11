@@ -13,7 +13,7 @@ class ModelsUpdaterHandlersMixin:
     @property
     def model_software_updater(self):
         if not hasattr(self, '_model_software_updater_obj'):
-            from app.core.desktop.logic.models.updater import ModelSoftwareUpdater
+            from app.core.desktop.logic.offline_models.updater import ModelSoftwareUpdater
             self._model_software_updater_obj = ModelSoftwareUpdater(self)
         return self._model_software_updater_obj
 

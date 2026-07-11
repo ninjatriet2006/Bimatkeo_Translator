@@ -42,7 +42,7 @@ class ApiProfileHandlersMixin:
         self._api_profile_mgr.on_api_profile_changed_generic(profile_name, service)
 
     def _get_pool_profiles_file_path(self) -> str:
-        return self._get_yaml_config_path('pool_profiles.yaml')
+        return self._get_yaml_config_path('pool_profiles.yaml')  # type: ignore
 
     def _load_pool_profiles(self, service: str = "Translator") -> dict:
         profiles = self._load_api_profiles()

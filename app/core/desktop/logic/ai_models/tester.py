@@ -18,11 +18,15 @@ def test_ai_model(main_window, button, combo):
     
     model_name = combo.currentText()
     if not model_name or model_name == "Auto":
-        QMessageBox.warning(main_window, "Warning", "Please select a specific model to test (not Auto).")
+        QMessageBox.warning(
+            main_window, 
+            main_window.get_string("msg_title_warning"), 
+            main_window.get_string("msg_warn_select_model")
+        )
         return
 
     if not endpoint and ai_provider != 'gemini':
-        main_window.log("WARNING", "No API Endpoint URL provided. Please enter a valid URL.")
+        main_window.log("WARNING", "msg_warn_no_url")
         return
 
     button.setEnabled(False)
@@ -31,9 +35,9 @@ def test_ai_model(main_window, button, combo):
     def thread_target():
         from app.core.shared_registry import TranslatorFactory
         try:
-            import app.plugins.translator.openai_impl
-            import app.plugins.translator.gemini_impl
-            import app.plugins.translator.felo_impl
+            import app.plugins.translator.openai.main_impl
+            import app.plugins.translator.gemini.main_impl
+            import app.plugins.translator.felo.main_impl
             
             translator = TranslatorFactory.create(ai_provider)
             translator.load_weights({
@@ -52,6 +56,6 @@ def on_test_finished(main_window, success, message, button):
     button.setEnabled(True)
     button.setText("Test")
     if success:
-        QMessageBox.information(main_window, "Test Successful", message)
+        QMessageBox.information(main_window, main_window.get_string("msg_title_test_success"), message)
     else:
-        QMessageBox.critical(main_window, "Test Failed", message)
+        QMessageBox.critical(main_window, main_window.get_string("msg_title_test_failed"), message)

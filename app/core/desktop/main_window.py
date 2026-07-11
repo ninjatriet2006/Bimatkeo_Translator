@@ -12,7 +12,7 @@ import subprocess
 import threading
 
 # Ensure project root is in sys.path to allow running this script directly
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -31,7 +31,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QSize, QTimer, Signal, QByteArray, QEvent, QPoint
 from PySide6.QtGui import QFont, QCursor, QStandardItemModel, QFontDatabase, QPixmap, QPainter, QColor, QPalette
 
-from app.core.desktop.config_loader import ConfigLoader
+from app.core.desktop.config import ConfigLoader
 
 from app.core.desktop.components.widgets_helper import (
     DynamicHeightListWidget,
@@ -187,6 +187,16 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         self._on_translator_category_changed()
         self._on_ocr_category_changed()
         self._update_inpainter_visibility()
+
+    def get_string(self, string_id: str, **kwargs) -> str:
+        """
+        Helper method to get translated strings.
+        Delegates to LanguageManager using the current app_language.
+        """
+        if hasattr(self, 'config_loader') and hasattr(self.config_loader, 'app_language'):
+            lang_id = self.config_loader.app_language
+            return self.config_loader.language_manager.get_string(lang_id, string_id, **kwargs)
+        return string_id
 
     def _initialize_app(self):
         """
