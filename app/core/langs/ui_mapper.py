@@ -19,15 +19,14 @@ class LanguageUIMapper:
     def apply_language_to_ui_map(self, raw_ui_map: dict, lang_id: str) -> dict:
         """
         Translates a raw studio UI Map utilizing the selected localization data.
-        Returns the translated dictionary.
+        Returns the translated dictionary. Note: Now uses ID Linking for labels and tabs,
+        so it only maps enums and dynamic dropdowns here.
         """
         lang_data = self.fallback_handler.get_lang_data(lang_id)
         if not lang_data:
             print(f"[LanguageUIMapper] WARNING: No language data found for '{lang_id}'!")
             lang_data = {}
 
-        settings_translations = lang_data.get("settings", {})
-        tab_translations = lang_data.get("tabs", {})
         enums_translations = lang_data.get("enums", {})
         
         new_ui_map = {}
@@ -36,31 +35,13 @@ class LanguageUIMapper:
             if tab_name.startswith("__"):
                 continue
                 
-            # Translate the tab name
-            translated_tab_name = tab_translations.get(tab_name)
-            if not translated_tab_name:
-                print(f"\\033[91m[LanguageUIMapper] ERROR: Missing translation for Tab ID: '{tab_name}'\\033[0m")
-                translated_tab_name = "<Not Named Tab>"
-                
-            new_ui_map[translated_tab_name] = widgets
+            # KEEP the original tab name as key for ID linking!
+            new_ui_map[tab_name] = widgets
             
-            # Translate settings within the tab
+            # Translate settings within the tab (Only Enums & Value Maps)
             for key, info in widgets.items():
                 if not isinstance(info, dict):
                     continue
-                    
-                trans = settings_translations.get(key)
-                if trans:
-                    info["label"] = trans.get("label", "<Not Named>")
-                    info["tooltip"] = trans.get("tooltip", "")
-                    if "placeholder" in trans:
-                        info["placeholder"] = trans["placeholder"]
-                    if "button_text" in trans:
-                        info["button_text"] = trans["button_text"]
-                else:
-                    print(f"\\033[91m[LanguageUIMapper] ERROR: Missing translation for Widget ID: '{key}' in tab '{tab_name}'\\033[0m")
-                    info["label"] = "<Not Named>"
-                    info["tooltip"] = ""
                     
                 if "values" in info and isinstance(info["values"], list):
                     value_map = {}

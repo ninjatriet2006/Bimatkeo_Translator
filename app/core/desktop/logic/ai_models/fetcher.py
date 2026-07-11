@@ -69,4 +69,5 @@ def select_fetched_model(main_window, model_name, entry_widget):
 
 def on_fetch_finished(main_window, button):
     button.setEnabled(True)
-    button.setText("Fetch")
+    fetch_text = main_window.get_string("ui_btn_fetch") if main_window.get_string("ui_btn_fetch") != "ui_btn_fetch" else "Fetch"
+    button.setText(fetch_text)

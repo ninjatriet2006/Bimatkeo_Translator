@@ -25,7 +25,12 @@ class RowsBuilderMixin:
         widget_type = info.get("widget")
 
         if widget_type == "label":
-            widget = QLabel(info.get("label", ""))
+            label_text = self.mw.get_ui_string("settings", info.get("key", ""), "label")
+            if label_text == info.get("key", ""):
+                label_text = info.get("label", "")
+            widget = QLabel(label_text)
+            widget.setProperty("lang_id", info.get("key", ""))
+            
             if "style" in info:
                 widget.setStyleSheet(info["style"])
             row_layout.addWidget(widget)
@@ -60,11 +65,18 @@ class RowsBuilderMixin:
             label_layout.setContentsMargins(0, 0, 0, 0)
             label_layout.setSpacing(5)
 
-            label_text = info.get("label", info.get("key", "N/A"))
+            label_text = self.mw.get_ui_string("settings", info.get("key", ""), "label")
+            if label_text == info.get("key", ""):
+                label_text = info.get("label", info.get("key", "N/A"))
+                
             main_label = QLabel(label_text)
+            main_label.setProperty("lang_id", info.get("key", ""))
             label_layout.addWidget(main_label)
 
-            tooltip_text = info.get("tooltip")
+            tooltip_text = self.mw.get_ui_string("settings", info.get("key", ""), "tooltip")
+            if tooltip_text == info.get("key", ""):
+                tooltip_text = info.get("tooltip", "")
+                
             if tooltip_text:
                 tooltip_icon = QLabel("(?)")
                 tooltip_icon.setStyleSheet("color: #40E0D0;")
@@ -72,6 +84,7 @@ class RowsBuilderMixin:
                 default_val = info.get('default', 'N/A')
                 full_tooltip = f"<b>{label_text}</b><hr>{tooltip_text}<br><i>(Default: {default_val})</i>"
                 tooltip_icon.setToolTip(full_tooltip)
+                tooltip_icon.setProperty("tooltip_lang_id", info.get("key", ""))
                 label_layout.addWidget(tooltip_icon)
 
             label_layout.addStretch()

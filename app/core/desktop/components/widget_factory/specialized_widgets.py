@@ -69,7 +69,10 @@ class SpecializedWidgetFactory:
             
         layout.addWidget(combo, stretch=1)
         
-        manage_btn = QPushButton("⚙️ Manage Pools")
+        manage_text = self.mw.get_string("ui_manage_pools") if self.mw.get_string("ui_manage_pools") != "ui_manage_pools" else "⚙️ Manage Pools"
+        manage_btn = QPushButton(manage_text)
+        manage_btn.setProperty("lang_id", "ui_manage_pools")
+        manage_btn.setProperty("lang_type", "ui")
         manage_btn.setToolTip("Open Manage Pools Dialog")
         manage_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         manage_btn.setStyleSheet("""
@@ -114,12 +117,18 @@ class SpecializedWidgetFactory:
             
         layout.addWidget(combo, stretch=1)
         
-        fetch_btn = QPushButton(info.get("button_text", "Fetch"))
+        fetch_text = self.mw.get_string("ui_btn_fetch") if self.mw.get_string("ui_btn_fetch") != "ui_btn_fetch" else info.get("button_text", "Fetch")
+        fetch_btn = QPushButton(fetch_text)
+        fetch_btn.setProperty("lang_id", "ui_btn_fetch")
+        fetch_btn.setProperty("lang_type", "ui")
         fetch_btn.setFixedWidth(50)
         fetch_btn.clicked.connect(lambda: self.mw._fetch_ai_models(fetch_btn))
         layout.addWidget(fetch_btn)
         
-        test_btn = QPushButton("Test")
+        test_text = self.mw.get_string("ui_btn_test") if self.mw.get_string("ui_btn_test") != "ui_btn_test" else "Test"
+        test_btn = QPushButton(test_text)
+        test_btn.setProperty("lang_id", "ui_btn_test")
+        test_btn.setProperty("lang_type", "ui")
         test_btn.setFixedWidth(50)
         test_btn.setToolTip("Test API Endpoint & Key with this model")
         test_btn.clicked.connect(lambda: self.mw._test_ai_model(test_btn, combo))
@@ -241,12 +250,23 @@ class SpecializedWidgetFactory:
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(0, 0, 0, 0)
 
-        label = QLabel(info.get("label", "Translation Steps:"))
+        lbl_text = self.mw.get_string("ui_chain_steps") if self.mw.get_string("ui_chain_steps") != "ui_chain_steps" else info.get("label", "Translation Steps:")
+        label = QLabel(lbl_text)
+        label.setProperty("lang_id", "ui_chain_steps")
+        label.setProperty("lang_type", "ui")
         header_layout.addWidget(label)
         header_layout.addStretch()
 
-        add_btn = QPushButton("➕ Add Step")
-        remove_btn = QPushButton("➖ Remove Selected")
+        add_text = self.mw.get_string("ui_chain_add") if self.mw.get_string("ui_chain_add") != "ui_chain_add" else "➕ Add Step"
+        add_btn = QPushButton(add_text)
+        add_btn.setProperty("lang_id", "ui_chain_add")
+        add_btn.setProperty("lang_type", "ui")
+        
+        remove_text = self.mw.get_string("ui_chain_remove") if self.mw.get_string("ui_chain_remove") != "ui_chain_remove" else "➖ Remove Selected"
+        remove_btn = QPushButton(remove_text)
+        remove_btn.setProperty("lang_id", "ui_chain_remove")
+        remove_btn.setProperty("lang_type", "ui")
+        
         header_layout.addWidget(add_btn)
         header_layout.addWidget(remove_btn)
 
@@ -276,9 +296,18 @@ class SpecializedWidgetFactory:
 
         translator_combo = NoScrollComboBox()
 
-        layout.addWidget(QLabel("Translate to:"))
+        translate_to = self.mw.get_string("ui_chain_translate_to") if self.mw.get_string("ui_chain_translate_to") != "ui_chain_translate_to" else "Translate to:"
+        translate_to_lbl = QLabel(translate_to)
+        translate_to_lbl.setProperty("lang_id", "ui_chain_translate_to")
+        translate_to_lbl.setProperty("lang_type", "ui")
+        layout.addWidget(translate_to_lbl)
         layout.addWidget(lang_combo)
-        layout.addWidget(QLabel("with:"))
+        
+        with_text = self.mw.get_string("ui_chain_with") if self.mw.get_string("ui_chain_with") != "ui_chain_with" else "with:"
+        with_lbl = QLabel(with_text)
+        with_lbl.setProperty("lang_id", "ui_chain_with")
+        with_lbl.setProperty("lang_type", "ui")
+        layout.addWidget(with_lbl)
         layout.addWidget(translator_combo)
 
         setattr(step_widget, "translator_combo", translator_combo)

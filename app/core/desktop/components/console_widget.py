@@ -19,7 +19,17 @@ class ConsoleWidget(QWidget):
         header_layout.setContentsMargins(0, 0, 0, 0)
         
         header_layout.addStretch()
-        clear_button = QPushButton("Clear Log")
+        
+        # Determine initial text based on parent if available
+        initial_text = "Clear Log"
+        if self.parent() and hasattr(self.parent(), "get_string"):
+            initial_text = self.parent().get_string("ui_clear_log")
+            if initial_text == "ui_clear_log":
+                initial_text = "Clear Log"
+                
+        clear_button = QPushButton(initial_text)
+        clear_button.setProperty("lang_id", "ui_clear_log")
+        clear_button.setProperty("lang_type", "ui")
         clear_button.clicked.connect(self.clear_log)
         header_layout.addWidget(clear_button)
         

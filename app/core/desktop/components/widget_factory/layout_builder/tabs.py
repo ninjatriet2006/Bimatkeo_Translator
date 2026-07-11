@@ -23,16 +23,6 @@ class TabsBuilderMixin:
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(8)
 
-        raw_tab_name = tab_name
-        if hasattr(self.mw, 'config_loader') and hasattr(self.mw.config_loader, 'get_lang_data'):
-            lang_data = self.mw.config_loader.get_lang_data(self.mw.config_loader.app_language)
-            if lang_data:
-                tab_translations = lang_data.get("tabs", {})
-                for eng_tab, loc_tab in tab_translations.items():
-                    if loc_tab == tab_name:
-                        raw_tab_name = eng_tab
-                        break
-
         standard_settings = []
         advanced_settings = []
         for info in settings_list:
@@ -68,7 +58,7 @@ class TabsBuilderMixin:
                 widget_row = self.create_setting_row(info)
                 layout.addWidget(widget_row)
 
-        if raw_tab_name == "Extra Settings":
+        if tab_name == "Extra Settings":
             font_scale_widget = self.create_font_scale_widget()
             theme_manager_widget = self.create_theme_manager_widget()
             layout.addWidget(font_scale_widget)
@@ -89,6 +79,10 @@ class TabsBuilderMixin:
         
         if current_tab_idx < self.mw.settings_tab_view.count():
             self.mw.settings_tab_view.setCurrentIndex(current_tab_idx)
+            
+        # Update the rest of the application's UI strings using the new ID linking
+        if hasattr(self.mw, 'update_language_ui'):
+            self.mw.update_language_ui()
 
     def populate_all_tabs(self):
         config_data = self.mw.config_loader.full_config_data
@@ -99,4 +93,5 @@ class TabsBuilderMixin:
         for tab_name in tab_order:
             settings_list = grouped_settings.get(tab_name, [])
             tab_content_widget = self.build_dynamic_tab_content(tab_name, settings_list)
-            self.mw.settings_tab_view.addTab(tab_content_widget, tab_name)
+            translated_tab_name = self.mw.get_ui_string('tabs', tab_name)
+            self.mw.settings_tab_view.addTab(tab_content_widget, translated_tab_name)

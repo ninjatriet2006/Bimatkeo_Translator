@@ -68,3 +68,24 @@ class LanguageManager:
                 print(f"[LanguageManager] Formatting error for ID '{string_id}': {e}")
 
         return translated_text
+
+    def get_ui_string(self, lang_id: str, category: str, string_id: str, sub_key: str = None) -> str:
+        """
+        Retrieves a translated UI string (tabs, settings, enums).
+        category: 'tabs', 'settings', 'enums'
+        sub_key: for 'settings', e.g. 'label', 'tooltip', 'placeholder'
+        """
+        lang_data = self.get_lang_data(lang_id)
+        if not lang_data:
+            return string_id
+
+        cat_data = lang_data.get(category, {})
+        trans = cat_data.get(string_id)
+
+        if trans is None:
+            return string_id
+        
+        if category == "settings" and sub_key and isinstance(trans, dict):
+            return trans.get(sub_key, string_id)
+        
+        return trans if isinstance(trans, str) else string_id

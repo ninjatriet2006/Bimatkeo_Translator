@@ -165,7 +165,9 @@ class PreviewTester:
 
         if hasattr(self.mw, 'run_test_button'):
             self.mw.run_test_button.setEnabled(False)
-            self.mw.run_test_button.setText("Testing...")
+            testing_text = self.mw.get_string("ui_testing") if self.mw.get_string("ui_testing") != "ui_testing" else "Testing..."
+            self.mw.run_test_button.setText(testing_text)
+            self.mw.run_test_button.setProperty("lang_id", "ui_testing")
 
         thread = threading.Thread(target=self.run_visual_test, args=(test_job, final_config,), daemon=True)
         thread.start()
@@ -280,4 +282,6 @@ class PreviewTester:
     def on_visual_test_finished(self):
         if hasattr(self.mw, 'run_test_button'):
             self.mw.run_test_button.setEnabled(True)
-            self.mw.run_test_button.setText("Run Test")
+            run_text = self.mw.get_string("ui_run_test") if self.mw.get_string("ui_run_test") != "ui_run_test" else "Run Test"
+            self.mw.run_test_button.setText(run_text)
+            self.mw.run_test_button.setProperty("lang_id", "ui_run_test")

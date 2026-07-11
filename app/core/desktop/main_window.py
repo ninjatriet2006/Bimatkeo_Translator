@@ -198,12 +198,78 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             return self.config_loader.language_manager.get_string(lang_id, string_id, **kwargs)
         return string_id
 
+    def get_ui_string(self, category: str, string_id: str, sub_key: str = None) -> str:
+        if hasattr(self, 'config_loader') and hasattr(self.config_loader, 'app_language'):
+            lang_id = self.config_loader.app_language
+            return self.config_loader.language_manager.get_ui_string(lang_id, category, string_id, sub_key)
+        return string_id
+
+    def update_language_ui(self):
+        """Dynamically update UI text for all widgets using ID linking."""
+        def walk_widget(w):
+            lang_id = w.property("lang_id")
+            if lang_id:
+                lang_type = w.property("lang_type")
+                if not lang_type:
+                    lang_type = "ui" if str(lang_id).startswith("ui_") else "settings"
+                
+                if lang_type == "settings":
+                    new_text = self.get_ui_string("settings", lang_id, "label")
+                else:
+                    new_text = self.get_string(lang_id)
+                    
+                if new_text and new_text != lang_id:
+                    if hasattr(w, 'setText'):
+                        w.setText(new_text)
+                    elif hasattr(w, 'setTitle'):
+                        w.setTitle(new_text)
+            
+            tooltip_lang_id = w.property("tooltip_lang_id")
+            if tooltip_lang_id:
+                lang_type = w.property("tooltip_lang_type")
+                if not lang_type:
+                    lang_type = "ui" if str(tooltip_lang_id).startswith("ui_") else "settings"
+                    
+                if lang_type == "settings":
+                    new_tooltip = self.get_ui_string("settings", tooltip_lang_id, "tooltip")
+                    label_text = self.get_ui_string("settings", tooltip_lang_id, "label")
+                    if label_text == tooltip_lang_id:
+                        label_text = "Settings" # generic fallback if no label
+                else:
+                    new_tooltip = self.get_string(tooltip_lang_id)
+                    label_text = ""
+                    
+                if new_tooltip and new_tooltip != tooltip_lang_id:
+                    if hasattr(w, 'setToolTip'):
+                        if lang_type == "settings" and label_text:
+                            w.setToolTip(f"<b>{label_text}</b><hr>{new_tooltip}")
+                        else:
+                            w.setToolTip(new_tooltip)
+
+            # Also update tabs
+            if isinstance(w, QTabWidget):
+                tab_ids = w.property("tab_lang_ids")
+                if tab_ids:
+                    for i, t_id in enumerate(tab_ids):
+                        new_text = self.get_string(t_id)
+                        if new_text and new_text != t_id:
+                            w.setTabText(i, new_text)
+
+            for child in w.children():
+                from PySide6.QtWidgets import QWidget
+                if isinstance(child, QWidget):
+                    walk_widget(child)
+
+        walk_widget(self)
+
     def _initialize_app(self):
         """
         Sets up the main window, its properties, and creates the main layout.
         """
         print("[UI] Initializing PySide6 application window...")
-        self.setWindowTitle("🎌 Bimatkeo Translator - PySide")
+        self.setWindowTitle(self.get_string("ui_app_title") if self.get_string("ui_app_title") != "ui_app_title" else "🎌 Bimatkeo Translator - PySide")
+        self.setProperty("lang_id", "ui_app_title")
+        self.setProperty("lang_type", "ui")
         self.resize(1280, 720)
         self.setMinimumSize(QSize(960, 540))
         self._create_main_layout()
@@ -248,7 +314,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         queue_layout = QVBoxLayout(queue_frame)
         queue_layout.setContentsMargins(0, 0, 0, 0)
 
-        queue_title = QLabel("Queue (Next Up)")
+        queue_title = QLabel(self.get_string("ui_queue_title") if self.get_string("ui_queue_title") != "ui_queue_title" else "Queue (Next Up)")
+        queue_title.setProperty("lang_id", "ui_queue_title")
+        queue_title.setProperty("lang_type", "ui")
         font = queue_title.font()
         font.setPointSize(12)
         font.setBold(True)
@@ -271,16 +339,24 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         job_controls_layout = QHBoxLayout(job_controls_container)
         job_controls_layout.setContentsMargins(0, 0, 0, 0)
 
-        add_folder_btn = QPushButton("➕ Add Folder")
+        add_folder_btn = QPushButton(self.get_string("ui_add_folder") if self.get_string("ui_add_folder") != "ui_add_folder" else "➕ Add Folder")
+        add_folder_btn.setProperty("lang_id", "ui_add_folder")
+        add_folder_btn.setProperty("lang_type", "ui")
         add_folder_btn.clicked.connect(self._add_job)
 
-        add_file_btn = QPushButton("📄 Add File(s)")
+        add_file_btn = QPushButton(self.get_string("ui_add_file") if self.get_string("ui_add_file") != "ui_add_file" else "📄 Add File(s)")
+        add_file_btn.setProperty("lang_id", "ui_add_file")
+        add_file_btn.setProperty("lang_type", "ui")
         add_file_btn.clicked.connect(self._add_file_job)
 
-        remove_btn = QPushButton("🗑️ Remove Selected")
+        remove_btn = QPushButton(self.get_string("ui_remove_selected") if self.get_string("ui_remove_selected") != "ui_remove_selected" else "🗑️ Remove Selected")
+        remove_btn.setProperty("lang_id", "ui_remove_selected")
+        remove_btn.setProperty("lang_type", "ui")
         remove_btn.clicked.connect(self._remove_selected_jobs_from_queue)
 
-        clear_btn = QPushButton("🧹 Clear Queue")
+        clear_btn = QPushButton(self.get_string("ui_clear_queue") if self.get_string("ui_clear_queue") != "ui_clear_queue" else "🧹 Clear Queue")
+        clear_btn.setProperty("lang_id", "ui_clear_queue")
+        clear_btn.setProperty("lang_type", "ui")
         clear_btn.clicked.connect(self._clear_queue)
 
         job_controls_layout.addWidget(add_folder_btn)
@@ -295,7 +371,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         history_layout = QVBoxLayout(history_frame)
         history_layout.setContentsMargins(0, 0, 0, 0)
 
-        history_title = QLabel("History (Completed Jobs)")
+        history_title = QLabel(self.get_string("ui_history_title") if self.get_string("ui_history_title") != "ui_history_title" else "History (Completed Jobs)")
+        history_title.setProperty("lang_id", "ui_history_title")
+        history_title.setProperty("lang_type", "ui")
         history_title.setFont(font)
         history_layout.addWidget(history_title)
 
@@ -313,7 +391,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         history_controls_layout.setContentsMargins(0, 0, 0, 0)
         history_controls_layout.addStretch()
 
-        clear_history_btn = QPushButton("Clear History")
+        clear_history_btn = QPushButton(self.get_string("ui_clear_history") if self.get_string("ui_clear_history") != "ui_clear_history" else "Clear History")
+        clear_history_btn.setProperty("lang_id", "ui_clear_history")
+        clear_history_btn.setProperty("lang_type", "ui")
         clear_history_btn.clicked.connect(self._clear_history)
         history_controls_layout.addWidget(clear_history_btn)
         history_layout.addWidget(history_controls_container)
@@ -322,9 +402,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         left_panel_layout.addWidget(queue_frame, stretch=1)
         
         # --- Middle Section: Live Log ---
-        log_frame = self._create_log_tab()
-        # Thay đổi tiêu đề Log nếu cần (hoặc giữ nguyên widget từ hàm cũ)
-        left_panel_layout.addWidget(log_frame, stretch=1)
+        self.log_viewer = ConsoleWidget(self)
+        left_panel_layout.addWidget(self.log_viewer, stretch=1)
 
         # --- Bottom Section: History ---
         left_panel_layout.addWidget(history_frame, stretch=1)
@@ -335,11 +414,12 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
     def _create_right_panel(self) -> QWidget:
         """Creates the right panel widget containing the main tabs."""
         self.main_tabs = QTabWidget()
+        self.main_tabs.setProperty("tab_lang_ids", ["ui_tab_configuration", "ui_tab_preview_tester"])
         tab_config = self._create_settings_tab_container()
         tab_preview_tester = self._create_preview_tester_tab()
 
-        self.main_tabs.addTab(tab_config, "Configuration ⚙️")
-        self.main_tabs.addTab(tab_preview_tester, "Preview Tester 🔍")
+        self.main_tabs.addTab(tab_config, self.get_string("ui_tab_configuration") if self.get_string("ui_tab_configuration") != "ui_tab_configuration" else "Configuration ⚙️")
+        self.main_tabs.addTab(tab_preview_tester, self.get_string("ui_tab_preview_tester") if self.get_string("ui_tab_preview_tester") != "ui_tab_preview_tester" else "Preview Tester 🔍")
 
         return self.main_tabs
 

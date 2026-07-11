@@ -93,6 +93,13 @@ class ConfigLoaderBase(BaseConfigLoader):
         # No-op after the first successful run on this machine. Never raises.
         self.optimize_profiles_once()  # type: ignore
 
+    def apply_language(self, lang_id: str):
+        """Dynamically switch the active language and re-apply translations to ui_map."""
+        self.app_language = lang_id
+        from app.core.desktop.config.studio_ui_map import STUDIO_UI_MAP
+        import copy
+        self.ui_map = copy.deepcopy(STUDIO_UI_MAP)
+        self.ui_map = self.language_manager.apply_language_to_ui_map(self.ui_map, self.app_language)
 
     def save_oldsession_config(self):
         import copy

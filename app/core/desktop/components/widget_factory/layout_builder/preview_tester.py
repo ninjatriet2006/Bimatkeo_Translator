@@ -28,9 +28,12 @@ class PreviewTesterBuilderMixin:
         self.mw.fast_preview_check = QCheckBox("Fast Preview")
         self.mw.fast_preview_check.setChecked(True)
 
-        self.mw.run_test_button = QPushButton("Run Test")
+        run_test_text = self.mw.get_string("ui_run_test") if self.mw.get_string("ui_run_test") != "ui_run_test" else "Run Test"
+        self.mw.run_test_button = QPushButton(run_test_text)
+        self.mw.run_test_button.setProperty("lang_id", "ui_run_test")
+        self.mw.run_test_button.setProperty("lang_type", "ui")
         self.mw.run_test_button.setEnabled(False)
-        self.mw.run_test_button.clicked.connect(self.mw._run_visual_test_thread)
+        self.mw.run_test_button.clicked.connect(self.mw.run_visual_test_thread)
 
         reset_button = QPushButton("Reset View")
         reset_button.clicked.connect(self.mw._fit_image_to_view)

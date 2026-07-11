@@ -143,6 +143,7 @@ class SettingsSyncManager:
                 self.mw.config_loader.oldsession_config["app_language"] = new_value
                 self.mw.config_loader.save_oldsession_config()
                 self.mw._rebuild_settings_tab()
+                self.mw.update_language_ui()
 
     def get_value_from_widget(self, key: str, widget: QWidget) -> Any:
         import app.core.desktop.main_window as mw_module

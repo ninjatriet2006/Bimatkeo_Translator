@@ -23,17 +23,21 @@ class JobQueueUIManager:
 
         menu = QMenu()
         
-        resume_action = menu.addAction("▶️ Resume (Bỏ qua file đã hoàn thành)")
+        resume_text = self.mw.get_string("ui_menu_resume") if self.mw.get_string("ui_menu_resume") != "ui_menu_resume" else "▶️ Resume (Bỏ qua file đã hoàn thành)"
+        resume_action = menu.addAction(resume_text)
         resume_action.triggered.connect(self.mw._resume_selected_jobs)
         
-        restart_action = menu.addAction("🔄 Restart (Dịch lại từ đầu)")
+        restart_text = self.mw.get_string("ui_menu_restart") if self.mw.get_string("ui_menu_restart") != "ui_menu_restart" else "🔄 Restart (Dịch lại từ đầu)"
+        restart_action = menu.addAction(restart_text)
         restart_action.triggered.connect(self.mw._restart_selected_jobs)
 
         menu.addSeparator()
-        duplicate_action = menu.addAction("➕ Duplicate Job (as new task)")
+        dup_text = self.mw.get_string("ui_menu_duplicate") if self.mw.get_string("ui_menu_duplicate") != "ui_menu_duplicate" else "➕ Duplicate Job (as new task)"
+        duplicate_action = menu.addAction(dup_text)
         duplicate_action.triggered.connect(self.mw._duplicate_selected_jobs)
 
-        remove_action = menu.addAction("🗑️ Remove from Queue")
+        rem_text = self.mw.get_string("ui_menu_remove_queue") if self.mw.get_string("ui_menu_remove_queue") != "ui_menu_remove_queue" else "🗑️ Remove from Queue"
+        remove_action = menu.addAction(rem_text)
         remove_action.triggered.connect(self.mw._remove_selected_jobs_from_queue)
 
         menu.exec(self.mw.queue_list_widget.mapToGlobal(position))
@@ -62,6 +66,7 @@ class JobQueueUIManager:
             return
 
         menu = QMenu()
-        requeue_action = menu.addAction("↪️ Re-queue Job")
+        req_text = self.mw.get_string("ui_menu_requeue") if self.mw.get_string("ui_menu_requeue") != "ui_menu_requeue" else "↪️ Re-queue Job"
+        requeue_action = menu.addAction(req_text)
         requeue_action.triggered.connect(self.mw._requeue_job)
         menu.exec(self.mw.history_list_widget.mapToGlobal(position))
