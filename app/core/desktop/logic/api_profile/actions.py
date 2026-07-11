@@ -9,7 +9,7 @@ INTEGRITY NOTES (For AI Agents):
 =============================================================================
 """
 from PySide6.QtWidgets import QMessageBox, QComboBox, QInputDialog
-from .config.mapping import get_profile_mapping
+from .mapping import get_profile_mapping
 from app.core.api_profile.storage.reader import load_api_profiles
 from app.core.api_profile.storage.writer import save_api_profiles
 

@@ -4,7 +4,8 @@ tabs:
   Detector & OCR: Nhận diện & OCR
   Image & Inpainter: Hình ảnh & Xóa chữ
   Render & Output: Vẽ chữ & Đầu ra
-  Extra Settings: Cài đặt thêm
+  Extra Settings: Cài đặt Bổ sung
+  Output Export: Trích xuất & Đầu ra
 tasks:
   raw_output:
     label: Chỉ xóa chữ (RAW)
@@ -219,6 +220,102 @@ settings:
     placeholder: Nhập khóa API của bạn
   outline_color:
     button_text: '...'
+  memory_mode:
+    label: 'Chế độ bộ nhớ:'
+    tooltip: Cách xử lý bộ nhớ ngữ cảnh.
+  context_window:
+    label: 'Cửa sổ ngữ cảnh:'
+    tooltip: Số câu tối đa để giữ trong ngữ cảnh dịch.
+  stride_window:
+    label: 'Kích thước bước trượt:'
+    tooltip: Số câu lặp lại giữa các cửa sổ ngữ cảnh.
+  enable_double_check:
+    label: Bật kiểm tra chéo
+    tooltip: Yêu cầu AI tự kiểm tra lại bản dịch.
+  ai_mode:
+    label: 'Chế độ AI:'
+    tooltip: Chế độ xử lý cho API.
+  pool_name:
+    label: 'Tên Pool:'
+    tooltip: Tên của nhóm API.
+  max_retries:
+    label: 'Số lần thử lại tối đa:'
+    tooltip: Số lần thử lại tối đa khi lỗi.
+  max_request_length:
+    label: 'Độ dài yêu cầu tối đa:'
+    tooltip: Số ký tự tối đa cho mỗi yêu cầu.
+  system_prompt_profile:
+    label: 'Profile System Prompt:'
+    tooltip: Hồ sơ mẫu câu lệnh hệ thống.
+  merge_nearby_boxes:
+    label: Gộp các hộp gần nhau
+    tooltip: Gộp các hộp văn bản gần nhau.
+  api_ocr:
+    label: 'Api Ocr:'
+    tooltip: 'Api Ocr setting.'
+  diffusion_model:
+    label: 'Diffusion Model:'
+    tooltip: 'Diffusion Model setting.'
+  enable_advanced_diffusion:
+    label: 'Enable Advanced Diffusion:'
+    tooltip: 'Enable Advanced Diffusion setting.'
+  enable_post_translation_check:
+    label: 'Enable Post Translation Check:'
+    tooltip: 'Enable Post Translation Check setting.'
+  enable_upscaler:
+    label: 'Enable Upscaler:'
+    tooltip: 'Enable Upscaler setting.'
+  export_mode:
+    label: 'Export Mode:'
+    tooltip: 'Export Mode setting.'
+  gimp_font:
+    label: 'Gimp Font:'
+    tooltip: 'Gimp Font setting.'
+  gpt_config:
+    label: 'Gpt Config:'
+    tooltip: 'Gpt Config setting.'
+  is_bold:
+    label: 'Is Bold:'
+    tooltip: 'Is Bold setting.'
+  ocr_ai_mode:
+    label: 'Ocr Ai Mode:'
+    tooltip: 'Ocr Ai Mode setting.'
+  ocr_api_name:
+    label: 'Ocr Api Name:'
+    tooltip: 'Ocr Api Name setting.'
+  ocr_category:
+    label: 'Ocr Category:'
+    tooltip: 'Ocr Category setting.'
+  ocr_pool_name:
+    label: 'Ocr Pool Name:'
+    tooltip: 'Ocr Pool Name setting.'
+  offline_detector:
+    label: 'Offline Detector:'
+    tooltip: 'Offline Detector setting.'
+  offline_ocr:
+    label: 'Offline Ocr:'
+    tooltip: 'Offline Ocr setting.'
+  outline_width:
+    label: 'Outline Width:'
+    tooltip: 'Outline Width setting.'
+  post_check_max_retry_attempts:
+    label: 'Post Check Max Retry Attempts:'
+    tooltip: 'Post Check Max Retry Attempts setting.'
+  post_check_repetition_threshold:
+    label: 'Post Check Repetition Threshold:'
+    tooltip: 'Post Check Repetition Threshold setting.'
+  post_check_target_lang_threshold:
+    label: 'Post Check Target Lang Threshold:'
+    tooltip: 'Post Check Target Lang Threshold setting.'
+  sd_base_model:
+    label: 'Sd Base Model:'
+    tooltip: 'Sd Base Model setting.'
+  selective_translation:
+    label: 'Selective Translation:'
+    tooltip: 'Selective Translation setting.'
+  translator:
+    label: 'Translator:'
+    tooltip: 'Translator setting.'
 flow_steps:
   detection: 📝 Nhận diện
   ocr: 🔍 OCR
@@ -263,3 +360,24 @@ enums:
   no: Không
   english: Tiếng Anh
   tiếng_việt: Tiếng Việt
+ui_strings:
+  ui_font_scale: 'Tỷ lệ Font giao diện:'
+  ui_appearance_theme: 'Giao diện & Chủ đề'
+  ui_select_theme: 'Chọn Theme ⚠⚠⚠'
+  ui_advanced_settings: 'CÀI ĐẶT NÂNG CAO'
+  ui_load_test_image: 'Tải ảnh thử nghiệm...'
+  ui_fast_preview: 'Xem trước nhanh'
+  ui_reset_view: 'Đặt lại góc nhìn'
+  ui_btn_export_detector: '💾 Xuất ảnh kèm BBox'
+  ui_btn_export_ocr: '💾 Xuất dữ liệu OCR (CSV)'
+  ui_btn_export_translator: '💾 Xuất bản dịch (CSV)'
+  ui_btn_export_inpainter: '💾 Xuất ảnh đã xóa chữ'
+  ui_btn_export_render: '💾 Xuất ảnh thành phẩm'
+  ui_tab_detector: 'Nhận diện BBox'
+  ui_tab_ocr: 'Nhận dạng chữ'
+  ui_chain_translate_to: 'Translate to:'
+  ui_chain_steps: 'Chain Steps'
+  ui_tab_translator: 'Dịch thuật'
+  ui_tab_inpainter: 'Xóa chữ (Inpaint)'
+  ui_tab_render: 'Thành phẩm'
+  ui_clear_log: 'Xóa lịch sử Log'

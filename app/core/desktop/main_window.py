@@ -87,9 +87,10 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
 
     def __init__(self):
         super().__init__()
-        self.project_base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.project_base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         
         self.config_loader = ConfigLoader(self.project_base_dir)
+        self.app_logger = AppLogger(self.config_loader, self)
         
         # Update LANGUAGES dynamically from the backend if loaded
         if hasattr(self.config_loader, 'languages') and self.config_loader.languages:
@@ -173,7 +174,6 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
 
         self._initialize_app()
         # Connect custom signals to their slots
-        self.log_signal.connect(self._insert_log_text)
         self.pipeline_finished_signal.connect(self._on_pipeline_finished)
         self.pipeline_progress_signal.connect(self._update_progress_bar)
         self.models_fetched_signal.connect(self._on_models_fetched)
@@ -404,6 +404,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         # --- Middle Section: Live Log ---
         self.log_viewer = ConsoleWidget(self)
         left_panel_layout.addWidget(self.log_viewer, stretch=1)
+        self.log_signal.connect(self.log_viewer.insert_log)
+        if hasattr(self, 'app_logger'):
+            self.app_logger.log_signal.connect(self.log_viewer.insert_log)
 
         # --- Bottom Section: History ---
         left_panel_layout.addWidget(history_frame, stretch=1)
@@ -451,3 +454,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             self.progress_label.setText(text)
 
         # Removed _on_hitl_requested and _on_mtpe_approved
+
+    def log(self, level: str, message: str):
+        if hasattr(self, 'app_logger'):
+            self.app_logger.log(level, message)

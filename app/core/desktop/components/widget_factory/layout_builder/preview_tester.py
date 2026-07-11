@@ -23,9 +23,13 @@ class PreviewTesterBuilderMixin:
         controls_layout = QHBoxLayout(controls_frame)
 
         load_button = QPushButton("Load Test Image...")
+        load_button.setProperty("lang_id", "ui_load_test_image")
+        load_button.setProperty("lang_type", "ui")
         load_button.clicked.connect(self.mw._load_test_image)
 
         self.mw.fast_preview_check = QCheckBox("Fast Preview")
+        self.mw.fast_preview_check.setProperty("lang_id", "ui_fast_preview")
+        self.mw.fast_preview_check.setProperty("lang_type", "ui")
         self.mw.fast_preview_check.setChecked(True)
 
         run_test_text = self.mw.get_string("ui_run_test") if self.mw.get_string("ui_run_test") != "ui_run_test" else "Run Test"
@@ -33,9 +37,11 @@ class PreviewTesterBuilderMixin:
         self.mw.run_test_button.setProperty("lang_id", "ui_run_test")
         self.mw.run_test_button.setProperty("lang_type", "ui")
         self.mw.run_test_button.setEnabled(False)
-        self.mw.run_test_button.clicked.connect(self.mw.run_visual_test_thread)
+        self.mw.run_test_button.clicked.connect(self.mw.preview_tester.run_visual_test_thread)
 
         reset_button = QPushButton("Reset View")
+        reset_button.setProperty("lang_id", "ui_reset_view")
+        reset_button.setProperty("lang_type", "ui")
         reset_button.clicked.connect(self.mw._fit_image_to_view)
 
         self.mw.zoom_label = QLabel("Zoom: 100%")
@@ -54,10 +60,13 @@ class PreviewTesterBuilderMixin:
         layout.addWidget(controls_frame)
 
         self.mw.preview_tabs = QTabWidget()
+        self.mw.preview_tabs.setProperty("tab_lang_ids", ["ui_tab_detector", "ui_tab_ocr", "ui_tab_translator", "ui_tab_inpainter", "ui_tab_render"])
         
         self.mw.tab_detector = QWidget()
         det_layout = QVBoxLayout(self.mw.tab_detector)
         self.mw.btn_export_detector = QPushButton("💾 Export Image with BBox")
+        self.mw.btn_export_detector.setProperty("lang_id", "ui_btn_export_detector")
+        self.mw.btn_export_detector.setProperty("lang_type", "ui")
         self.mw.btn_export_detector.clicked.connect(self.mw._export_detector_image)
         det_layout.addWidget(self.mw.btn_export_detector, alignment=Qt.AlignmentFlag.AlignRight)
         self.mw.view_detector = QGraphicsView()
@@ -70,6 +79,8 @@ class PreviewTesterBuilderMixin:
         self.mw.tab_ocr = QWidget()
         ocr_layout = QVBoxLayout(self.mw.tab_ocr)
         self.mw.btn_export_ocr = QPushButton("💾 Export OCR Data (CSV)")
+        self.mw.btn_export_ocr.setProperty("lang_id", "ui_btn_export_ocr")
+        self.mw.btn_export_ocr.setProperty("lang_type", "ui")
         self.mw.btn_export_ocr.clicked.connect(self.mw._export_ocr_data)
         ocr_layout.addWidget(self.mw.btn_export_ocr, alignment=Qt.AlignmentFlag.AlignRight)
         self.mw.table_ocr = QTableWidget()
@@ -82,6 +93,8 @@ class PreviewTesterBuilderMixin:
         self.mw.tab_translator = QWidget()
         trans_layout = QVBoxLayout(self.mw.tab_translator)
         self.mw.btn_export_translator = QPushButton("💾 Export Translated Text (CSV)")
+        self.mw.btn_export_translator.setProperty("lang_id", "ui_btn_export_translator")
+        self.mw.btn_export_translator.setProperty("lang_type", "ui")
         self.mw.btn_export_translator.clicked.connect(self.mw._export_translator_data)
         trans_layout.addWidget(self.mw.btn_export_translator, alignment=Qt.AlignmentFlag.AlignRight)
         self.mw.table_translator = QTableWidget()
@@ -94,6 +107,8 @@ class PreviewTesterBuilderMixin:
         self.mw.tab_inpainter = QWidget()
         inp_layout = QVBoxLayout(self.mw.tab_inpainter)
         self.mw.btn_export_inpainter = QPushButton("💾 Export Inpainted Image")
+        self.mw.btn_export_inpainter.setProperty("lang_id", "ui_btn_export_inpainter")
+        self.mw.btn_export_inpainter.setProperty("lang_type", "ui")
         self.mw.btn_export_inpainter.clicked.connect(self.mw._export_inpainter_image)
         inp_layout.addWidget(self.mw.btn_export_inpainter, alignment=Qt.AlignmentFlag.AlignRight)
         self.mw.view_inpainter = QGraphicsView()
@@ -106,6 +121,8 @@ class PreviewTesterBuilderMixin:
         self.mw.tab_render = QWidget()
         ren_layout = QVBoxLayout(self.mw.tab_render)
         self.mw.btn_export_render = QPushButton("💾 Export Rendered Image")
+        self.mw.btn_export_render.setProperty("lang_id", "ui_btn_export_render")
+        self.mw.btn_export_render.setProperty("lang_type", "ui")
         self.mw.btn_export_render.clicked.connect(self.mw._export_render_image)
         ren_layout.addWidget(self.mw.btn_export_render, alignment=Qt.AlignmentFlag.AlignRight)
         self.mw.view_render = QGraphicsView()

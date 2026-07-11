@@ -199,15 +199,49 @@ settings:
     label: 'Min. Font Size:'
     tooltip: Prevents font size from falling below this value. -1 disables this feature.
 
+  memory_mode:
+    label: 'Memory Mode:'
+    tooltip: Choose how the application handles memory for large contexts.
+  context_window:
+    label: 'Context Window:'
+    tooltip: Number of sentences to keep in context window.
+  stride_window:
+    label: 'Stride Window:'
+    tooltip: Overlap size for sliding window.
+  enable_double_check:
+    label: Enable Double Check
+    tooltip: Ask the AI to verify its own translations.
+  ai_mode:
+    label: 'AI Mode:'
+    tooltip: Processing mode for this API.
+  pool_name:
+    label: 'Pool Name:'
+    tooltip: Name of the API pool.
+  max_retries:
+    label: 'Max Retries:'
+    tooltip: Maximum number of retries.
+  max_request_length:
+    label: 'Max Request Length:'
+    tooltip: Max number of characters per request.
+  system_prompt_profile:
+    label: 'System Prompt Profile:'
+    tooltip: Profile for system prompts.
+  merge_nearby_boxes:
+    label: Merge Nearby Boxes
+    tooltip: Merge text boxes that are close.
+
   api_key_manager:
     label: Manage API Keys
     tooltip: Manage your translation API keys securely.
   enable_verbose_output:
     label: Enable Verbose Output ⚠
-    tooltip: 'WARNING: Saves all intermediate processing steps (masks, OCR boxes, etc.) for debugging. This will consume a very large amount of disk space and slow down processing.'
+    tooltip: 'WARNING: Saves all intermediate processing steps (masks, OCR boxes,
+      etc.) for debugging. This will consume a very large amount of disk space and
+      slow down processing.'
   app_language:
     label: 'App Language:'
-    tooltip: Choose the language of the application interface (labels and tooltips).
+    tooltip: Choose the language of the application interface (labels and
+      tooltips).
   ocr_api_endpoint:
     placeholder: e.g., https://api.openai.com/v1
   ocr_api_model:
@@ -217,6 +251,8 @@ settings:
     placeholder: Enter your API key
   outline_color:
     button_text: '...'
+    label: Offline Detector
+    tooltip: Offline Detector
 flow_steps:
   detection: 📝 Detection
   ocr: 🔍 OCR
@@ -261,3 +297,120 @@ enums:
   no: No
   english: English
   tiếng_việt: Vietnamese
+
+ui_strings:
+  ui_font_scale: 'UI Font Scale:'
+  ui_appearance_theme: 'Appearance & Theme'
+  ui_select_theme: 'Select Theme ⚠⚠⚠'
+  ui_advanced_settings: 'ADVANCED SETTINGS'
+  ui_load_test_image: 'Load Test Image...'
+  ui_fast_preview: 'Fast Preview'
+  ui_reset_view: 'Reset View'
+  ui_btn_export_detector: '💾 Export Image with BBox'
+  ui_btn_export_ocr: '💾 Export OCR Data (CSV)'
+  ui_btn_export_translator: '💾 Export Translated Text (CSV)'
+  ui_btn_export_inpainter: '💾 Export Inpainted Image'
+  ui_btn_export_render: '💾 Export Rendered Image'
+  ui_tab_detector: 'Detector'
+  ui_tab_ocr: 'OCR'
+  ui_tab_translator: 'Translator'
+  ui_tab_inpainter: 'Image Inpainter'
+  ui_tab_render: 'Render Output'
+  ui_clear_log: 'Clear Log'
+  ui_btn_start: 'Btn Start'
+  ui_btn_stop: 'Btn Stop'
+  ui_chain_add: 'Chain Add'
+  ui_chain_remove: 'Chain Remove'
+  ui_chain_steps: 'Chain Steps'
+  ui_chain_translate_to: 'Chain Translate To'
+  ui_chain_with: 'Chain With'
+  ui_status_ready: 'Status Ready'
+
+  update_supported_langs: 📥 Update translation support list...
+  update_langs_list: 📥 Update language list...
+  ui_app_title: 🎌 Bimatkeo Translator - PySide
+  ui_queue_title: Queue (Next Up)
+  ui_add_folder: ➕ Add Folder
+  ui_add_file: 📄 Add File(s)
+  ui_remove_selected: 🗑️ Remove Selected
+  ui_clear_queue: 🧹 Clear Queue
+  ui_history_title: History (Completed Jobs)
+  ui_clear_history: Clear History
+  ui_tab_configuration: Configuration ⚙️
+  ui_tab_preview_tester: Preview Tester 🔍
+  ui_menu_resume: ▶️ Resume (Bỏ qua file đã hoàn thành)
+  ui_menu_restart: 🔄 Restart (Dịch lại từ đầu)
+  ui_menu_duplicate: ➕ Duplicate Job (as new task)
+  ui_menu_remove_queue: 🗑️ Remove from Queue
+  ui_menu_requeue: ↪️ Re-queue Job
+  ui_export_error: Export Error
+  ui_msg_no_test_results: No test results available to export. Please run a test
+    first.
+  ui_msg_det_not_found: Detector result image not found.
+  ui_dlg_export_detector: Export Detector Image
+  ui_success: Success
+  ui_msg_det_exported: Detector image exported successfully.
+  ui_error: Error
+  ui_msg_export_failed: 'Failed to export image: {err}'
+  ui_msg_ocr_not_found: OCR data not found.
+  ui_dlg_export_ocr: Export OCR Data
+  ui_col_bbox: BBox
+  ui_col_orig_text: Original Text
+  ui_msg_ocr_exported: OCR data exported successfully.
+  ui_msg_export_failed_ocr: 'Failed to export OCR data: {err}'
+  ui_msg_trans_not_found: Translation data not found.
+  ui_dlg_export_trans: Export Translated Text
+  ui_col_trans_text: Translated Text
+  ui_msg_trans_exported: Translated text exported successfully.
+  ui_msg_export_failed_trans: 'Failed to export translated text: {err}'
+  ui_msg_inp_not_found: Inpainter result image not found.
+  ui_dlg_export_inp: Export Inpainted Image
+  ui_msg_inp_exported: Inpainted image exported successfully.
+  ui_msg_no_test_img: No test image path found.
+  ui_msg_ren_not_found: Render result image not found.
+  ui_dlg_export_ren: Export Rendered Image
+  ui_msg_ren_exported: Rendered image exported successfully.
+  ui_testing: Testing...
+  ui_run_test: Run Test
+  ui_btn_fetch: Fetch
+  ui_select_pool: 'Select Pool:'
+  ui_apis_in_pool: 'APIs in Pool (Ordered by Priority):'
+  ui_btn_move_up: Move Up
+  ui_btn_move_down: Move Down
+  ui_btn_remove_from_pool: Remove from Pool
+  ui_add_api_to_pool: Add API to Pool
+  ui_add_existing_api: 'Add Existing API:'
+  ui_btn_add: Add
+  ui_or_add_new_api: '--- OR Add New API ---'
+  ui_api_name: 'API Name:'
+  ui_endpoint_url: 'Endpoint URL:'
+  ui_model: 'Model:'
+  ui_api_key: 'API Key:'
+  ui_btn_create_add_pool: Create && Add to Pool
+  ui_btn_save_pool: Save Pool
+  ui_btn_close: Close
+  ui_manage_pools: ⚙️ Manage Pools
+  ui_btn_test: Test
+
+messages:
+  msg_title_warning: Warning
+  msg_warn_select_model: Please select a specific model to test (not Auto).
+  msg_warn_no_url: No API Endpoint URL provided. Please enter a valid URL.
+  msg_title_test_success: Test Successful
+  msg_title_test_failed: Test Failed
+  msg_title_confirm_exit: Confirm Exit
+  msg_confirm_exit_running: A process is still running. Are you sure you want to
+    stop it and exit?
+  msg_pipeline_starting: Starting Modular Pipeline for job '{job_name}'.
+  msg_pipeline_stopped: Pipeline run stopped by user.
+  msg_pipeline_completed: Job '{job_name}' completed successfully.
+  msg_pipeline_no_files: No files found in the source directory.
+  msg_pipeline_error: 'Error executing pipeline: {error}'
+  msg_pipeline_progress: 'Processing {current}/{total} : {text}'
+  msg_pipeline_skip_resume: 'Skipping completed file (Resume): {filename}'
+  msg_pipeline_produce_text: 'Loading text file: {filename}'
+  msg_pipeline_produce_image: 'Loading image (RAM Mode): {filename}'
+  msg_pipeline_produce_image_disk: 'Loading image (DISK Mode): {filename}'
+  msg_pipeline_produce_error: 'Failed to read image: {filename}'
+  msg_pipeline_consume_text: 'Saved text result: {filename}'
+  msg_pipeline_consume_image: 'Saved result: {filename}'

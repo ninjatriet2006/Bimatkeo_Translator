@@ -5,7 +5,7 @@ from PySide6.QtGui import QIcon
 
 # Configure path: Add the parent directory of 'desktop_ui' (the project root) to sys.path
 # so we can import app and other packages if needed.
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, BASE_DIR)
 
 # Set HF_HOME so all huggingface cache goes to the app's models folder

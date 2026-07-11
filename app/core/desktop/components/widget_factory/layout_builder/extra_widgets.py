@@ -23,6 +23,8 @@ class ExtraWidgetsBuilderMixin:
         row_layout.setSpacing(5)
 
         label = QLabel("UI Font Scale:")
+        label.setProperty("lang_id", "ui_font_scale")
+        label.setProperty("lang_type", "ui")
         label.setToolTip("Changes the font size for the entire application UI.")
         row_layout.addWidget(label, stretch=1)
 
@@ -41,6 +43,8 @@ class ExtraWidgetsBuilderMixin:
         theme_layout.setContentsMargins(0, 10, 0, 0)
 
         label = QLabel("Appearance & Theme")
+        label.setProperty("lang_id", "ui_appearance_theme")
+        label.setProperty("lang_type", "ui")
         font = label.font()
         font.setBold(True)
         label.setFont(font)
@@ -51,6 +55,8 @@ class ExtraWidgetsBuilderMixin:
         controls_layout.setContentsMargins(0, 0, 0, 0)
 
         label = QLabel("Select Theme ⚠⚠⚠")
+        label.setProperty("lang_id", "ui_select_theme")
+        label.setProperty("lang_type", "ui")
         label.setToolTip(
             "Note:\n"
             "Selected button colors\n"

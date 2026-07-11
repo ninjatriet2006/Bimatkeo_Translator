@@ -44,6 +44,8 @@ class TabsBuilderMixin:
             separator_layout.setSpacing(5)
 
             label = QLabel("<b>ADVANCED SETTINGS</b>")
+            label.setProperty("lang_id", "ui_advanced_settings")
+            label.setProperty("lang_type", "ui")
 
             line = QFrame()
             line.setFrameShape(QFrame.Shape.HLine)
