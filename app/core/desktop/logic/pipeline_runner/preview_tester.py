@@ -105,7 +105,8 @@ class PreviewTester:
         view = getattr(self.mw, 'view_detector', None)
         if view and hasattr(self.mw, 'zoom_label'):
             zoom = view.transform().m11()
-            self.mw.zoom_label.setText(f"Zoom: {zoom * 100:.0f}%")
+            zoom_text = self.mw.get_string("ui_zoom", default="Zoom:")
+            self.mw.zoom_label.setText(f"{zoom_text} {zoom * 100:.0f}%")
 
     def run_visual_test_thread(self):
         if not getattr(self.mw, 'test_image_path', None):

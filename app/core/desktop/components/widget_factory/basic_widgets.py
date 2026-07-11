@@ -113,6 +113,8 @@ class BasicWidgetFactory:
 
     def create_open_yaml_button(self, info: dict) -> QPushButton:
         button = QPushButton("Open Configuration (YAML) 📂")
+        button.setProperty("lang_id", "ui_btn_open_yaml")
+        button.setProperty("lang_type", "ui")
         file_name = info.get("default") or "Ignored.yaml"
         
         def on_click():

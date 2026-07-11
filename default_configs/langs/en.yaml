@@ -243,16 +243,22 @@ settings:
     tooltip: Choose the language of the application interface (labels and
       tooltips).
   ocr_api_endpoint:
+    label: 'OCR API Endpoint:'
+    tooltip: 'Endpoint URL for the OCR API.'
     placeholder: e.g., https://api.openai.com/v1
   ocr_api_model:
+    label: 'OCR API Model:'
+    tooltip: 'Model name for the OCR API.'
     placeholder: e.g., gemini-2.5-flash
     button_text: Fetch
   ocr_api_key:
+    label: 'OCR API Key:'
+    tooltip: 'API Key for the OCR API.'
     placeholder: Enter your API key
   outline_color:
+    label: 'Outline Color:'
+    tooltip: 'Color of the text outline.'
     button_text: '...'
-    label: Offline Detector
-    tooltip: Offline Detector
 flow_steps:
   detection: 📝 Detection
   ocr: 🔍 OCR
