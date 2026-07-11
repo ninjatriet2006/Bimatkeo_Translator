@@ -223,6 +223,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
                         w.setText(new_text)
                     elif hasattr(w, 'setTitle'):
                         w.setTitle(new_text)
+                        w.setTitle(new_text)
             
             tooltip_lang_id = w.property("tooltip_lang_id")
             if tooltip_lang_id:
@@ -261,6 +262,13 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
                     walk_widget(child)
 
         walk_widget(self)
+        
+        # Update dynamic zoom label explicitly
+        if hasattr(self, 'zoom_label'):
+            zoom = getattr(self.preview_image, 'current_zoom', 1.0) if hasattr(self, 'preview_image') else 1.0
+            zoom_text = self.get_string("ui_zoom")
+            if zoom_text and zoom_text != "ui_zoom":
+                self.zoom_label.setText(f"{zoom_text} {zoom * 100:.0f}%")
 
     def _initialize_app(self):
         """
@@ -276,6 +284,11 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         
         self._update_job_list_ui()
         self._update_history_list_ui()
+        
+        # Ensure ID linking translations run at startup for hardcoded UI elements
+        if hasattr(self, 'update_language_ui'):
+            self.update_language_ui()
+            
         print("[UI] Main layout and dynamic widgets created successfully.")
 
     def _create_main_layout(self):
