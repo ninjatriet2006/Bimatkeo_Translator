@@ -14,6 +14,9 @@ from .loader import LanguageLoader
 from .fallback import LanguageFallback
 from .ui_mapper import LanguageUIMapper
 from .verify import LanguageVerifier
+import logging
+
+logger = logging.getLogger(__name__)
 
 class LanguageManager:
     """
@@ -59,13 +62,14 @@ class LanguageManager:
             translated_text = ui_strings.get(string_id)
 
         if translated_text is None:
+            logger.warning(f"[LanguageManager] Missing translation for string ID '{string_id}' in language '{lang_id}'")
             return string_id
 
         if kwargs:
             try:
                 translated_text = translated_text.format(**kwargs)
             except Exception as e:
-                print(f"[LanguageManager] Formatting error for ID '{string_id}': {e}")
+                logger.error(f"[LanguageManager] Formatting error for ID '{string_id}': {e}")
 
         return translated_text
 
@@ -77,15 +81,23 @@ class LanguageManager:
         """
         lang_data = self.get_lang_data(lang_id)
         if not lang_data:
+            logger.warning(f"[LanguageManager] Language data not found for '{lang_id}'")
             return string_id
 
         cat_data = lang_data.get(category, {})
         trans = cat_data.get(string_id)
 
         if trans is None:
+            logger.warning(f"[LanguageManager] Missing UI string for '{category}' -> '{string_id}' in language '{lang_id}'")
             return string_id
-        
-        if category == "settings" and sub_key and isinstance(trans, dict):
-            return trans.get(sub_key, string_id)
-        
-        return trans if isinstance(trans, str) else string_id
+            
+        if sub_key and isinstance(trans, dict):
+            sub_trans = trans.get(sub_key)
+            if sub_trans is None:
+                logger.warning(f"[LanguageManager] Missing sub_key '{sub_key}' for '{category}' -> '{string_id}' in language '{lang_id}'")
+                return string_id
+            return sub_trans
+        elif isinstance(trans, str):
+            return trans
+            
+        return string_id

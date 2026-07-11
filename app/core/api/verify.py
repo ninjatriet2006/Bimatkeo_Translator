@@ -11,6 +11,9 @@ INTEGRITY NOTES (For AI Agents):
 
 import os
 from ruamel.yaml import YAML
+import logging
+
+logger = logging.getLogger(__name__)
 
 class APIVerifier:
     def __init__(self):
@@ -20,19 +23,19 @@ class APIVerifier:
         """
         Runs basic validation on the model registry and schema configurations.
         """
-        print("[APIVerifier] Running integrity check on API module configs...")
+        logger.info("[APIVerifier] Running integrity check on API module configs...")
         yaml = YAML(typ='safe')
         
         # Verify Model Registry (REMOVED - migrated to dynamic factories)
 
         # Verify Schema Fallback
         if not os.path.exists(schema_path):
-            print(f"  [!] Missing schema fallback at {schema_path}")
+            logger.warning(f"  [!] Missing schema fallback at {schema_path}")
         else:
             try:
                 with open(schema_path, "r", encoding="utf-8") as f:
                     data = yaml.load(f)
                     if not data or "properties" not in data:
-                        print("  [!] schema_fallback.yaml is missing 'properties' root key.")
+                        logger.warning("  [!] schema_fallback.yaml is missing 'properties' root key.")
             except Exception as e:
-                print(f"  [!] Failed to parse schema_fallback.yaml: {e}")
+                logger.error(f"  [!] Failed to parse schema_fallback.yaml: {e}")

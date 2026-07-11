@@ -11,6 +11,9 @@ INTEGRITY NOTES (For AI Agents):
 
 import os
 from typing import List, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 def run_models_verification(verifier_name: str, factories: List[Any], orphan_check_dirs: List[str] | None = None, models_base_path: str = "models"):
     """
@@ -18,7 +21,7 @@ def run_models_verification(verifier_name: str, factories: List[Any], orphan_che
     Reports Not Installed models (in registry but not on disk) 
     and orphaned models (on disk but not in registry).
     """
-    print(f"[{verifier_name}] Running integrity check on local models...")
+    logger.info(f"[{verifier_name}] Running integrity check on local models...")
 
     # 1. Collect all declared models
     declared_models = []
@@ -35,19 +38,19 @@ def run_models_verification(verifier_name: str, factories: List[Any], orphan_che
             })
 
     # 2. Check for missing models
-    print("  -> Checking for missing models (declared in registry but missing on disk)...")
+    logger.info("  -> Checking for missing models (declared in registry but missing on disk)...")
     missing_count = 0
     for model in declared_models:
         file_path = os.path.normpath(model["check_file"])
         if not os.path.exists(file_path) and file_path.startswith("models"):
-            print(f"     [Missing]: '{model['key']}' -> Expected file: {file_path}")
+            logger.warning(f"     [Missing]: '{model['key']}' -> Expected file: {file_path}")
             missing_count += 1
     if missing_count == 0:
-        print("     [OK] All declared models are present on disk.")
+        logger.info("     [OK] All declared models are present on disk.")
 
     # 3. Check for orphaned models
     if orphan_check_dirs:
-        print("  -> Checking for orphaned models (exist on disk but not in registry)...")
+        logger.info("  -> Checking for orphaned models (exist on disk but not in registry)...")
         valid_paths = [os.path.normpath(m["check_file"]) for m in declared_models if m["check_file"].startswith("models")]
         orphan_count = 0
         
@@ -62,11 +65,11 @@ def run_models_verification(verifier_name: str, factories: List[Any], orphan_che
                     is_valid = any(vp.startswith(item_path + os.sep) for vp in valid_paths)
                     if not is_valid:
                         if item_path not in valid_paths:
-                            print(f"     [Orphaned Directory]: '{item_path}' is not associated with any registry model.")
+                            logger.warning(f"     [Orphaned Directory]: '{item_path}' is not associated with any registry model.")
                             orphan_count += 1
 
         for check_dir in orphan_check_dirs:
             check_orphans(os.path.join(models_base_path, check_dir))
             
         if orphan_count == 0:
-            print("     [OK] No orphaned directories found.")
+            logger.info("     [OK] No orphaned directories found.")

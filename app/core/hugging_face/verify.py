@@ -16,6 +16,9 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class HFVerifier:
     def __init__(self):
@@ -27,7 +30,7 @@ class HFVerifier:
         Reports orphaned local versions (models that were removed from the registry
         but still exist in local_versions).
         """
-        print("[HuggingFaceVerifier] Running integrity check on local models...")
+        logger.info("[HuggingFaceVerifier] Running integrity check on local models...")
         from ruamel.yaml import YAML
         yaml = YAML(typ='safe')
 
@@ -37,7 +40,7 @@ class HFVerifier:
                 with open(local_versions_path, "r", encoding="utf-8") as lf:
                     local_versions = yaml.load(lf) or {}
             except Exception as e:
-                print(f"  [!] Failed to load local_versions: {e}")
+                logger.error(f"  [!] Failed to load local_versions: {e}")
 
         if not local_versions:
             return
@@ -73,5 +76,5 @@ class HFVerifier:
                 
             for model_key in models.keys():
                 if model_key not in valid_model_keys:
-                    print(f"  [!] Orphaned Model Config Found: '{model_key}' in category '{category}'")
-                    print(f"      (This model exists in your local_versions.yaml but was removed from model_registry.yaml)")
+                    logger.warning(f"  [!] Orphaned Model Config Found: '{model_key}' in category '{category}'")
+                    logger.warning(f"      (This model exists in your local_versions.yaml but was removed from model_registry.yaml)")

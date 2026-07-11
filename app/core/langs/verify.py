@@ -10,6 +10,9 @@ INTEGRITY NOTES (For AI Agents):
 """
 
 from typing import Dict, Any, List
+import logging
+
+logger = logging.getLogger(__name__)
 
 class LanguageVerifier:
     def __init__(self, localization: Dict[str, Any]):
@@ -20,9 +23,9 @@ class LanguageVerifier:
         Cross-checks loaded localization dictionaries against the raw UI Map.
         Reports missing translations and orphaned keys.
         """
-        print("[LanguageVerifier] Running integrity check on languages...")
+        logger.info("[LanguageVerifier] Running integrity check on languages...")
         if not self.localization:
-            print("  [!] No localization files loaded.")
+            logger.warning("  [!] No localization files loaded.")
             return
 
         # Extract all needed keys from raw_ui_map
@@ -44,7 +47,7 @@ class LanguageVerifier:
                         required_enums.add(v)
 
         for lang_id, lang_data in self.localization.items():
-            print(f"  -> Verifying language '{lang_id}'...")
+            logger.info(f"  -> Verifying language '{lang_id}'...")
             lang_tabs = set(lang_data.get("tabs", {}).keys())
             lang_settings = set(lang_data.get("settings", {}).keys())
             lang_enums = set(lang_data.get("enums", {}).keys())
@@ -55,11 +58,11 @@ class LanguageVerifier:
             missing_enums = required_enums - lang_enums
 
             if missing_tabs:
-                print(f"     [Missing Tabs]: {', '.join(missing_tabs)}")
+                logger.warning(f"     [Missing Tabs]: {', '.join(missing_tabs)}")
             if missing_settings:
-                print(f"     [Missing Settings]: {', '.join(missing_settings)}")
+                logger.warning(f"     [Missing Settings]: {', '.join(missing_settings)}")
             if missing_enums:
-                print(f"     [Missing Enums]: {', '.join(missing_enums)}")
+                logger.warning(f"     [Missing Enums]: {', '.join(missing_enums)}")
 
             # Check orphans (defined in language file but not in UI map)
             orphan_tabs = lang_tabs - required_tabs
@@ -67,8 +70,8 @@ class LanguageVerifier:
             orphan_enums = lang_enums - required_enums
 
             if orphan_tabs:
-                print(f"     [Orphan Tabs]: {', '.join(orphan_tabs)}")
+                logger.warning(f"     [Orphan Tabs]: {', '.join(orphan_tabs)}")
             if orphan_settings:
-                print(f"     [Orphan Settings]: {', '.join(orphan_settings)}")
+                logger.warning(f"     [Orphan Settings]: {', '.join(orphan_settings)}")
             if orphan_enums:
-                print(f"     [Orphan Enums]: {', '.join(orphan_enums)}")
+                logger.warning(f"     [Orphan Enums]: {', '.join(orphan_enums)}")
