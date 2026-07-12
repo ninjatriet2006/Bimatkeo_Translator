@@ -11,7 +11,7 @@ INTEGRITY NOTES (For AI Agents):
 import threading
 import queue
 from app.core.shared_context.dto import PageContext
-from app.core.shared_context.context_reader import get_original_image, get_inpainted_image, get_background_image
+from app.core.shared_context.utils import get_original_image, get_inpainted_image, get_background_image
 from app.core.renderer.interfaces import BaseRenderer
 
 class RenderWorker(threading.Thread):

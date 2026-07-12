@@ -10,10 +10,9 @@ INTEGRITY NOTES (For AI Agents):
 """
 
 from app.core.shared_context.dto import PageContext
-from app.core.shared_context.context_reader import get_original_image, get_inpainted_image, get_background_image
+from app.core.shared_context.utils import get_original_image, get_inpainted_image, get_background_image
 from app.core.ocr.interfaces import BaseCloudOCR
-from app.core.ocr.filter import OCRFilter
-from app.core.ocr.geometry import sort_comic_text_boxes, merge_nearby_boxes_and_texts
+from app.core.ocr.image_utils import OCRFilter, sort_comic_text_boxes, merge_nearby_boxes_and_texts
 
 class CloudOCRRunner:
     def __init__(self, cloud_ocr: BaseCloudOCR, ocr_config: dict, render_config: dict, log_callback=None):

@@ -62,7 +62,6 @@ class LanguageManager:
             translated_text = ui_strings.get(string_id)
 
         if translated_text is None:
-            logger.warning(f"[LanguageManager] Missing translation for string ID '{string_id}' in language '{lang_id}'")
             return string_id
 
         if kwargs:
@@ -81,20 +80,17 @@ class LanguageManager:
         """
         lang_data = self.get_lang_data(lang_id)
         if not lang_data:
-            logger.warning(f"[LanguageManager] Language data not found for '{lang_id}'")
             return string_id
 
         cat_data = lang_data.get(category, {})
         trans = cat_data.get(string_id)
 
         if trans is None:
-            logger.warning(f"[LanguageManager] Missing UI string for '{category}' -> '{string_id}' in language '{lang_id}'")
             return string_id
             
         if sub_key and isinstance(trans, dict):
             sub_trans = trans.get(sub_key)
             if sub_trans is None:
-                logger.warning(f"[LanguageManager] Missing sub_key '{sub_key}' for '{category}' -> '{string_id}' in language '{lang_id}'")
                 return string_id
             return sub_trans
         elif isinstance(trans, str):

@@ -17,7 +17,7 @@ def _download_dict_if_needed(dict_path, log_callback=None):
         url = "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/ppocr/utils/en_dict.txt"
         
         try:
-            from app.core.shared_registry.constants import GLOBAL_RESOURCES
+            from app.core.base.constants import GLOBAL_RESOURCES
             configured_url = GLOBAL_RESOURCES.get("paddle_en_dict")
             if configured_url:
                 url = configured_url

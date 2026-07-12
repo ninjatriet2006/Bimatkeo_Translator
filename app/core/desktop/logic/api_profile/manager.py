@@ -10,9 +10,7 @@ INTEGRITY NOTES (For AI Agents):
 """
 from PySide6.QtCore import QObject
 
-from app.core.api_profile.storage.paths import get_api_profiles_file_path
-from app.core.api_profile.storage.reader import load_api_profiles
-from app.core.api_profile.storage.writer import save_api_profiles
+from app.core.api.profile.profile_storage import load_api_profiles, save_api_profiles, get_api_profiles_file_path
 
 from app.core.desktop.logic.api_profile.actions import save_api_profile_generic
 from app.core.desktop.logic.api_profile.actions import delete_api_profile_generic

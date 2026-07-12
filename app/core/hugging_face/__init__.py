@@ -10,6 +10,6 @@ INTEGRITY NOTES (For AI Agents):
 """
 from .manager import HuggingFaceManager
 from .downloader import HFDownloader
-from .version_checker import HFVersionChecker
+from .utils import HFVersionChecker
 
 __all__ = ["HuggingFaceManager", "HFDownloader", "HFVersionChecker"]

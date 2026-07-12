@@ -10,9 +10,8 @@ INTEGRITY NOTES (For AI Agents):
 """
 
 from .downloader import HFDownloader
-from .version_checker import HFVersionChecker
+from .utils import HFVersionChecker, HFConfigUpdater
 from .verify import HFVerifier
-from .config_updater import HFConfigUpdater
 
 class HuggingFaceManager:
     def __init__(self):

@@ -10,7 +10,7 @@ INTEGRITY NOTES (For AI Agents):
 """
 import os
 import sys
-from app.core.shared_registry.constants import REQUIRED_MODEL_FIELDS, GLOBAL_RESOURCES, MODEL_PRIORITY_KEYWORDS
+from app.core.base.constants import REQUIRED_MODEL_FIELDS, GLOBAL_RESOURCES, MODEL_PRIORITY_KEYWORDS
 from app.core.shared_registry import (
     TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory,
     UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory,

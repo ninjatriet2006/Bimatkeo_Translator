@@ -4,7 +4,7 @@ INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.pipeline.consumer
 - RESPONSIBILITY: Saves processed results from the pipeline queue (q_out) to disk.
 - CALLED BY: app.core.pipeline.executor
-- CALLS TO: app.core.shared_context.dto, app.core.shared_context.context_reader
+- CALLS TO: app.core.shared_context.dto, app.core.shared_context.utils
 - IN = OUT: Writes translated texts, JSON data, and final images.
 =============================================================================
 """
@@ -13,7 +13,7 @@ import cv2
 import json
 import queue
 from app.core.shared_context.dto import PageContext
-from app.core.shared_context.context_reader import get_original_image, get_inpainted_image
+from app.core.shared_context.utils import get_original_image, get_inpainted_image
 
 def consume(output_path: str, config_dict: dict, log_callback, q_out: queue.Queue):
     """

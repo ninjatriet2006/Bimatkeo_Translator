@@ -10,18 +10,20 @@ INTEGRITY NOTES (For AI Agents):
 """
 
 from app.core.shared_context.dto import PageContext
-from app.core.shared_context.context_reader import get_original_image, get_inpainted_image, get_background_image
-from app.core.shared_context.context_writer import set_original_image, set_inpainted_image
+from app.core.shared_context.utils import get_original_image, get_inpainted_image, get_background_image, set_original_image, set_inpainted_image
 from app.core.ocr.interfaces import BaseTextDetector
 from app.core.ocr.interfaces import BaseTextRecognizer
 
-from app.core.ocr.preprocessor import OCRPreprocessor
-from app.core.ocr.rotator import OCRRotator
-from app.core.ocr.cropper import OCRCropper
-from app.core.ocr.recognizer import OCRRecognizer
-from app.core.ocr.filter import OCRFilter
-from app.core.ocr.geometry import sort_comic_text_boxes, merge_nearby_boxes_and_texts
+from app.core.ocr.image_utils import (
+    OCRPreprocessor,
+    OCRRotator,
+    OCRCropper,
+    OCRFilter,
+    sort_comic_text_boxes,
+    merge_nearby_boxes_and_texts
+)
 from app.core.ocr.corrector import OfflineOCRCorrector
+import numpy as np
 
 class LocalOCRRunner:
     def __init__(self, detector: BaseTextDetector, recognizer: BaseTextRecognizer | None, ocr_config: dict, render_config: dict, corrector: OfflineOCRCorrector, log_callback=None):
@@ -31,6 +33,18 @@ class LocalOCRRunner:
         self.render_config = render_config
         self.corrector = corrector
         self.log_callback = log_callback
+
+    def _recognize_crop(self, crop: np.ndarray, prob_thresh: float = 0.0) -> str:
+        """Thực thi nhận diện chữ trên một ảnh crop nhỏ."""
+        if crop.size == 0 or crop.shape[0] < 8 or crop.shape[1] < 8 or not self.recognizer:
+            return ""
+        try:
+            text, conf = self.recognizer.recognize(crop)
+            if conf > 0 and conf < prob_thresh:
+                return ""
+            return text
+        except Exception:
+            return ""
 
     def run(self, ctx: PageContext):
         image = get_original_image(ctx)
@@ -83,7 +97,7 @@ class LocalOCRRunner:
             for i, box in enumerate(bboxes):
                 poly = polygons[i]
                 crop = OCRCropper.crop(image, box, poly, use_rotation=use_rotation)
-                text = OCRRecognizer.recognize(crop, self.recognizer, prob_thresh)
+                text = self._recognize_crop(crop, prob_thresh)
                 texts.append(text)
                     
         # 5. Correction

@@ -1,13 +1,19 @@
 """
-[INTEGRITY NOTES]
-Purpose: Read API profiles data from storage.
-Responsibilities:
-- Load data from `api_profiles.yaml`.
-- Handle legacy pool migrations.
-- Fallback to `.env` variables if necessary.
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.api.profile.profile_storage
+- RESPONSIBILITY: Manage file paths, read, and write API profiles data from storage.
+- CALLED BY: app.core.desktop.logic.api_profile.manager, app.core.desktop.logic.api_profile.actions
+- CALLS TO: None
+- IN = OUT: Helper methods for API profile persistence.
+=============================================================================
 """
 import os
-from .paths import get_api_profiles_file_path
+
+def get_api_profiles_file_path(project_base_dir: str) -> str:
+    base_dir = os.path.join(project_base_dir, '.config', 'configs')
+    os.makedirs(base_dir, exist_ok=True)
+    return os.path.join(base_dir, 'api_profiles.yaml')
 
 def load_api_profiles(main_window) -> dict:
     path = get_api_profiles_file_path(main_window.project_base_dir)
@@ -35,10 +41,12 @@ def load_api_profiles(main_window) -> dict:
                         main_window._save_yaml_config('api_profiles.yaml', data)
                     os.rename(pool_path, pool_path + ".migrated")
                 except Exception as e:
-                    print(f"[ERROR] Pool Migration failed: {e}")
+                    import logging
+                    logging.getLogger("APIProfile").error(f"Pool Migration failed: {e}")
             return data
         except Exception as e:
-            print(f"[ERROR] Failed to load API profiles: {e}")
+            import logging
+            logging.getLogger("APIProfile").error(f"Failed to load API profiles: {e}")
     
     from dotenv import load_dotenv
     load_dotenv(os.path.join(main_window.project_base_dir, ".env"))
@@ -51,3 +59,6 @@ def load_api_profiles(main_window) -> dict:
             "key": ""
         }
     }
+
+def save_api_profiles(main_window, profiles: dict):
+    main_window._save_yaml_config('api_profiles.yaml', profiles)
