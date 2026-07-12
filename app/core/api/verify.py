@@ -5,7 +5,7 @@ INTEGRITY NOTES (For AI Agents):
 - RESPONSIBILITY: Verify API configuration integrity.
 - CALLED BY: app.core.api.manager
 - CALLS TO: None
-- IN = OUT: Evaluates dictionaries, returns validation results/warnings.
+- IN = OUT: Evaluates dictionaries, logs validation results/warnings to system logger.
 =============================================================================
 """
 

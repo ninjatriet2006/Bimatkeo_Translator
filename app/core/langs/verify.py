@@ -5,7 +5,7 @@ INTEGRITY NOTES (For AI Agents):
 - RESPONSIBILITY: Integrity and sanity check for localization vs UI map.
 - CALLED BY: app.core.langs.manager
 - CALLS TO: None
-- IN = OUT: Evaluates dictionaries, returns validation results/warnings.
+- IN = OUT: Evaluates dictionaries, logs validation results/warnings to system logger.
 =============================================================================
 """
 

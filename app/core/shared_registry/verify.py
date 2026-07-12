@@ -5,7 +5,7 @@ INTEGRITY NOTES (For AI Agents):
 - RESPONSIBILITY: Provides common integrity check logic for models against the registry (missing, orphaned).
 - CALLED BY: app.core.diffusion.verify, app.core.inpainter.verify, app.core.ocr.verify, app.core.translator.verify, app.core.renderer.verify
 - CALLS TO: None
-- IN = OUT: run_models_verification receives Factories -> prints results to console.
+- IN = OUT: run_models_verification receives Factories -> logs results to system logger.
 =============================================================================
 """
 
