@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.logger
+- RESPONSIBILITY: logger.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.logic.logger.
+=============================================================================
+"""
 import os
 import re
 import logging

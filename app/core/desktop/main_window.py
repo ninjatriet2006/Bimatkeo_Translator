@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.main_window
+- RESPONSIBILITY: main_window.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.main_window.
+=============================================================================
+"""
 # type: ignore
 # ===============================================================
 # Main Application Window (PySide6 Version) - Entry Point

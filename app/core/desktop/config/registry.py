@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.config.registry
+- RESPONSIBILITY: registry.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.config.registry.
+=============================================================================
+"""
 import os
 from typing import TYPE_CHECKING
 from app.core.desktop.constants import CAT_OFFLINE_MODELS, CAT_API_BASED, CAT_OTHER_ACTIONS

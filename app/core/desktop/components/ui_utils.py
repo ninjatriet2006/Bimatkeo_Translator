@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.components.ui_utils
+- RESPONSIBILITY: ui_utils.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.components.ui_utils.
+=============================================================================
+"""
 def build_grouped_settings_tabs(config_data, tab_order):
     """
     Groups configuration settings by their 'group' attribute and orders them

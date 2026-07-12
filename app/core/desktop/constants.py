@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.constants
+- RESPONSIBILITY: constants.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.constants.
+=============================================================================
+"""
 # Categories for Dropdowns
 CAT_OFFLINE_MODELS = "--- OFFLINE MODELS (No API Key) ---"
 CAT_API_BASED = "--- API-BASED (Requires Setup) ---"

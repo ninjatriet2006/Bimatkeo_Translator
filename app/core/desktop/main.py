@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.main
+- RESPONSIBILITY: main.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.main.
+=============================================================================
+"""
 import os
 import sys
 from PySide6.QtWidgets import QApplication, QMessageBox

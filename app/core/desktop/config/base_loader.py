@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.config.base_loader
+- RESPONSIBILITY: base_loader.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.config.base_loader.
+=============================================================================
+"""
 # type: ignore
 import os
 import sys

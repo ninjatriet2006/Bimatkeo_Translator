@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.config.studio_ui_map
+- RESPONSIBILITY: studio_ui_map.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.config.studio_ui_map.
+=============================================================================
+"""
 STUDIO_UI_MAP = \
 {   'General & Translator': {   'processing_device': {   'widget': 'segmented_button'},
                                 'target_lang': {   'widget': 'optionmenu_languages'},

@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.config.capabilities
+- RESPONSIBILITY: capabilities.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.config.capabilities.
+=============================================================================
+"""
 # type: ignore
 import os
 from ruamel.yaml import YAML

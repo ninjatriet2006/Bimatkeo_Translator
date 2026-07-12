@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.components.widget_factory.complex_widgets
+- RESPONSIBILITY: complex_widgets.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.components.widget_factory.complex_widgets.
+=============================================================================
+"""
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QButtonGroup, QPushButton, QComboBox, QGridLayout
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor

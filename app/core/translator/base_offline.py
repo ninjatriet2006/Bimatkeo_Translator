@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.translator.base_offline
+- RESPONSIBILITY: base_offline.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.translator.base_offline.
+=============================================================================
+"""
 import os
 from typing import List, Union
 

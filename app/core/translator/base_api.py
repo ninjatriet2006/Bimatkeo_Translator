@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.translator.base_api
+- RESPONSIBILITY: base_api.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.translator.base_api.
+=============================================================================
+"""
 import os
 import json
 import urllib.request

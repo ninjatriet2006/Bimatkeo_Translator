@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.components.console_widget
+- RESPONSIBILITY: console_widget.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.components.console_widget.
+=============================================================================
+"""
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton, QTextEdit
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QFont

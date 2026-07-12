@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.components.settings_panel
+- RESPONSIBILITY: settings_panel.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.components.settings_panel.
+=============================================================================
+"""
 from PySide6.QtWidgets import QWidget, QPushButton, QComboBox, QCheckBox, QSpinBox, QSlider, QLineEdit
 from app.core.desktop.components.widget_factory.layout_builder import LayoutBuilderFactory
 from app.core.desktop.components.widget_factory.basic_widgets import BasicWidgetFactory

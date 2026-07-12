@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.logic.job_runner
+- RESPONSIBILITY: job_runner.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.logic.job_runner.
+=============================================================================
+"""
 from app.core.desktop.logic.pipeline_runner.drag_drop_handler import DragDropHandler
 from app.core.pipeline.job_queue import QueueManager
 from app.core.desktop.logic.pipeline_runner.thread_manager import ThreadManager

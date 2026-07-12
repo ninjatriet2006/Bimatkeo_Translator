@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.components.preview_panel
+- RESPONSIBILITY: preview_panel.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.components.preview_panel.
+=============================================================================
+"""
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QFrame, 
                                QPushButton, QCheckBox, QLabel, QTabWidget, 
                                QGraphicsView, QGraphicsScene, QTableWidget, QHeaderView)

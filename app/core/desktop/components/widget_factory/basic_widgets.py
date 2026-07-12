@@ -1,3 +1,13 @@
+"""
+=============================================================================
+INTEGRITY NOTES (For AI Agents):
+- MODULE: app.core.desktop.components.widget_factory.basic_widgets
+- RESPONSIBILITY: basic_widgets.py module logic.
+- CALLED BY: Various
+- CALLS TO: Various
+- IN = OUT: Defines logic for app.core.desktop.components.widget_factory.basic_widgets.
+=============================================================================
+"""
 import os
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QLabel, QCheckBox, QSlider,
