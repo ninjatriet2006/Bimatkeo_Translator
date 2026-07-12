@@ -72,7 +72,7 @@ class LanguageManager:
 
         return translated_text
 
-    def get_ui_string(self, lang_id: str, category: str, string_id: str, sub_key: str = None) -> str:
+    def get_ui_string(self, lang_id: str, category: str, string_id: str, sub_key: str | None = None) -> str:
         """
         Retrieves a translated UI string (tabs, settings, enums).
         category: 'tabs', 'settings', 'enums'

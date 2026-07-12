@@ -24,16 +24,11 @@ def _get_registry_data():
         
         # Load custom endpoints via factories
         from app.core.shared_registry import TranslatorFactory
-        from app.plugins.translator.base_api import BaseAPITranslator
+        from app.core.translator.base_api import BaseAPITranslator
         ai_translators = TranslatorFactory.get_all_registered_models(BaseAPITranslator)
             
-        # Load SSOT model blacklist
-        with open(schema_path, "r", encoding="utf-8") as f:
-            schema_data = y.load(f) or {}
-            global_blacklist = schema_data.get("properties", {}).get("global_settings", {}).get("properties", {}).get("model_blacklist", {}).get("default", [])
-            
     except Exception as e:
-        print(f"[api.config] Warning: Failed to load registry/schema: {e}")
+        print(f"[api.config] Warning: Failed to load registry: {e}")
         
     return global_blacklist, ai_translators
 

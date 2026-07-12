@@ -8,6 +8,8 @@ import os
 import sys
 import json
 import urllib.request
+import urllib.parse
+import urllib.error
 from PySide6.QtCore import QThread, Signal
 
 class TranslatorSoftwareUpdateWorker(QThread):
@@ -52,8 +54,8 @@ class TranslatorSoftwareUpdateWorker(QThread):
                     self.finished.emit(False, f"Lỗi khi tải Base Model: {e}")
                     return
             
-            from app.core.downloader import ModelDownloader
-            url = ModelDownloader.get_source_url_from_registry(self.key, self.model_name)
+            from app.core.shared_registry import BaseFactory
+            url = BaseFactory.get_source_url_from_registry(self.key, self.model_name)
             
             if not url:
                 self.finished.emit(False, f"Không tìm thấy cấu hình nguồn tải (thuộc tính 'source') cho '{self.model_name}'.")
@@ -64,7 +66,12 @@ class TranslatorSoftwareUpdateWorker(QThread):
             is_direct_archive = False
             is_direct_file = False
             is_huggingface = False
-            
+            hf_manager = None
+            repo_id = ""
+            hf_specific_file = None
+            file_url = ""
+            zipball_url = ""
+
             if url.startswith('hf://'):
                 is_huggingface = True
                 hf_url_parts = url[5:].split('@', 1)
@@ -129,6 +136,9 @@ class TranslatorSoftwareUpdateWorker(QThread):
             self.progress.emit(70, f"Đang tiến hành lấy danh sách file từ {url}...")
             
             if is_huggingface:
+                if hf_manager is None:
+                    self.finished.emit(False, "Lỗi: hf_manager không được khởi tạo")
+                    return
                 try:
                     if self.check_file_path:
                         model_dir = os.path.join(base_dir, os.path.dirname(self.check_file_path))
@@ -152,7 +162,6 @@ class TranslatorSoftwareUpdateWorker(QThread):
                             local_path = os.path.join(base_dir, self.check_file_path)
                         else:
                             model_dir = os.path.join(base_dir, "models", "Unknown", self.model_name)
-                            import urllib.parse
                             filename = os.path.basename(urllib.parse.urlparse(file_url).path)
                             if not filename: filename = "model.bin"
                             local_path = os.path.join(model_dir, filename)
@@ -237,7 +246,8 @@ class TranslatorSoftwareUpdateWorker(QThread):
                 return
 
             if is_huggingface:
-                hf_manager.update_local_version(local_versions_file, self.key, self.model_name, latest_version)
+                if hf_manager is not None:
+                    hf_manager.update_local_version(local_versions_file, self.key, self.model_name, latest_version)
             else:
                 local_versions = {}
                 if os.path.exists(local_versions_file):

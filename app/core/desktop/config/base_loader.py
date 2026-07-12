@@ -80,8 +80,6 @@ class ConfigLoaderBase(BaseConfigLoader):
 
 
         self.backend_schema = self._load_backend_schema()
-        if not self.backend_schema:
-            raise RuntimeError("Failed to load backend configuration schema.")
 
         # Run config initialization and repair before building data
         self._initialize_and_repair_config()  # type: ignore

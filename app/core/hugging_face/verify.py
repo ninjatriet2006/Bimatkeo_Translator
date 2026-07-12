@@ -49,7 +49,8 @@ class HFVerifier:
         valid_model_keys = set()
         from app.core.shared_registry import (
             TranslatorFactory, DetectorFactory, RecognizerFactory, InpainterFactory,
-            UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory, DiffusionFactory
+            UpscalerFactory, ColorizerFactory, RendererFactory, CloudOCRFactory,
+            DiffusionMainModelFactory, DiffusionBaseModelFactory
         )
         
         all_models = (
@@ -61,7 +62,8 @@ class HFVerifier:
             ColorizerFactory.get_all_registered_models() +
             RendererFactory.get_all_registered_models() +
             CloudOCRFactory.get_all_registered_models() +
-            DiffusionFactory.get_all_registered_models()
+            DiffusionMainModelFactory.get_all_registered_models() +
+            DiffusionBaseModelFactory.get_all_registered_models()
         )
         
         for model in all_models:

@@ -15,7 +15,7 @@ from typing import Any, Optional
 
 from .io import load_yaml_file
 
-def load_backend_schema(cache_path: str, fallback_path: str) -> Optional[dict[str, Any]]:
+def load_backend_schema(cache_path: str, fallback_path: str = "") -> Optional[dict[str, Any]]:
     if os.path.exists(cache_path):
         try:
             with open(cache_path, 'r', encoding='utf-8') as f:
@@ -24,17 +24,7 @@ def load_backend_schema(cache_path: str, fallback_path: str) -> Optional[dict[st
         except (json.JSONDecodeError, OSError):
             pass
 
-    print("[ConfigLoader] Loading static configuration schema from fallback...")
-    if os.path.exists(fallback_path):
-        try:
-            schema_data = load_yaml_file(fallback_path)
-            return schema_data
-        except Exception as e:
-            print(f"[ERROR] Could not load schema fallback: {e}")
-            return None
-    else:
-        print("[ERROR] No schema fallback found!")
-        return None
+    return None
 
 def strip_ansi(text: str) -> str:
     ansi_escape = re.compile(r'\x1B\[[0-9;]*[A-Za-z]')
