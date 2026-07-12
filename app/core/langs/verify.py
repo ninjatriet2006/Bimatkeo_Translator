@@ -18,9 +18,9 @@ class LanguageVerifier:
     def __init__(self, localization: Dict[str, Any]):
         self.localization = localization
 
-    def run_verification(self, raw_ui_map: dict):
+    def run_verification(self, raw_ui_map: dict, hardcoded_keys: dict = None):
         """
-        Cross-checks loaded localization dictionaries against the raw UI Map.
+        Cross-checks loaded localization dictionaries against the raw UI Map and hardcoded keys.
         Reports missing translations and orphaned keys.
         """
         logger.info("[LanguageVerifier] Running integrity check on languages...")
@@ -46,17 +46,23 @@ class LanguageVerifier:
                     for v in info["values"]:
                         required_enums.add(v)
 
-        # Baseline required keys from 'en' language (or fallback)
+        # Baseline required keys from python source code (hardcoded_keys)
+        hardcoded_keys = hardcoded_keys or {}
+        required_ui_strings = hardcoded_keys.get("ui_strings", set())
+        required_messages = hardcoded_keys.get("messages", set())
+        required_tasks = hardcoded_keys.get("tasks", set())
+
+        # If hardcoded_keys were not provided or failed to load, fallback to 'en' baseline
         baseline = self.localization.get("en", {})
-        required_ui_strings = set(baseline.get("ui_strings", {}).keys())
-        required_messages = set(baseline.get("messages", {}).keys())
-        required_tasks = set(baseline.get("tasks", {}).keys())
+        if not required_ui_strings:
+            required_ui_strings = set(baseline.get("ui_strings", {}).keys())
+        if not required_messages:
+            required_messages = set(baseline.get("messages", {}).keys())
+        if not required_tasks:
+            required_tasks = set(baseline.get("tasks", {}).keys())
 
-        # Check all languages
+        # Check all languages (including 'en')
         for lang_id, lang_data in self.localization.items():
-            if lang_id == "en":
-                continue # Skip verifying the baseline against itself, though checking it against ui_map is useful
-
             logger.info(f"  -> Verifying language '{lang_id}'...")
             lang_tabs = set(lang_data.get("tabs", {}).keys())
             lang_settings = set(lang_data.get("settings", {}).keys())
@@ -86,7 +92,7 @@ class LanguageVerifier:
             if missing_tasks:
                 logger.warning(f"     [Missing Tasks]: {', '.join(missing_tasks)}")
 
-            # Check orphans (defined in language file but not in UI map or baseline)
+            # Check orphans (defined in language file but not in UI map or codebase)
             orphan_tabs = lang_tabs - required_tabs
             orphan_settings = lang_settings - required_settings
             orphan_enums = lang_enums - required_enums
@@ -106,23 +112,6 @@ class LanguageVerifier:
                 logger.warning(f"     [Orphan Messages]: {', '.join(orphan_messages)}")
             if orphan_tasks:
                 logger.warning(f"     [Orphan Tasks]: {', '.join(orphan_tasks)}")
-
-        # Also verify 'en' against raw_ui_map
-        if "en" in self.localization:
-            lang_tabs = set(baseline.get("tabs", {}).keys())
-            lang_settings = set(baseline.get("settings", {}).keys())
-            lang_enums = set(baseline.get("enums", {}).keys())
-            missing_tabs = required_tabs - lang_tabs
-            missing_settings = required_settings - lang_settings
-            missing_enums = required_enums - lang_enums
-            if missing_tabs or missing_settings or missing_enums:
-                logger.info(f"  -> Verifying language 'en' against raw UI map...")
-                if missing_tabs:
-                    logger.warning(f"     [Missing Tabs]: {', '.join(missing_tabs)}")
-                if missing_settings:
-                    logger.warning(f"     [Missing Settings]: {', '.join(missing_settings)}")
-                if missing_enums:
-                    logger.warning(f"     [Missing Enums]: {', '.join(missing_enums)}")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

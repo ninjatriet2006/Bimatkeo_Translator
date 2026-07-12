@@ -158,7 +158,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
 
         self.last_pan_pos = None
         self.temp_dir = os.path.join(self.project_base_dir, "temp")
-        self.detected_vram_gb = 0
+        self.detected_vram_gb = 0.0
         def check_vram_background():
             try:
                 python_exe = getattr(self, 'config_loader', None) and getattr(self.config_loader, 'python_executable', None) or sys.executable
@@ -208,7 +208,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             return self.config_loader.language_manager.get_string(lang_id, string_id, **kwargs)
         return string_id
 
-    def get_ui_string(self, category: str, string_id: str, sub_key: str = None) -> str:
+    def get_ui_string(self, category: str, string_id: str, sub_key: str | None = None) -> str:
         if hasattr(self, 'config_loader') and hasattr(self.config_loader, 'app_language'):
             lang_id = self.config_loader.app_language
             return self.config_loader.language_manager.get_ui_string(lang_id, category, string_id, sub_key)
@@ -310,41 +310,85 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.setSpacing(10)
 
-        top_area_widget = QWidget()
-        top_layout = QHBoxLayout(top_area_widget)
-        top_layout.setContentsMargins(0, 0, 0, 0)
-        top_layout.setSpacing(10)
+        # Build underlying widgets and wrap them in standalone windows
+        self._build_auxiliary_windows()
 
-        left_panel = self._create_left_panel()
-        right_panel = self._create_right_panel()
+        # Top Toolbar
+        toolbar_layout = QHBoxLayout()
+        toolbar_layout.setContentsMargins(0, 0, 0, 0)
+        toolbar_layout.setSpacing(10)
+        
+        btn_queue = QPushButton("📋 Job Queue")
+        btn_log = QPushButton("📜 Console Log")
+        btn_history = QPushButton("🕒 History")
+        btn_preview = QPushButton("🔍 Preview Tester")
+        
+        btn_queue.clicked.connect(lambda: self._show_standalone_window(self.queue_window))
+        btn_log.clicked.connect(lambda: self._show_standalone_window(self.log_window))
+        btn_history.clicked.connect(lambda: self._show_standalone_window(self.history_window))
+        btn_preview.clicked.connect(lambda: self._show_standalone_window(self.preview_window))
 
-        top_layout.addWidget(left_panel, stretch=1)
-        top_layout.addWidget(right_panel, stretch=3)
+        toolbar_layout.addWidget(btn_queue)
+        toolbar_layout.addWidget(btn_log)
+        toolbar_layout.addWidget(btn_history)
+        toolbar_layout.addWidget(btn_preview)
+        toolbar_layout.addStretch()
+
+        # Main Studio Settings is now the core central area
+        settings_panel = self._create_settings_tab_container()
 
         bottom_panel = self._create_bottom_panel()
 
-        main_layout.addWidget(top_area_widget)
+        main_layout.addLayout(toolbar_layout)
+        main_layout.addWidget(settings_panel, stretch=1)
         main_layout.addWidget(bottom_panel)
 
-    def _create_left_panel(self) -> QWidget:
-        """Creates the main left panel, divided into a 'Queue' and 'History' section."""
-        left_panel_container = QFrame()
-        left_panel_container.setObjectName("LeftPanel")
-        left_panel_layout = QVBoxLayout(left_panel_container)
+    def _show_standalone_window(self, window):
+        window.show()
+        window.raise_()
+        window.activateWindow()
 
-        # --- 1. Top Section: Queue ---
+    def _build_auxiliary_windows(self):
+        class StandaloneToolWindow(QDialog):
+            def __init__(self, parent, title, widget, width=600, height=400):
+                super().__init__(parent)
+                self.setWindowTitle(title)
+                self.setWindowFlags(Qt.WindowType.Window) # Make it act like an independent window
+                self.resize(width, height)
+                layout = QVBoxLayout(self)
+                layout.setContentsMargins(5, 5, 5, 5)
+                layout.addWidget(widget)
+
+            def closeEvent(self, event):
+                self.hide()
+                event.ignore()
+
+        # 1. Queue Window
+        queue_widget = self._create_queue_widget()
+        self.queue_window = StandaloneToolWindow(self, self.get_string("ui_queue_title") if self.get_string("ui_queue_title") != "ui_queue_title" else "Queue (Next Up)", queue_widget, 400, 600)
+        self.queue_window.setProperty("lang_id", "ui_queue_title")
+
+        # 2. History Window
+        history_widget = self._create_history_widget()
+        self.history_window = StandaloneToolWindow(self, self.get_string("ui_history_title") if self.get_string("ui_history_title") != "ui_history_title" else "History (Completed Jobs)", history_widget, 400, 600)
+        self.history_window.setProperty("lang_id", "ui_history_title")
+
+        # 3. Log Window
+        self.log_viewer = ConsoleWidget(self)
+        self.log_signal.connect(self.log_viewer.insert_log)
+        if hasattr(self, 'app_logger'):
+            self.app_logger.log_signal.connect(self.log_viewer.insert_log)
+        self.log_window = StandaloneToolWindow(self, "Console Log", self.log_viewer, 600, 400)
+
+        # 4. Preview Tester Window
+        preview_widget = self._create_preview_tester_tab()
+        self.preview_window = StandaloneToolWindow(self, self.get_string("ui_tab_preview_tester") if self.get_string("ui_tab_preview_tester") != "ui_tab_preview_tester" else "Preview Tester", preview_widget, 1000, 700)
+        self.preview_window.setProperty("lang_id", "ui_tab_preview_tester")
+
+    def _create_queue_widget(self) -> QWidget:
         queue_frame = QWidget()
         queue_layout = QVBoxLayout(queue_frame)
         queue_layout.setContentsMargins(0, 0, 0, 0)
-
-        queue_title = QLabel(self.get_string("ui_queue_title") if self.get_string("ui_queue_title") != "ui_queue_title" else "Queue (Next Up)")
-        queue_title.setProperty("lang_id", "ui_queue_title")
-        queue_title.setProperty("lang_type", "ui")
-        font = queue_title.font()
-        font.setPointSize(12)
-        font.setBold(True)
-        queue_title.setFont(font)
-        queue_layout.addWidget(queue_title)
 
         self.queue_list_widget = QListWidget()
         self.queue_list_widget.setToolTip("Add folders by clicking 'Add Job' or by dragging and dropping them here.")
@@ -357,29 +401,24 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         self.queue_list_widget.itemChanged.connect(self._on_queue_item_changed)
         queue_layout.addWidget(self.queue_list_widget)
 
-        # --- Job Control Buttons for the Queue ---
         job_controls_container = QWidget()
         job_controls_layout = QHBoxLayout(job_controls_container)
         job_controls_layout.setContentsMargins(0, 0, 0, 0)
 
         add_folder_btn = QPushButton(self.get_string("ui_add_folder") if self.get_string("ui_add_folder") != "ui_add_folder" else "➕ Add Folder")
         add_folder_btn.setProperty("lang_id", "ui_add_folder")
-        add_folder_btn.setProperty("lang_type", "ui")
         add_folder_btn.clicked.connect(self._add_job)
 
         add_file_btn = QPushButton(self.get_string("ui_add_file") if self.get_string("ui_add_file") != "ui_add_file" else "📄 Add File(s)")
         add_file_btn.setProperty("lang_id", "ui_add_file")
-        add_file_btn.setProperty("lang_type", "ui")
         add_file_btn.clicked.connect(self._add_file_job)
 
         remove_btn = QPushButton(self.get_string("ui_remove_selected") if self.get_string("ui_remove_selected") != "ui_remove_selected" else "🗑️ Remove Selected")
         remove_btn.setProperty("lang_id", "ui_remove_selected")
-        remove_btn.setProperty("lang_type", "ui")
         remove_btn.clicked.connect(self._remove_selected_jobs_from_queue)
 
         clear_btn = QPushButton(self.get_string("ui_clear_queue") if self.get_string("ui_clear_queue") != "ui_clear_queue" else "🧹 Clear Queue")
         clear_btn.setProperty("lang_id", "ui_clear_queue")
-        clear_btn.setProperty("lang_type", "ui")
         clear_btn.clicked.connect(self._clear_queue)
 
         job_controls_layout.addWidget(add_folder_btn)
@@ -388,17 +427,12 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         job_controls_layout.addWidget(clear_btn)
 
         queue_layout.addWidget(job_controls_container)
+        return queue_frame
 
-        # --- 2. Bottom Section: History ---
+    def _create_history_widget(self) -> QWidget:
         history_frame = QWidget()
         history_layout = QVBoxLayout(history_frame)
         history_layout.setContentsMargins(0, 0, 0, 0)
-
-        history_title = QLabel(self.get_string("ui_history_title") if self.get_string("ui_history_title") != "ui_history_title" else "History (Completed Jobs)")
-        history_title.setProperty("lang_id", "ui_history_title")
-        history_title.setProperty("lang_type", "ui")
-        history_title.setFont(font)
-        history_layout.addWidget(history_title)
 
         self.history_list_widget = QListWidget()
         self.history_list_widget.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
@@ -408,7 +442,6 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
 
         history_layout.addWidget(self.history_list_widget)
 
-        # --- History Control Buttons ---
         history_controls_container = QWidget()
         history_controls_layout = QHBoxLayout(history_controls_container)
         history_controls_layout.setContentsMargins(0, 0, 0, 0)
@@ -416,38 +449,11 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
 
         clear_history_btn = QPushButton(self.get_string("ui_clear_history") if self.get_string("ui_clear_history") != "ui_clear_history" else "Clear History")
         clear_history_btn.setProperty("lang_id", "ui_clear_history")
-        clear_history_btn.setProperty("lang_type", "ui")
         clear_history_btn.clicked.connect(self._clear_history)
         history_controls_layout.addWidget(clear_history_btn)
         history_layout.addWidget(history_controls_container)
 
-        # --- Add all sections to the main panel layout (3 equal parts) ---
-        left_panel_layout.addWidget(queue_frame, stretch=1)
-        
-        # --- Middle Section: Live Log ---
-        self.log_viewer = ConsoleWidget(self)
-        left_panel_layout.addWidget(self.log_viewer, stretch=1)
-        self.log_signal.connect(self.log_viewer.insert_log)
-        if hasattr(self, 'app_logger'):
-            self.app_logger.log_signal.connect(self.log_viewer.insert_log)
-
-        # --- Bottom Section: History ---
-        left_panel_layout.addWidget(history_frame, stretch=1)
-
-        self.left_panel_widget = left_panel_container
-        return left_panel_container
-
-    def _create_right_panel(self) -> QWidget:
-        """Creates the right panel widget containing the main tabs."""
-        self.main_tabs = QTabWidget()
-        self.main_tabs.setProperty("tab_lang_ids", ["ui_tab_configuration", "ui_tab_preview_tester"])
-        tab_config = self._create_settings_tab_container()
-        tab_preview_tester = self._create_preview_tester_tab()
-
-        self.main_tabs.addTab(tab_config, self.get_string("ui_tab_configuration") if self.get_string("ui_tab_configuration") != "ui_tab_configuration" else "Configuration ⚙️")
-        self.main_tabs.addTab(tab_preview_tester, self.get_string("ui_tab_preview_tester") if self.get_string("ui_tab_preview_tester") != "ui_tab_preview_tester" else "Preview Tester 🔍")
-
-        return self.main_tabs
+        return history_frame
 
     def _create_settings_tab_container(self) -> QWidget:
         """

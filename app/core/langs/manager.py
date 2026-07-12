@@ -35,7 +35,14 @@ class LanguageManager:
         self.verifier = LanguageVerifier(self.localization)
 
     def run_verification(self, raw_ui_map: dict):
-        self.verifier.run_verification(raw_ui_map)
+        try:
+            from app.core.desktop.config.ui_verify import extract_hardcoded_ui_keys
+            hardcoded_keys = extract_hardcoded_ui_keys(self.project_base_dir)
+        except Exception as e:
+            logger.error(f"[LanguageManager] Failed to extract hardcoded UI keys: {e}")
+            hardcoded_keys = None
+            
+        self.verifier.run_verification(raw_ui_map, hardcoded_keys)
 
     def get_lang_data(self, lang_id: str) -> dict:
         return self.fallback.get_lang_data(lang_id)
