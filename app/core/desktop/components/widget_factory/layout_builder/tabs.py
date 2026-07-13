@@ -97,3 +97,11 @@ class TabsBuilderMixin:
             tab_content_widget = self.build_dynamic_tab_content(tab_name, settings_list)
             translated_tab_name = self.mw.get_ui_string('tabs', tab_name)
             self.mw.settings_tab_view.addTab(tab_content_widget, translated_tab_name)
+
+        # Trigger visibility handlers after populating
+        if hasattr(self.mw, '_update_translator_visibility'):
+            self.mw._update_translator_visibility()
+        if hasattr(self.mw, '_update_ocr_visibility'):
+            self.mw._update_ocr_visibility()
+        if hasattr(self.mw, '_update_inpainter_visibility'):
+            self.mw._update_inpainter_visibility()

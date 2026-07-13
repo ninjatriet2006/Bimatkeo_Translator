@@ -8,9 +8,9 @@ Responsibilities:
 def get_active_ocr_category(main_window) -> str:
     widget = main_window.setting_widgets.get('ocr_category')
     if not widget:
-        return 'offline'
+        return ''
     val = main_window._get_value_from_widget('ocr_category', widget)
-    return val or 'offline'
+    return val or ''
 
 def update_ocr_visibility(main_window):
     category = get_active_ocr_category(main_window)

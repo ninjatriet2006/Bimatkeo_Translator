@@ -8,9 +8,9 @@ Responsibilities:
 def get_active_translator_category(main_window) -> str:
     widget = main_window.setting_widgets.get('translator_category')
     if not widget:
-        return 'offline'
+        return ''
     val = main_window._get_value_from_widget('translator_category', widget)
-    return val or 'offline'
+    return val or ''
 
 def get_active_translator_name(main_window) -> str:
     category = get_active_translator_category(main_window)
@@ -81,7 +81,7 @@ def update_task_translator_visibility(main_window, context_key: str):
     settings = main_window.task_settings.get(context_key, {})
     rows = main_window.task_rows.get(context_key, {})
     
-    category = settings.get('translator_category', 'offline')
+    category = settings.get('translator_category', '')
     show_offline = (category == 'offline')
     show_ai = (category == 'api')
 
