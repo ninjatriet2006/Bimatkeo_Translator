@@ -41,7 +41,22 @@ class RegistryLoader:
             "model_priority_keywords": MODEL_PRIORITY_KEYWORDS
         }
         
-        UI_TAB_LAYOUT = {
+        # 1. Load base UI_TAB_LAYOUT from model_registry.yaml
+        yaml_path = self.registry_path()
+        try:
+            import yaml
+            if os.path.exists(yaml_path):
+                with open(yaml_path, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f)
+                    UI_TAB_LAYOUT = data.get("fields", {})
+            else:
+                UI_TAB_LAYOUT = {}
+        except Exception as e:
+            print(f"[Registry] Warning: failed to load {yaml_path}: {e}")
+            UI_TAB_LAYOUT = {}
+
+        # 2. Collect dynamic models from factories
+        DYNAMIC_LAYOUT = {
             "General & Translator": {
                 "offline_translator": TranslatorFactory.get_all_registered_models(BaseOfflineTranslator),
                 "ai_translator": TranslatorFactory.get_all_registered_models(BaseAPITranslator),
@@ -62,6 +77,23 @@ class RegistryLoader:
                 "renderer": RendererFactory.get_all_registered_models(),
             }
         }
+
+        # 3. Merge dynamic models into base layout
+        for tab_name, categories in DYNAMIC_LAYOUT.items():
+            if tab_name not in UI_TAB_LAYOUT:
+                UI_TAB_LAYOUT[tab_name] = {}
+            for field, models in categories.items():
+                if field not in UI_TAB_LAYOUT[tab_name]:
+                    UI_TAB_LAYOUT[tab_name][field] = []
+                
+                # Update existing or append new
+                existing = {m.get("key"): m for m in UI_TAB_LAYOUT[tab_name][field] if isinstance(m, dict) and "key" in m}
+                for model in models:
+                    key = model.get("key")
+                    if key and key in existing:
+                        existing[key].update(model)
+                    else:
+                        UI_TAB_LAYOUT[tab_name][field].append(model)
 
         self.rm.full_registry = {
             "fields": UI_TAB_LAYOUT,
