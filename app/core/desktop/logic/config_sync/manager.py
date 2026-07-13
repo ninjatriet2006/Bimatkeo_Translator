@@ -101,11 +101,9 @@ class ConfigSyncManager:
             mw.LANGUAGES.clear()
             mw.LANGUAGES.update(self.mw.config_loader.languages)
             
-        offline_info = self.mw.config_loader.full_config_data.get('offline_translator')
-        ai_info = self.mw.config_loader.full_config_data.get('ai_translator')
+        offline_list = self.mw.config_loader.translator_groups.get(CAT_OFFLINE_MODELS, [])
+        api_list = self.mw.config_loader.translator_groups.get(CAT_API_BASED, [])
         
-        offline_list = offline_info.get('values', []) if offline_info else []
-        api_list = ai_info.get('values', []) if ai_info else []
         other_list = ["original", "none"]
         
         mw.TRANSLATOR_GROUPS.clear()

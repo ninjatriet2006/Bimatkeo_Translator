@@ -127,8 +127,7 @@ STUDIO_UI_MAP = \
                                                 'options': {'step': 1}},
                           'stride_window': {   'widget': 'spinbox',
                                                'options': {'step': 1}},
-                          'enable_double_check': {'widget': 'optionmenu'},
-                          'api_key_manager': {'widget': 'api_key_manager'},
+                          'enable_double_check': {'widget': 'checkbox'},
                           'app_language': {'widget': 'optionmenu'},
                           'enable_verbose_output': {   'widget': 'checkbox',
                                                        'tooltip_color': 'red'}}}

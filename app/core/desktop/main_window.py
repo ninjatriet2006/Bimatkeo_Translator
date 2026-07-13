@@ -111,15 +111,13 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             LANGUAGES.clear()
             LANGUAGES.update(self.config_loader.languages)
 
-        # Update TRANSLATOR_GROUPS dynamically from the custom values of offline_translator and ai_translator
-        offline_info = self.config_loader.full_config_data.get('offline_translator')
-        ai_info = self.config_loader.full_config_data.get('ai_translator')
+        # Update TRANSLATOR_GROUPS dynamically from the custom values
+        offline_list = self.config_loader.translator_groups.get(CAT_OFFLINE_MODELS, [])
+        api_list = self.config_loader.translator_groups.get(CAT_API_BASED, [])
 
         global TRANSLATOR_GROUPS, LOG_COLORS
         TRANSLATOR_GROUPS.clear()
         
-        offline_list = offline_info.get('values', []) if offline_info else []
-        api_list = ai_info.get('values', []) if ai_info else []
         other_list = ["original", "none"]
 
         TRANSLATOR_GROUPS[CAT_OFFLINE_MODELS] = offline_list
@@ -185,27 +183,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
                 self.log("WARNING", f"Could not detect VRAM. Automatic mode will default to Safe. Error: {e}")
                 from PySide6.QtCore import QTimer
                 QTimer.singleShot(0, lambda: self._update_gpu_status_ui(False))
-                
-    def _update_gpu_status_ui(self, has_gpu: bool):
-        processing_widget = getattr(self, 'setting_widgets', {}).get('processing_device')
-        if processing_widget:
-            from PySide6.QtWidgets import QPushButton
-            for button in processing_widget.findChildren(QPushButton):
-                if button.property("internal_id") == "cuda":
-                    if not has_gpu:
-                        current_text = button.text()
-                        if "(Unavailable)" not in current_text:
-                            button.setText(f"{current_text} (Unavailable)")
-                            button.setEnabled(False)
-                            if button.isChecked():
-                                for b in processing_widget.findChildren(QPushButton):
-                                    if b.property("internal_id") == "cpu":
-                                        b.setChecked(True)
-                                        # Also update the settings dict
-                                        if hasattr(self, 'current_settings'):
-                                            self.current_settings['processing_device'] = 'cpu'
-                                        break
-        
+
         threading.Thread(target=check_vram_background, daemon=True).start()
 
         # --- Pipeline for backend processing ---
@@ -229,6 +207,30 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         self._on_translator_category_changed()
         self._on_ocr_category_changed()
         self._update_inpainter_visibility()
+
+    def _update_gpu_status_ui(self, has_gpu: bool):
+        processing_widget = getattr(self, 'setting_widgets', {}).get('processing_device')
+        if processing_widget:
+            from PySide6.QtWidgets import QPushButton
+            for button in processing_widget.findChildren(QPushButton):
+                if button.property("internal_id") == "cuda":
+                    current_text = button.text()
+                    if not has_gpu:
+                        if "(Unavailable)" not in current_text:
+                            button.setText(f"{current_text} (Unavailable)")
+                            button.setEnabled(False)
+                            if button.isChecked():
+                                for b in processing_widget.findChildren(QPushButton):
+                                    if b.property("internal_id") == "cpu":
+                                        b.setChecked(True)
+                                        # Also update the settings dict
+                                        if hasattr(self, 'current_settings'):
+                                            self.current_settings['processing_device'] = 'cpu'
+                                        break
+                    else:
+                        if "(Unavailable)" in current_text:
+                            button.setText(current_text.replace(" (Unavailable)", ""))
+                        button.setEnabled(True)
 
     def get_string(self, string_id: str, **kwargs) -> str:
         """

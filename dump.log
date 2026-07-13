@@ -1,0 +1,116 @@
+Fatal Python error: Aborted
+
+Current thread 0x00007f5b17ced740 [python] (most recent call first):
+  File "/home/bimatkeo/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/importlib/metadata/__init__.py", line 915 in read_text
+  File "/home/bimatkeo/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/importlib/metadata/__init__.py", line 545 in _read_files_distinfo
+  File "/home/bimatkeo/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/importlib/metadata/__init__.py", line 535 in files
+  File "/home/bimatkeo/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/importlib/metadata/__init__.py", line 1088 in _top_level_inferred
+  File "/home/bimatkeo/.local/share/uv/python/cpython-3.14.6-linux-x86_64-gnu/lib/python3.14/importlib/metadata/__init__.py", line 1045 in packages_distributions
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/lib/python3.14/site-packages/transformers/utils/import_utils.py", line 47 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/lib/python3.14/site-packages/transformers/utils/generic.py", line 38 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/lib/python3.14/site-packages/transformers/utils/auto_docstring.py", line 32 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/lib/python3.14/site-packages/transformers/utils/__init__.py", line 22 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1314 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/lib/python3.14/site-packages/transformers/dependency_versions_check.py", line 16 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1434 in _handle_fromlist
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/lib/python3.14/site-packages/transformers/__init__.py", line 30 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/app/core/translator/base_offline.py", line 18 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/app/core/shared_registry/core/loader.py", line 19 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/app/core/desktop/config/registry.py", line 14 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/app/core/desktop/config/__init__.py", line 22 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+  File "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/app/core/desktop/main_window.py", line 44 in <module>
+  File "<frozen importlib._bootstrap>", line 491 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 759 in exec_module
+  File "<frozen importlib._bootstrap>", line 938 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1342 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1371 in _find_and_load
+
+Current thread's C stack trace (most recent call first):
+  Binary file ".venv/bin/python", at _Py_DumpStack+0x30 [0x4b3620]
+  Binary file ".venv/bin/python" [0x5365eb]
+  Binary file ".venv/bin/python" [0x5364ce]
+  Binary file "/lib/x86_64-linux-gnu/libc.so.6", at +0x45330 [0x7f5b17a45330]
+  Binary file ".venv/bin/python" [0x1a063dc]
+  Binary file ".venv/bin/python" [0x1a0cc04]
+  Binary file ".venv/bin/python" [0x1a0242f]
+  Binary file ".venv/bin/python" [0x1aa3e1a]
+  Binary file ".venv/bin/python", at PyEval_EvalCode+0xa6 [0x1aa3b3e]
+  Binary file ".venv/bin/python" [0x1ae0bf1]
+  Binary file ".venv/bin/python" [0x1a23903]
+  Binary file ".venv/bin/python" [0x1a1458d]
+  Binary file ".venv/bin/python" [0x1a5541c]
+  Binary file ".venv/bin/python" [0x1a55375]
+  Binary file ".venv/bin/python", at PyObject_CallMethodObjArgs+0xbb [0x1a55245]
+  Binary file ".venv/bin/python", at PyImport_ImportModuleLevelObject+0x376 [0x1a3a036]
+  Binary file ".venv/bin/python" [0x1a39c5c]
+  Binary file "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/lib/python3.14/site-packages/shiboken6/libshiboken6.abi3.so.6.11", at +0x368c6 [0x7f5b178958c6]
+  Binary file ".venv/bin/python" [0x1a78b53]
+  Binary file ".venv/bin/python", at PyObject_Call+0x7d [0x1a8c67f]
+  Binary file "/home/bimatkeo/Documents/Translator/Bimatkeo_Translator/.venv/lib/python3.14/site-packages/shiboken6/libshiboken6.abi3.so.6.11", at +0x1a520 [0x7f5b17879520]
+  Binary file ".venv/bin/python" [0x1a78b53]
+  Binary file ".venv/bin/python", at PyObject_Vectorcall+0x363 [0x1a18723]
+  Binary file ".venv/bin/python" [0x1d8e332]
+  Binary file ".venv/bin/python" [0x1a35c4e]
+  Binary file ".venv/bin/python" [0x1aa3e1a]
+  Binary file ".venv/bin/python", at PyEval_EvalCode+0xa6 [0x1aa3b3e]
+  Binary file ".venv/bin/python" [0x1ae0bf1]
+  Binary file ".venv/bin/python" [0x1a23903]
+  Binary file ".venv/bin/python" [0x1a1458d]
+  Binary file ".venv/bin/python" [0x1a5541c]
+  Binary file ".venv/bin/python" [0x1a55375]
+  <truncated rest of calls>
+
+Extension modules: shiboken6.Shiboken, PySide6.QtCore, PySide6.QtGui, PySide6.QtWidgets, regex._regex, numpy._core._multiarray_umath, numpy.linalg._umath_linalg (total: 7)
