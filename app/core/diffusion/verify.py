@@ -29,5 +29,7 @@ class DiffusionVerifier:
         )
 
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
     verifier = DiffusionVerifier()
     verifier.run_verification()

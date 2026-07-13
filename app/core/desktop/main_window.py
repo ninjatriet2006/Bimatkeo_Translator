@@ -105,6 +105,22 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         # Verify language files (reports missing/orphan keys to standard logger)
         self.config_loader.language_manager.run_verification(self.config_loader.ui_map, target_lang=getattr(self.config_loader, 'app_language', 'en'))
         
+        # Verify models (reports missing/orphan models to standard logger)
+        try:
+            from app.core.translator.verify import TranslatorVerifier
+            from app.core.ocr.verify import OCRVerifier
+            from app.core.inpainter.verify import InpainterVerifier
+            from app.core.renderer.verify import RendererVerifier
+            from app.core.diffusion.verify import DiffusionVerifier
+            
+            TranslatorVerifier().run_verification()
+            OCRVerifier().run_verification()
+            InpainterVerifier().run_verification()
+            RendererVerifier().run_verification()
+            DiffusionVerifier().run_verification()
+        except Exception as e:
+            self.app_logger.log_signal.emit("WARNING", f"Failed to run model verifications: {e}")
+        
         # Update LANGUAGES dynamically from the backend if loaded
         if hasattr(self.config_loader, 'languages') and self.config_loader.languages:
             global LANGUAGES

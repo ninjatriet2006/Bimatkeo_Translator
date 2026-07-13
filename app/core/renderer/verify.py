@@ -29,5 +29,7 @@ class RendererVerifier:
         )
 
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
     verifier = RendererVerifier()
     verifier.run_verification()

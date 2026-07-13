@@ -14,8 +14,8 @@ import importlib
 
 def discover_plugins():
     """Tự động tìm và import tất cả các plugins trong thư mục app/plugins để đăng ký vào Factory."""
-    # Move up 3 directories from app/core/shared_registry/discovery.py to project root
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    # Move up 4 directories from app/core/shared_registry/discovery.py to project root
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     plugins_dir = os.path.join(project_root, "app", "plugins")
     if not os.path.exists(plugins_dir):
         return

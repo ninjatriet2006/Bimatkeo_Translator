@@ -29,5 +29,7 @@ class OCRVerifier:
         )
 
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
     verifier = OCRVerifier()
     verifier.run_verification()

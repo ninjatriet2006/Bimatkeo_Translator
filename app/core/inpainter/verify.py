@@ -29,5 +29,7 @@ class InpainterVerifier:
         )
 
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
     verifier = InpainterVerifier()
     verifier.run_verification()
