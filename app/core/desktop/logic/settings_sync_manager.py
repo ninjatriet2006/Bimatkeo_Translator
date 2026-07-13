@@ -81,8 +81,10 @@ class SettingsSyncManager:
         if context_key:
             widget = self.mw.task_widgets[context_key].get(key)
             new_value = self.mw._get_value_from_widget(key, widget)
+            if self.mw.task_settings[context_key].get(key) == new_value:
+                return
             self.mw.task_settings[context_key][key] = new_value
-            logging.info(f"[Task Settings] Updated '{context_key}.{key}' to: {new_value}")
+            logging.info(f"Updated task setting '{context_key}.{key}' to: {new_value}")
             if key in ['translator_category', 'ai_mode', 'api_name']:
                 self.mw._update_task_translator_visibility(context_key)
         else:
@@ -97,8 +99,11 @@ class SettingsSyncManager:
                     self.mw._trigger_online_config_update_from_combo(key, widget)
                     return
 
+            if self.mw.current_settings.get(key) == new_value:
+                return
+
             self.mw.current_settings[key] = new_value
-            logging.info(f"[Settings] Updated '{key}' to: {new_value}")
+            logging.info(f"Updated setting '{key}' to: {new_value}")
 
             if hasattr(self.mw, 'queue_list_widget') and hasattr(self.mw, 'job_queue'):
                 selected_items = self.mw.queue_list_widget.selectedItems()
@@ -339,7 +344,7 @@ class SettingsSyncManager:
                 self.mw.restoreGeometry(QByteArray.fromHex(geometry_hex.encode('utf-8')))
 
             self.mw.last_selected_directory = settings.get("last_directory")
-            logging.info("Application state loaded.")
+            logging.info("Application state loaded.", extra={"ui_level": "SUCCESS"})
         except Exception as e:
             logging.warning(f"[WARNING] Could not load app settings: {e}")
 

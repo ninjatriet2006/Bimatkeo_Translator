@@ -61,7 +61,7 @@ class ThemeManager:
             else:
                 self.mw.setStyleSheet(f"QWidget {{ font-size: {font_size}; }}")
             self.mw.theme_colors = {}
-            self.mw.log("INFO", "msg_revert_theme")
+            self.mw.log("SUCCESS", "Reverted to Default Qt Theme.")
             return
 
         theme_data = self.mw.available_themes.get(theme_name)
@@ -95,4 +95,4 @@ class ThemeManager:
             style_sheet = template.safe_substitute(mapping)
             self.mw.setStyleSheet(style_sheet)
         
-        self.mw.log("INFO", f"msg_theme_applied|theme_name={theme_name}")
+        self.mw.log("SUCCESS", f"Theme '{theme_name}' applied successfully.")

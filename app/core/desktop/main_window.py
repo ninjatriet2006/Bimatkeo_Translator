@@ -163,6 +163,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         self.temp_dir = os.path.join(self.project_base_dir, "temp")
         self.detected_vram_gb = 0.0
         def check_vram_background():
+            self.log("INFO", "Checking available VRAM...")
             try:
                 python_exe = getattr(self, 'config_loader', None) and getattr(self.config_loader, 'python_executable', None) or sys.executable
                 cmd = [python_exe, "-c", "import torch; print(torch.cuda.get_device_properties(0).total_memory if torch.cuda.is_available() else 0)"]
@@ -173,7 +174,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
                         mem_bytes = int(val)
                         self.detected_vram_gb = mem_bytes / (1024**3)
                         if self.detected_vram_gb > 0:
-                            self.log("INFO", f"Detected {self.detected_vram_gb:.2f} GB of VRAM via subprocess.")
+                            self.log("SUCCESS", f"Detected {self.detected_vram_gb:.2f} GB of VRAM via subprocess.")
+                        else:
+                            self.log("SUCCESS", "No dedicated NVIDIA VRAM detected. Using Safe mode defaults.")
             except Exception as e:
                 self.log("WARNING", f"Could not detect VRAM. Automatic mode will default to Safe. Error: {e}")
         
@@ -302,7 +305,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         if hasattr(self, 'update_language_ui'):
             self.update_language_ui()
             
-        self.log("INFO", "Main layout and dynamic widgets created successfully.")
+        self.log("SUCCESS", "Main layout and dynamic widgets created successfully.")
 
     def _create_main_layout(self):
         """Creates the main QWidget and layouts to structure the window."""
@@ -370,13 +373,13 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         queue_widget = self._create_queue_widget()
         self.queue_window = StandaloneToolWindow(self, self.get_string("ui_queue_title") if self.get_string("ui_queue_title") != "ui_queue_title" else "Queue (Next Up)", queue_widget, 400, 600)
         self.queue_window.setProperty("lang_id", "ui_queue_title")
-        self.log("INFO", "Job Queue window created.")
+        self.log("SUCCESS", "Job Queue window created.")
 
         # 2. History Window
         history_widget = self._create_history_widget()
         self.history_window = StandaloneToolWindow(self, self.get_string("ui_history_title") if self.get_string("ui_history_title") != "ui_history_title" else "History (Completed Jobs)", history_widget, 400, 600)
         self.history_window.setProperty("lang_id", "ui_history_title")
-        self.log("INFO", "History window created.")
+        self.log("SUCCESS", "History window created.")
 
         # 3. Log Window
         self.log_viewer = ConsoleWidget(self)
@@ -385,13 +388,13 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             self.app_logger.log_signal.connect(self.log_viewer.insert_log)
             self.app_logger.flush_early_logs()
         self.log_window = StandaloneToolWindow(self, "Console Log", self.log_viewer, 600, 400)
-        self.log("INFO", "Console Log window created.")
+        self.log("SUCCESS", "Console Log window created.")
 
         # 4. Preview Tester Window
         preview_widget = self._create_preview_tester_tab()
         self.preview_window = StandaloneToolWindow(self, self.get_string("ui_tab_preview_tester") if self.get_string("ui_tab_preview_tester") != "ui_tab_preview_tester" else "Preview Tester", preview_widget, 1000, 700)
         self.preview_window.setProperty("lang_id", "ui_tab_preview_tester")
-        self.log("INFO", "Preview Tester window created.")
+        self.log("SUCCESS", "Preview Tester window created.")
 
     def _create_queue_widget(self) -> QWidget:
         queue_frame = QWidget()

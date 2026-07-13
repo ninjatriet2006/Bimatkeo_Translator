@@ -131,7 +131,7 @@ class LanguageVerifier:
                 logger.warning(f"     [Orphan Tasks]: {', '.join(orphan_tasks)}")
 
             if not has_errors:
-                logger.info(f"     [OK] Language '{lang_id}' passed verification with no missing or orphan keys.")
+                logger.info(f"     Language '{lang_id}' passed verification with no missing or orphan keys.", extra={"ui_level": "SUCCESS"})
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
