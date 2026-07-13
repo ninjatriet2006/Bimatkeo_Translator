@@ -18,6 +18,7 @@ import json
 import subprocess
 import urllib.request
 import time
+import logging
 from app.core.desktop.constants import *
 
 
@@ -62,7 +63,7 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
         reg_groups = getattr(self, "registry_translator_groups", None)
         reg_caps = getattr(self, "registry_translator_capabilities", None)
         if reg_groups and reg_caps:
-            print("[ConfigLoader] Loaded translator groups/capabilities from model registry.")
+            logging.info("[ConfigLoader] Loaded translator groups/capabilities from model registry.")
             return {
                 "TRANSLATOR_GROUPS": reg_groups,
                 "LOG_COLORS": self._default_log_colors(),
@@ -76,7 +77,7 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
             offline_keys = []
             ai_keys = []
 
-        print("[ConfigLoader] Registry groups unavailable; using minimal default capabilities.")
+        logging.info("[ConfigLoader] Registry groups unavailable; using minimal default capabilities.")
         return {
             "TRANSLATOR_GROUPS": {
                 CAT_OFFLINE_MODELS: offline_keys,
@@ -111,10 +112,10 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
                     formatted_langs = {}
                     for code, name in langs.items():
                         formatted_langs[str(name)] = str(code)
-                    print("[ConfigLoader] Loaded languages dynamically from supporttargetlang.yaml.")
+                    logging.info("[ConfigLoader] Loaded languages dynamically from supporttargetlang.yaml.")
                     return formatted_langs
         except Exception as e:
-            print(f"[ConfigLoader] Error loading supporttargetlang.yaml: {e}")
+            logging.warning(f"[ConfigLoader] Error loading supporttargetlang.yaml: {e}")
 
         return {
             "Auto-Detect": "auto",
@@ -272,7 +273,7 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
             self._initialize_and_repair_config()
             return True
         except Exception as e:
-            print(f"[ConfigLoader] Error saving supporttargetlang.yaml: {e}")
+            logging.error(f"[ConfigLoader] Error saving supporttargetlang.yaml: {e}")
             return False
 
 

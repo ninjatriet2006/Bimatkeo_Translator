@@ -12,6 +12,7 @@ import os
 from typing import Any
 from PySide6.QtWidgets import QWidget, QComboBox, QCheckBox, QLineEdit, QButtonGroup, QSlider, QMessageBox
 from PySide6.QtCore import Qt, QByteArray
+import logging
 
 class SettingsSyncManager:
     def __init__(self, main_window):
@@ -81,7 +82,7 @@ class SettingsSyncManager:
             widget = self.mw.task_widgets[context_key].get(key)
             new_value = self.mw._get_value_from_widget(key, widget)
             self.mw.task_settings[context_key][key] = new_value
-            print(f"[Task Settings] Updated '{context_key}.{key}' to: {new_value}")
+            logging.info(f"[Task Settings] Updated '{context_key}.{key}' to: {new_value}")
             if key in ['translator_category', 'ai_mode', 'api_name']:
                 self.mw._update_task_translator_visibility(context_key)
         else:
@@ -97,7 +98,7 @@ class SettingsSyncManager:
                     return
 
             self.mw.current_settings[key] = new_value
-            print(f"[Settings] Updated '{key}' to: {new_value}")
+            logging.info(f"[Settings] Updated '{key}' to: {new_value}")
 
             if hasattr(self.mw, 'queue_list_widget') and hasattr(self.mw, 'job_queue'):
                 selected_items = self.mw.queue_list_widget.selectedItems()
@@ -144,6 +145,9 @@ class SettingsSyncManager:
                 self.mw.config_loader.save_oldsession_config()
                 self.mw._rebuild_settings_tab()
                 self.mw.update_language_ui()
+                # Run language verification specifically for the newly selected language
+                if hasattr(self.mw.config_loader, 'language_manager'):
+                    self.mw.config_loader.language_manager.run_verification(self.mw.config_loader.ui_map, target_lang=new_value)
 
     def get_value_from_widget(self, key: str, widget: QWidget) -> Any:
         import app.core.desktop.main_window as mw_module
@@ -335,9 +339,9 @@ class SettingsSyncManager:
                 self.mw.restoreGeometry(QByteArray.fromHex(geometry_hex.encode('utf-8')))
 
             self.mw.last_selected_directory = settings.get("last_directory")
-            print("[INFO] Application state loaded.")
+            logging.info("[INFO] Application state loaded.")
         except Exception as e:
-            print(f"[WARNING] Could not load app settings: {e}")
+            logging.warning(f"[WARNING] Could not load app settings: {e}")
 
     def save_app_state(self):
         if not hasattr(self.mw.config_loader, 'oldsession_config'):
@@ -382,4 +386,4 @@ class SettingsSyncManager:
                 
             self.mw.config_loader.save_oldsession_config()
             
-        print("[INFO] Application state saved.")
+        logging.info("[INFO] Application state saved.")

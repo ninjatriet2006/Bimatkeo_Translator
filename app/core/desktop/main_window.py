@@ -102,6 +102,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         self.config_loader = ConfigLoader(self.project_base_dir)
         self.app_logger = AppLogger(self.config_loader, self)
         
+        # Verify language files (reports missing/orphan keys to standard logger)
+        self.config_loader.language_manager.run_verification(self.config_loader.ui_map, target_lang=getattr(self.config_loader, 'app_language', 'en'))
+        
         # Update LANGUAGES dynamically from the backend if loaded
         if hasattr(self.config_loader, 'languages') and self.config_loader.languages:
             global LANGUAGES
@@ -170,9 +173,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
                         mem_bytes = int(val)
                         self.detected_vram_gb = mem_bytes / (1024**3)
                         if self.detected_vram_gb > 0:
-                            print(f"[INFO] Detected {self.detected_vram_gb:.2f} GB of VRAM via subprocess.")
+                            self.log("INFO", f"Detected {self.detected_vram_gb:.2f} GB of VRAM via subprocess.")
             except Exception as e:
-                print(f"[WARNING] Could not detect VRAM. Automatic mode will default to Safe. Error: {e}")
+                self.log("WARNING", f"Could not detect VRAM. Automatic mode will default to Safe. Error: {e}")
         
         threading.Thread(target=check_vram_background, daemon=True).start()
 
@@ -284,7 +287,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         """
         Sets up the main window, its properties, and creates the main layout.
         """
-        print("[UI] Initializing PySide6 application window...")
+        self.log("INFO", "Initializing PySide6 application window...")
         self.setWindowTitle(self.get_string("ui_app_title") if self.get_string("ui_app_title") != "ui_app_title" else "🎌 Bimatkeo Translator - PySide")
         self.setProperty("lang_id", "ui_app_title")
         self.setProperty("lang_type", "ui")
@@ -299,7 +302,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         if hasattr(self, 'update_language_ui'):
             self.update_language_ui()
             
-        print("[UI] Main layout and dynamic widgets created successfully.")
+        self.log("INFO", "Main layout and dynamic widgets created successfully.")
 
     def _create_main_layout(self):
         """Creates the main QWidget and layouts to structure the window."""
@@ -378,6 +381,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         self.log_signal.connect(self.log_viewer.insert_log)
         if hasattr(self, 'app_logger'):
             self.app_logger.log_signal.connect(self.log_viewer.insert_log)
+            self.app_logger.flush_early_logs()
         self.log_window = StandaloneToolWindow(self, "Console Log", self.log_viewer, 600, 400)
 
         # 4. Preview Tester Window

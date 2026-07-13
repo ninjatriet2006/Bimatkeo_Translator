@@ -18,7 +18,7 @@ class LanguageVerifier:
     def __init__(self, localization: Dict[str, Any]):
         self.localization = localization
 
-    def run_verification(self, raw_ui_map: dict, hardcoded_keys: dict = None):
+    def run_verification(self, raw_ui_map: dict, hardcoded_keys: dict = None, target_lang: str = None):
         """
         Cross-checks loaded localization dictionaries against the raw UI Map and hardcoded keys.
         Reports missing translations and orphaned keys.
@@ -61,8 +61,11 @@ class LanguageVerifier:
         if not required_tasks:
             required_tasks = set(baseline.get("tasks", {}).keys())
 
-        # Check all languages (including 'en')
+        # Check all languages (or just the target_lang if specified)
         for lang_id, lang_data in self.localization.items():
+            if target_lang and lang_id != target_lang:
+                continue
+                
             logger.info(f"  -> Verifying language '{lang_id}'...")
             lang_tabs = set(lang_data.get("tabs", {}).keys())
             lang_settings = set(lang_data.get("settings", {}).keys())

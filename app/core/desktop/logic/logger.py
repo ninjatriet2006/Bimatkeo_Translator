@@ -30,6 +30,8 @@ class AppLogger(QObject):
     def __init__(self, config_loader=None, parent=None):
         super().__init__(parent)
         self.config_loader = config_loader
+        self._early_logs = []
+        self._ui_connected = False
         self._setup_logging()
         
     def _setup_logging(self):
@@ -136,6 +138,20 @@ class AppLogger(QObject):
             else:
                 text = f"Processing {current}/{total} : {raw_message}"
             self.pipeline_progress_signal.emit(current, total, text)
-            self.log_signal.emit(color, f"[{ui_level}] [{current}/{total}] {raw_message}")
+            
+            log_str = f"[{ui_level}] [{current}/{total}] {raw_message}"
+            if not self._ui_connected:
+                self._early_logs.append((color, log_str))
+            self.log_signal.emit(color, log_str)
         else:
-            self.log_signal.emit(color, f"[{ui_level}] {raw_message}")
+            log_str = f"[{ui_level}] {raw_message}"
+            if not self._ui_connected:
+                self._early_logs.append((color, log_str))
+            self.log_signal.emit(color, log_str)
+
+    def flush_early_logs(self):
+        """Flushes buffered logs to UI console once connected."""
+        self._ui_connected = True
+        for color, msg in self._early_logs:
+            self.log_signal.emit(color, msg)
+        self._early_logs.clear()
