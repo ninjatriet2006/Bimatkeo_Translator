@@ -337,6 +337,7 @@ class SettingsSyncManager:
                 combo.blockSignals(False)
 
     def load_app_state(self):
+        logging.info("Loading previous session state...")
         try:
             settings = getattr(self.mw.config_loader, 'oldsession_config', {})
             geometry_hex = settings.get("window_geometry")
@@ -349,6 +350,7 @@ class SettingsSyncManager:
             logging.warning(f"[WARNING] Could not load app settings: {e}")
 
     def save_app_state(self):
+        logging.info("Saving application state...")
         if not hasattr(self.mw.config_loader, 'oldsession_config'):
             self.mw.config_loader.oldsession_config = {}
         self.mw.config_loader.oldsession_config["window_geometry"] = self.mw.saveGeometry().toHex().data().decode('utf-8')
@@ -391,4 +393,4 @@ class SettingsSyncManager:
                 
             self.mw.config_loader.save_oldsession_config()
             
-        logging.info("[INFO] Application state saved.")
+        logging.info("Application state saved.", extra={"ui_level": "SUCCESS"})
