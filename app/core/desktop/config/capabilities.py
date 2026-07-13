@@ -146,6 +146,38 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
             "Filipino (Tagalog)": "FIL"
         }
 
+    def get_model_state(self, model_name, field=None) -> str:
+        """Returns 'OK', 'NOT_SETUP', or 'INCOMPLETE'."""
+        if field:
+            field_key = field.lower()
+            if field_key == "app_language":
+                lang_data = None
+                for code, data in self.localization.items():
+                    if code == model_name or (isinstance(data, dict) and data.get("language_name") == model_name):
+                        lang_data = data
+                        break
+                if not lang_data or not isinstance(lang_data, dict):
+                    return "NOT_SETUP"
+                if "settings" in lang_data and "tabs" in lang_data:
+                    return "OK"
+                return "INCOMPLETE"
+                
+            elif field_key == "system_prompt_profile":
+                profiles = self.system_prompts.get("profiles", {})
+                profile_data = None
+                if isinstance(profiles, dict) and model_name in profiles:
+                    profile_data = profiles[model_name]
+                elif isinstance(self.system_prompts, dict) and model_name in self.system_prompts:
+                    profile_data = self.system_prompts[model_name]
+                if not profile_data or not isinstance(profile_data, dict):
+                    return "NOT_SETUP"
+                if "role_description" in profile_data and "json_schema_rules" in profile_data:
+                    return "OK"
+                return "INCOMPLETE"
+
+        # Fallback to normal existence check
+        return "OK" if self.check_model_existence(model_name, field) else "NOT_SETUP"
+
     def check_model_existence(self, model_name, field=None):
         """Checks if a model has its proof of existence."""
         if not isinstance(model_name, str):
@@ -173,7 +205,7 @@ class CapabilitiesMixin(_CapabilitiesMixinBase):
             if field_key == "app_language":
                 lang_data = None
                 for code, data in self.localization.items():
-                    if isinstance(data, dict) and data.get("language_name") == model_name:
+                    if code == model_name or (isinstance(data, dict) and data.get("language_name") == model_name):
                         lang_data = data
                         break
                 if lang_data and isinstance(lang_data, dict):

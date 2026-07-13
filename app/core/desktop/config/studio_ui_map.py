@@ -122,7 +122,7 @@ STUDIO_UI_MAP = \
                                                     'section': 'advanced'}},
     'Output & Export': {   'output_format': {'widget': 'optionmenu', 'values': ['png', 'jpg', 'webp', 'pdf', 'psd', 'xcf']},
                            'export_mode': {'widget': 'optionmenu', 'values': ['new_safe', 'new_overwrite', 'inplace']}},
-    'Extra Settings': {   'memory_mode': {'widget': 'optionmenu', 'values': ['ram', 'disk']},
+    'Extra Settings': {   'memory_mode': {'widget': 'segmented_button', 'values': ['ram', 'disk']},
                           'context_window': {   'widget': 'spinbox',
                                                 'options': {'step': 1}},
                           'stride_window': {   'widget': 'spinbox',

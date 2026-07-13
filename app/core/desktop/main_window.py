@@ -175,10 +175,36 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
                         self.detected_vram_gb = mem_bytes / (1024**3)
                         if self.detected_vram_gb > 0:
                             self.log("SUCCESS", f"Detected {self.detected_vram_gb:.2f} GB of VRAM via subprocess.")
+                            from PySide6.QtCore import QTimer
+                            QTimer.singleShot(0, lambda: self._update_gpu_status_ui(True))
                         else:
                             self.log("SUCCESS", "No dedicated NVIDIA VRAM detected. Using Safe mode defaults.")
+                            from PySide6.QtCore import QTimer
+                            QTimer.singleShot(0, lambda: self._update_gpu_status_ui(False))
             except Exception as e:
                 self.log("WARNING", f"Could not detect VRAM. Automatic mode will default to Safe. Error: {e}")
+                from PySide6.QtCore import QTimer
+                QTimer.singleShot(0, lambda: self._update_gpu_status_ui(False))
+                
+    def _update_gpu_status_ui(self, has_gpu: bool):
+        processing_widget = getattr(self, 'setting_widgets', {}).get('processing_device')
+        if processing_widget:
+            from PySide6.QtWidgets import QPushButton
+            for button in processing_widget.findChildren(QPushButton):
+                if button.property("internal_id") == "cuda":
+                    if not has_gpu:
+                        current_text = button.text()
+                        if "(Unavailable)" not in current_text:
+                            button.setText(f"{current_text} (Unavailable)")
+                            button.setEnabled(False)
+                            if button.isChecked():
+                                for b in processing_widget.findChildren(QPushButton):
+                                    if b.property("internal_id") == "cpu":
+                                        b.setChecked(True)
+                                        # Also update the settings dict
+                                        if hasattr(self, 'current_settings'):
+                                            self.current_settings['processing_device'] = 'cpu'
+                                        break
         
         threading.Thread(target=check_vram_background, daemon=True).start()
 

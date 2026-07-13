@@ -326,7 +326,7 @@ flow_steps:
   reletter: ✒️ Reletter
 enums:
   cpu: CPU
-  cuda: NVIDIA GPU
+  cuda: GPU (NVIDIA)
   offline: Offline
   api: AI / Online
   standalone: Standalone API

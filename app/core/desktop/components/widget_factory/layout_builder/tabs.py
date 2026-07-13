@@ -93,6 +93,10 @@ class TabsBuilderMixin:
         # Update the rest of the application's UI strings using the new ID linking
         if hasattr(self.mw, 'update_language_ui'):
             self.mw.update_language_ui()
+            
+        # Re-apply GPU unavailability UI if needed
+        if hasattr(self.mw, 'detected_vram_gb') and hasattr(self.mw, '_update_gpu_status_ui'):
+            self.mw._update_gpu_status_ui(self.mw.detected_vram_gb > 0)
 
     def populate_all_tabs(self):
         config_data = self.mw.config_loader.full_config_data

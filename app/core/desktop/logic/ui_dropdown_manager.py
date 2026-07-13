@@ -58,8 +58,8 @@ class UIDropdownManager:
         ui_strings = lang_data.get("ui_strings", {})
         if translator_name == ui_strings.get("update_supported_langs", "📥 Update translation support list..."):
             return
-        if translator_name and " (Not Setup)" in translator_name:
-            translator_name = translator_name.split(" (Not Setup)")[0]
+        if translator_name:
+            translator_name = translator_name.split(" (Not Setup)")[0].split(" (Incomplete)")[0]
         self.mw._update_translator_tooltip(translator_name)
 
     def is_translator_supported_for_target(self, translator_name: str, target_code: str) -> bool:
@@ -98,15 +98,17 @@ class UIDropdownManager:
             not_setup_items = []
             for val in self.mw.original_offline_translators:
                 supported = self.is_translator_supported_for_target(val, target_code)
-                exists = self.mw.config_loader.check_model_existence(val, field='offline_translator')
+                state = self.mw.config_loader.get_model_state(val, field='offline_translator')
                 
                 label = self.mw.config_loader.format_display_label(val, 'offline_translator')
-                if not exists:
+                if state == "NOT_SETUP":
                     label += " (Not Setup)"
+                elif state == "INCOMPLETE":
+                    label += " (Incomplete)"
                 if not supported:
                     label += " (Unavailable for this language)"
                     
-                if exists:
+                if state == "OK":
                     setup_items.append((val, label, not supported))
                 else:
                     not_setup_items.append((val, label, not supported))
@@ -158,15 +160,17 @@ class UIDropdownManager:
             not_setup_items = []
             for val in self.mw.original_ai_translators:
                 supported = self.is_translator_supported_for_target(val, target_code)
-                exists = self.mw.config_loader.check_model_existence(val, field='ai_translator')
+                state = self.mw.config_loader.get_model_state(val, field='ai_translator')
                 
                 label = self.mw.config_loader.format_display_label(val, 'ai_translator')
-                if not exists:
+                if state == "NOT_SETUP":
                     label += " (Not Setup)"
+                elif state == "INCOMPLETE":
+                    label += " (Incomplete)"
                 if not supported:
                     label += " (Unavailable for this language)"
                     
-                if exists:
+                if state == "OK":
                     setup_items.append((val, label, not supported))
                 else:
                     not_setup_items.append((val, label, not supported))
@@ -230,15 +234,17 @@ class UIDropdownManager:
             not_setup_items = []
             for t in translators:
                 supported = self.is_translator_supported_for_target(t, target_code)
-                exists = self.mw.config_loader.check_model_existence(t, field=field_name)
+                state = self.mw.config_loader.get_model_state(t, field=field_name)
                 
                 label = self.mw.config_loader.format_display_label(t, field_name)
-                if not exists:
+                if state == "NOT_SETUP":
                     label += " (Not Setup)"
+                elif state == "INCOMPLETE":
+                    label += " (Incomplete)"
                 if not supported:
                     label += " (Unavailable for this language)"
                     
-                if exists:
+                if state == "OK":
                     setup_items.append((t, label, not supported))
                 else:
                     not_setup_items.append((t, label, not supported))
@@ -288,8 +294,8 @@ class UIDropdownManager:
         if not lang_combo:
             return
 
-        if translator_name and " (Not Setup)" in translator_name:
-            translator_name = translator_name.split(" (Not Setup)")[0]
+        if translator_name:
+            translator_name = translator_name.split(" (Not Setup)")[0].split(" (Incomplete)")[0]
 
         from app.core.shared_registry import TranslatorFactory
         capabilities = TranslatorFactory.get_capabilities(translator_name)

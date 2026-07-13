@@ -74,12 +74,14 @@ class ComplexWidgetFactory:
                 combo_box.addItem("--- Select ---", "none")
                 info["default"] = "none"
                 for val in values:
-                    exists = self.mw.config_loader.check_model_existence(val, field=key)
+                    state = self.mw.config_loader.get_model_state(val, field=key)
                     display_name = self.mw.config_loader.format_display_label(val, key)
-                    if not exists:
+                    if state == "NOT_SETUP":
                         display_name = f"{display_name} (Not Setup)"
+                    elif state == "INCOMPLETE":
+                        display_name = f"{display_name} (Incomplete)"
                     combo_box.addItem(display_name, val)
-                    if not exists:
+                    if state in ("NOT_SETUP", "INCOMPLETE"):
                         last_idx = combo_box.count() - 1
                         combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
                 lang_data = self.mw.config_loader.get_lang_data(self.mw.config_loader.app_language)
@@ -95,12 +97,14 @@ class ComplexWidgetFactory:
                     combo_box.model().item(item_index).setEnabled(False)  # type: ignore
                     field_name = "offline_translator" if "OFFLINE" in group_name else ("ai_translator" if "API" in group_name else None)
                     for t in translators:
-                        exists = self.mw.config_loader.check_model_existence(t, field=field_name)
+                        state = self.mw.config_loader.get_model_state(t, field=field_name)
                         display_name = self.mw.config_loader.format_display_label(t, field_name)
-                        if not exists:
+                        if state == "NOT_SETUP":
                             display_name = f"{display_name} (Not Setup)"
+                        elif state == "INCOMPLETE":
+                            display_name = f"{display_name} (Incomplete)"
                         combo_box.addItem(display_name, t)
-                        if not exists:
+                        if state in ("NOT_SETUP", "INCOMPLETE"):
                             last_idx = combo_box.count() - 1
                             combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             self.set_combobox_value_by_data(combo_box, str(info.get("default")))
@@ -108,12 +112,14 @@ class ComplexWidgetFactory:
             combo_box.addItem("--- Select ---", "none")
             value_map = info.get("value_map", {})
             for val in values:
-                exists = self.mw.config_loader.check_model_existence(val, field=key) if key != 'api_ocr' else True
+                state = self.mw.config_loader.get_model_state(val, field=key) if key != 'api_ocr' else "OK"
                 display_name = value_map.get(val, self.mw.config_loader.format_display_label(val, key))
-                if not exists:
+                if state == "NOT_SETUP":
                     display_name = f"{display_name} (Not Setup)"
+                elif state == "INCOMPLETE":
+                    display_name = f"{display_name} (Incomplete)"
                 combo_box.addItem(display_name, val)
-                if not exists:
+                if state in ("NOT_SETUP", "INCOMPLETE"):
                     last_idx = combo_box.count() - 1
                     combo_box.setItemData(last_idx, QColor("#888888"), Qt.ItemDataRole.ForegroundRole)
             

@@ -169,7 +169,7 @@ class SearchableComboPopup(QWidget):
                         if not is_google:
                             item.setForeground(QColor("#888888"))
                             item.setToolTip("Custom font (manual copy, not from Google Fonts)")
-                elif "(Not Setup)" in text:
+                elif "(Not Setup)" in text or "(Incomplete)" in text:
                     item.setForeground(QColor("#a8a8a8"))
                     item.setToolTip("Model weights not found. Check model configs.")
                 self.list_widget.addItem(item)
