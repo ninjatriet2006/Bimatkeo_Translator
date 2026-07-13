@@ -18,7 +18,7 @@ class LanguageVerifier:
     def __init__(self, localization: Dict[str, Any]):
         self.localization = localization
 
-    def run_verification(self, raw_ui_map: dict, hardcoded_keys: dict = None, target_lang: str = None):
+    def run_verification(self, raw_ui_map: dict, hardcoded_keys: dict | None = None, target_lang: str | None = None):
         """
         Cross-checks loaded localization dictionaries against the raw UI Map and hardcoded keys.
         Reports missing translations and orphaned keys.
@@ -74,6 +74,8 @@ class LanguageVerifier:
             lang_messages = set(lang_data.get("messages", {}).keys())
             lang_tasks = set(lang_data.get("tasks", {}).keys())
 
+            has_errors = False
+
             # Check missing
             missing_tabs = required_tabs - lang_tabs
             missing_settings = required_settings - lang_settings
@@ -83,16 +85,22 @@ class LanguageVerifier:
             missing_tasks = required_tasks - lang_tasks
 
             if missing_tabs:
+                has_errors = True
                 logger.warning(f"     [Missing Tabs]: {', '.join(missing_tabs)}")
             if missing_settings:
+                has_errors = True
                 logger.warning(f"     [Missing Settings]: {', '.join(missing_settings)}")
             if missing_enums:
+                has_errors = True
                 logger.warning(f"     [Missing Enums]: {', '.join(missing_enums)}")
             if missing_ui_strings:
+                has_errors = True
                 logger.warning(f"     [Missing UI Strings]: {', '.join(missing_ui_strings)}")
             if missing_messages:
+                has_errors = True
                 logger.warning(f"     [Missing Messages]: {', '.join(missing_messages)}")
             if missing_tasks:
+                has_errors = True
                 logger.warning(f"     [Missing Tasks]: {', '.join(missing_tasks)}")
 
             # Check orphans (defined in language file but not in UI map or codebase)
@@ -104,17 +112,26 @@ class LanguageVerifier:
             orphan_tasks = lang_tasks - required_tasks
 
             if orphan_tabs:
+                has_errors = True
                 logger.warning(f"     [Orphan Tabs]: {', '.join(orphan_tabs)}")
             if orphan_settings:
+                has_errors = True
                 logger.warning(f"     [Orphan Settings]: {', '.join(orphan_settings)}")
             if orphan_enums:
+                has_errors = True
                 logger.warning(f"     [Orphan Enums]: {', '.join(orphan_enums)}")
             if orphan_ui_strings:
+                has_errors = True
                 logger.warning(f"     [Orphan UI Strings]: {', '.join(orphan_ui_strings)}")
             if orphan_messages:
+                has_errors = True
                 logger.warning(f"     [Orphan Messages]: {', '.join(orphan_messages)}")
             if orphan_tasks:
+                has_errors = True
                 logger.warning(f"     [Orphan Tasks]: {', '.join(orphan_tasks)}")
+
+            if not has_errors:
+                logger.info(f"     [OK] Language '{lang_id}' passed verification with no missing or orphan keys.")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

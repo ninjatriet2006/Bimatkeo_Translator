@@ -339,7 +339,7 @@ class SettingsSyncManager:
                 self.mw.restoreGeometry(QByteArray.fromHex(geometry_hex.encode('utf-8')))
 
             self.mw.last_selected_directory = settings.get("last_directory")
-            logging.info("[INFO] Application state loaded.")
+            logging.info("Application state loaded.")
         except Exception as e:
             logging.warning(f"[WARNING] Could not load app settings: {e}")
 

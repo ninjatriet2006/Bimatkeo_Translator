@@ -34,7 +34,7 @@ class LanguageManager:
         self.ui_mapper = LanguageUIMapper(self.localization, self.fallback)
         self.verifier = LanguageVerifier(self.localization)
 
-    def run_verification(self, raw_ui_map: dict, target_lang: str = None):
+    def run_verification(self, raw_ui_map: dict, target_lang: str | None = None):
         try:
             from app.core.desktop.config.ui_verify import extract_hardcoded_ui_keys
             hardcoded_keys = extract_hardcoded_ui_keys(self.project_base_dir)

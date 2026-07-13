@@ -370,11 +370,13 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         queue_widget = self._create_queue_widget()
         self.queue_window = StandaloneToolWindow(self, self.get_string("ui_queue_title") if self.get_string("ui_queue_title") != "ui_queue_title" else "Queue (Next Up)", queue_widget, 400, 600)
         self.queue_window.setProperty("lang_id", "ui_queue_title")
+        self.log("INFO", "Job Queue window created.")
 
         # 2. History Window
         history_widget = self._create_history_widget()
         self.history_window = StandaloneToolWindow(self, self.get_string("ui_history_title") if self.get_string("ui_history_title") != "ui_history_title" else "History (Completed Jobs)", history_widget, 400, 600)
         self.history_window.setProperty("lang_id", "ui_history_title")
+        self.log("INFO", "History window created.")
 
         # 3. Log Window
         self.log_viewer = ConsoleWidget(self)
@@ -383,11 +385,13 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             self.app_logger.log_signal.connect(self.log_viewer.insert_log)
             self.app_logger.flush_early_logs()
         self.log_window = StandaloneToolWindow(self, "Console Log", self.log_viewer, 600, 400)
+        self.log("INFO", "Console Log window created.")
 
         # 4. Preview Tester Window
         preview_widget = self._create_preview_tester_tab()
         self.preview_window = StandaloneToolWindow(self, self.get_string("ui_tab_preview_tester") if self.get_string("ui_tab_preview_tester") != "ui_tab_preview_tester" else "Preview Tester", preview_widget, 1000, 700)
         self.preview_window.setProperty("lang_id", "ui_tab_preview_tester")
+        self.log("INFO", "Preview Tester window created.")
 
     def _create_queue_widget(self) -> QWidget:
         queue_frame = QWidget()
