@@ -10,9 +10,17 @@ INTEGRITY NOTES (For AI Agents):
 """
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QFrame, QLabel
 
+from typing import TYPE_CHECKING, Any
+
 from app.core.desktop.components.ui_utils import build_grouped_settings_tabs
 
 class TabsBuilderMixin:
+    if TYPE_CHECKING:
+        mw: Any
+        def create_setting_row(self, info: dict, context_key: str | None = None) -> QWidget: ...
+        def create_font_scale_widget(self) -> QWidget: ...
+        def create_theme_manager_widget(self) -> QWidget: ...
+
     def build_dynamic_tab_content(self, tab_name: str, settings_list: list) -> QWidget:
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)

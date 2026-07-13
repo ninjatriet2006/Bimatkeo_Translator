@@ -275,7 +275,8 @@ class SettingsSyncManager:
                         value_to_check = f"{value}x"
 
                 for button in button_group.buttons():
-                    if button.text() == value_to_check:
+                    internal_id = button.property("internal_id")
+                    if (internal_id is not None and str(internal_id) == value_to_check) or button.text() == value_to_check:
                         button.setChecked(True)
                         break
         elif widget_type == "grid_segmented_button":
@@ -283,7 +284,8 @@ class SettingsSyncManager:
             if button_group:
                 value_to_check = str(value)
                 for button in button_group.buttons():
-                    if button.text() == value_to_check:
+                    internal_id = button.property("internal_id")
+                    if (internal_id is not None and str(internal_id) == value_to_check) or button.text() == value_to_check:
                         button.setChecked(True)
                         break
         elif widget_type == "open_yaml_button":
