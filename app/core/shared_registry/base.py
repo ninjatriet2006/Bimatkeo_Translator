@@ -74,7 +74,7 @@ class BaseFactory:
 
     @classmethod
     def get_model_path_from_registry(cls, field: str, key: str) -> str:
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         for factory in cls._all_factories: # type: ignore
             for item in factory.get_all_registered_models():
                 if item.get("key") == key:

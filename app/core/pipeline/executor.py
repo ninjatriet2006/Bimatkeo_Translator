@@ -105,18 +105,18 @@ class PipelineExecutor:
                 skip_languages=skip_languages,
                 filter_texts=filter_texts,
                 no_text_lang_skip=config_dict.get("translator", {}).get("no_text_lang_skip", False),
-                max_request_length=int(config_dict.get("translator", {}).get("max_request_length", 2000)),
-                context_window=int(config_dict.get("translator", {}).get("context_window", 10)),
-                stride_window=int(config_dict.get("translator", {}).get("stride_window", 5))
+                max_request_length=int(str(config_dict.get("translator", {}).get("max_request_length", 2000)).replace("none", "2000") or 2000),
+                context_window=int(str(config_dict.get("translator", {}).get("context_window", 10)).replace("none", "10") or 10),
+                stride_window=int(str(config_dict.get("translator", {}).get("stride_window", 5)).replace("none", "5") or 5)
             )
             
             edit_worker = EditWorker(
                 in_q=q_edit,
                 editor_translator=editor_translator,
                 log_callback=log_callback,
-                max_request_length=int(config_dict.get("translator", {}).get("max_request_length", 2000)),
-                context_window=int(config_dict.get("translator", {}).get("context_window", 10)),
-                stride_window=int(config_dict.get("translator", {}).get("stride_window", 5))
+                max_request_length=int(str(config_dict.get("translator", {}).get("max_request_length", 2000)).replace("none", "2000") or 2000),
+                context_window=int(str(config_dict.get("translator", {}).get("context_window", 10)).replace("none", "10") or 10),
+                stride_window=int(str(config_dict.get("translator", {}).get("stride_window", 5)).replace("none", "5") or 5)
             ) if editor_translator else None
             
             inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback, out_q=q_upscale if enable_upscaler else None)

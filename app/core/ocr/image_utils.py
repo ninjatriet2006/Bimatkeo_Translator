@@ -61,8 +61,15 @@ class OCRFilter:
         - Text quá ngắn (min_text_length).
         - Text nằm trong danh sách từ cấm (filter_text).
         """
-        min_text_length = int(ocr_config.get('min_text_length', 0))
-        ignore_bubble = int(ocr_config.get('ignore_bubble', 0))
+        try:
+            min_text_length = int(str(ocr_config.get('min_text_length', 0)).replace("none", "0") or 0)
+        except ValueError:
+            min_text_length = 0
+            
+        try:
+            ignore_bubble = int(str(ocr_config.get('ignore_bubble', 0)).replace("none", "0") or 0)
+        except ValueError:
+            ignore_bubble = 0
         filter_text_str = ocr_config.get('filter_text', '')
         filter_texts = [f.strip() for f in filter_text_str.split(',')] if filter_text_str else []
 

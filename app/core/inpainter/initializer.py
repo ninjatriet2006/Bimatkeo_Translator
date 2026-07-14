@@ -44,7 +44,7 @@ class InpainterInitializer:
 
         # Upscaler Initialization
         enable_upscaler = config_dict.get("inpainter", {}).get("enable_upscaler", False)
-        upscale_ratio = int(config_dict.get("inpainter", {}).get("upscale_ratio", 2))
+        upscale_ratio = int(str(config_dict.get("inpainter", {}).get("upscale_ratio", 2)).replace("none", "2") or 2)
         upscaler = None
         
         if enable_upscaler:

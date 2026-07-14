@@ -37,7 +37,7 @@ class BaseAPITranslator(BaseTranslator):
             self.endpoint = config.get("endpoint") or ""
             self.model = config.get("model") or ""
             self.key = config.get("key") or ""
-            self.max_retries = int(config.get("max_retries", 3))
+            self.max_retries = int(str(config.get("max_retries", 3)).replace("none", "3") or 3)
             
             project_base_dir = config.get("project_base_dir")
             if not project_base_dir:

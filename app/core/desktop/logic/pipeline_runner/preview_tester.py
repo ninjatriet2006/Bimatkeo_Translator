@@ -299,7 +299,8 @@ class PreviewTester:
         inspector.btn_rerun_ocr.setEnabled(False)
         self.mw.log("INFO", f"Đang chạy OCR cho Box {box_id}...")
         
-        config_dict = self.mw.config_loader.get_config_dict()
+        test_job = {"id": "single_box_job", "job_type": "T", "settings": self.mw.current_settings.copy()}
+        config_dict = self.mw.thread_manager.build_final_config_for_job(test_job)
         
         def callback(result):
             if result.get("success"):
@@ -332,7 +333,8 @@ class PreviewTester:
         inspector.btn_rerun_trans.setEnabled(False)
         self.mw.log("INFO", f"Đang dịch Box {box_id}...")
         
-        config_dict = self.mw.config_loader.get_config_dict()
+        test_job = {"id": "single_box_job", "job_type": "T", "settings": self.mw.current_settings.copy()}
+        config_dict = self.mw.thread_manager.build_final_config_for_job(test_job)
         
         def callback(result):
             from PySide6.QtCore import QMetaObject, Qt, Q_ARG
@@ -374,7 +376,8 @@ class PreviewTester:
         inspector.btn_render_box.setEnabled(False)
         self.mw.log("INFO", f"Đang Render Box {box_id}...")
         
-        config_dict = self.mw.config_loader.get_config_dict()
+        test_job = {"id": "single_box_job", "job_type": "T", "settings": self.mw.current_settings.copy()}
+        config_dict = self.mw.thread_manager.build_final_config_for_job(test_job)
         render_config = config_dict.get("render", {})
         
         def callback(result):

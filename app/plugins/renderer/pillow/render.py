@@ -55,8 +55,17 @@ def render_pillow(renderer_instance, image: np.ndarray, bboxes: List[List[int]],
     
     alignment = renderer_instance.config.get("alignment", "auto")
     font_size_override = renderer_instance.config.get("font_size")
+    try: font_size_override = int(str(font_size_override).replace("none", "0") or 0)
+    except ValueError: font_size_override = 0
+    
     font_size_offset = renderer_instance.config.get("font_size_offset", 0)
+    try: font_size_offset = int(str(font_size_offset).replace("none", "0") or 0)
+    except ValueError: font_size_offset = 0
+    
     font_size_minimum = renderer_instance.config.get("font_size_minimum", -1)
+    try: font_size_minimum = int(str(font_size_minimum).replace("none", "-1") or -1)
+    except ValueError: font_size_minimum = -1
+    
     uppercase = renderer_instance.config.get("uppercase", False)
     lowercase = renderer_instance.config.get("lowercase", False)
     
@@ -114,8 +123,8 @@ def render_pillow(renderer_instance, image: np.ndarray, bboxes: List[List[int]],
             best_lines = []
             best_y_offset = 0
             
-            if font_size_override and int(font_size_override) > 0:
-                target_size = int(font_size_override)
+            if font_size_override and font_size_override > 0:
+                target_size = font_size_override
                 try:
                     best_font = ImageFont.truetype(renderer_instance.font_path, target_size)
                 except:
@@ -163,9 +172,9 @@ def render_pillow(renderer_instance, image: np.ndarray, bboxes: List[List[int]],
                     best_y_offset = max(0, (box_height - (10 * line_spacing_scale * len(best_lines))) / 2)
                 
                 # Apply offset and minimum
-                final_size = getattr(best_font, "size", 10) + int(font_size_offset)
+                final_size = getattr(best_font, "size", 10) + font_size_offset
                 if font_size_minimum > 0 and final_size < font_size_minimum:
-                    final_size = int(font_size_minimum)
+                    final_size = font_size_minimum
                 
                 try:
                     best_font = ImageFont.truetype(renderer_instance.font_path, final_size)
