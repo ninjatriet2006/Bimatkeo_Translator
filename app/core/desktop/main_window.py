@@ -279,10 +279,13 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
                     new_text = self.get_string(lang_id)
                     
                 if new_text and new_text != lang_id:
+                    args = w.property("lang_args")
+                    if args is not None and isinstance(args, list):
+                        new_text = new_text.format(*args)
+
                     if hasattr(w, 'setText'):
                         w.setText(new_text)
                     elif hasattr(w, 'setTitle'):
-                        w.setTitle(new_text)
                         w.setTitle(new_text)
             
             tooltip_lang_id = w.property("tooltip_lang_id")
@@ -301,6 +304,10 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
                     label_text = ""
                     
                 if new_tooltip and new_tooltip != tooltip_lang_id:
+                    args = w.property("tooltip_lang_args")
+                    if args is not None and isinstance(args, list):
+                        new_tooltip = new_tooltip.format(*args)
+
                     if hasattr(w, 'setToolTip'):
                         if lang_type == "settings" and label_text:
                             w.setToolTip(f"<b>{label_text}</b><hr>{new_tooltip}")

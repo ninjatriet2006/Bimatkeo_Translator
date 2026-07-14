@@ -50,21 +50,33 @@ class DynamicButtonRouter:
                 installed_fonts = self.font_ui.get_installed_google_fonts()
                 if current_text in installed_fonts:
                     btn_download.show()
-                    btn_download.setToolTip(f"Cập nhật {current_text}")
+                    btn_download.setProperty("tooltip_lang_id", "ui_tooltip_download_font")
+                    btn_download.setProperty("tooltip_lang_args", [current_text])
+                    btn_download.setToolTip(self.mw.get_string("ui_tooltip_download_font").format(current_text))
                 else:
                     btn_search.show()
-                    btn_search.setToolTip(f"Tìm font thay thế cho {current_text} trên Google Fonts")
+                    btn_search.setProperty("tooltip_lang_id", "ui_tooltip_search_font")
+                    btn_search.setProperty("tooltip_lang_args", [current_text])
+                    btn_search.setToolTip(self.mw.get_string("ui_tooltip_search_font").format(current_text))
                 btn_delete.show()
-                btn_delete.setToolTip(f"Xóa/Gỡ cài đặt {current_text}")
+                btn_delete.setProperty("tooltip_lang_id", "ui_tooltip_delete_font")
+                btn_delete.setProperty("tooltip_lang_args", [current_text])
+                btn_delete.setToolTip(self.mw.get_string("ui_tooltip_delete_font").format(current_text))
         else:
             if current_data in ["update_all_software_trigger", "update_trigger"]:
                 btn_tick.show()
-                btn_tick.setToolTip("Xác nhận Thực thi")
+                # Assuming ui_btn_tick_confirm is defined
+                btn_tick.setProperty("tooltip_lang_id", "ui_btn_tick_confirm")
+                btn_tick.setToolTip(self.mw.get_string("ui_btn_tick_confirm"))
             else:
                 btn_download.show()
-                btn_download.setToolTip(f"Tải/Cập nhật mô hình {current_text}")
+                btn_download.setProperty("tooltip_lang_id", "ui_tooltip_download_model")
+                btn_download.setProperty("tooltip_lang_args", [current_text])
+                btn_download.setToolTip(self.mw.get_string("ui_tooltip_download_model").format(current_text))
                 btn_delete.show()
-                btn_delete.setToolTip(f"Xóa mô hình {current_text}")
+                btn_delete.setProperty("tooltip_lang_id", "ui_tooltip_delete_model")
+                btn_delete.setProperty("tooltip_lang_args", [current_text])
+                btn_delete.setToolTip(self.mw.get_string("ui_tooltip_delete_model").format(current_text))
 
     def on_dynamic_btn_clicked(self, key: str, action: str):
         if not hasattr(self.mw, '_dynamic_btns_map') or key not in self.mw._dynamic_btns_map:
