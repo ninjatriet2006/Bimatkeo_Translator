@@ -275,6 +275,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
                 
                 if lang_type == "settings":
                     new_text = self.get_ui_string("settings", lang_id, "label")
+                elif lang_type == "enums":
+                    new_text = self.get_ui_string("enums", lang_id)
                 else:
                     new_text = self.get_string(lang_id)
                     

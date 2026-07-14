@@ -33,20 +33,13 @@ class PreviewTester:
             if pixmap.isNull():
                 raise ValueError("Pixmap is null. The image file may be corrupt or in an unsupported format.")
 
-            if hasattr(self.mw, 'scene_detector'):
-                if getattr(self.mw, 'item_detector', None):
-                    self.mw.scene_detector.removeItem(self.mw.item_detector)
-                self.mw.scene_detector.clear()
-                self.mw.item_detector = self.mw.scene_detector.addPixmap(pixmap)
+            if hasattr(self.mw, 'preview_canvas'):
+                self.mw.preview_canvas.set_base_image(pixmap)
+                self.mw.preview_canvas.clear_boxes()
+                self.mw.preview_canvas.set_rendered_visible(False)
 
-            for attr_name, scene in [('item_inpainter', getattr(self.mw, 'scene_inpainter', None)), 
-                                     ('item_render', getattr(self.mw, 'scene_render', None))]:
-                if scene is not None:
-                    item = getattr(self.mw, attr_name, None)
-                    if item:
-                        scene.removeItem(item)
-                    scene.clear()
-                    setattr(self.mw, attr_name, None)
+            if hasattr(self.mw, 'preview_inspector'):
+                self.mw.preview_inspector.clear_inspector()
 
             if hasattr(self.mw, 'run_test_button'):
                 self.mw.run_test_button.setEnabled(True)
@@ -57,29 +50,25 @@ class PreviewTester:
             QMessageBox.critical(self.mw, "Error", f"Could not load the image:\n{e}")
 
     def fit_image_to_view(self):
-        for view, scene, item_attr in [
-            (getattr(self.mw, 'view_detector', None), getattr(self.mw, 'scene_detector', None), 'item_detector'),
-            (getattr(self.mw, 'view_inpainter', None), getattr(self.mw, 'scene_inpainter', None), 'item_inpainter'),
-            (getattr(self.mw, 'view_render', None), getattr(self.mw, 'scene_render', None), 'item_render')
-        ]:
-            if view and scene and getattr(self.mw, item_attr, None):
-                view.fitInView(scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+        view = getattr(self.mw, 'preview_canvas', None)
+        if view and view.scene():
+            view.fitInView(view.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
         self.update_zoom_label()
 
     def wheel_event_zoom(self, event):
-        views = [getattr(self.mw, 'view_detector', None), getattr(self.mw, 'view_inpainter', None), getattr(self.mw, 'view_render', None)]
-        views = [v for v in views if v is not None]
-        
-        if not views or event.modifiers() != Qt.KeyboardModifier.ControlModifier:
-            for v in views:
-                if v and v.underMouse():
-                    QGraphicsView.wheelEvent(v, event)
+        view = getattr(self.mw, 'preview_canvas', None)
+        if not view:
+            return
+            
+        if event.modifiers() != Qt.KeyboardModifier.ControlModifier:
+            if view.underMouse():
+                QGraphicsView.wheelEvent(view, event)
             return
 
         zoom_in_factor = 1.15
         zoom_out_factor = 1 / zoom_in_factor
 
-        current_zoom = views[0].transform().m11()
+        current_zoom = view.transform().m11()
 
         if event.angleDelta().y() > 0:
             zoom_factor = zoom_in_factor
@@ -90,19 +79,17 @@ class PreviewTester:
             min_zoom, max_zoom = 0.05, 8.0
             if (current_zoom * zoom_factor > min_zoom
                     and current_zoom * zoom_factor < max_zoom):
-                for v in views:
-                    v.scale(zoom_factor, zoom_factor)
+                view.scale(zoom_factor, zoom_factor)
         else:
             min_zoom, max_zoom = 0.01, 100.0
             if (current_zoom * zoom_factor > min_zoom
                     and current_zoom * zoom_factor < max_zoom):
-                for v in views:
-                    v.scale(zoom_factor, zoom_factor)
+                view.scale(zoom_factor, zoom_factor)
 
         self.update_zoom_label()
 
     def update_zoom_label(self):
-        view = getattr(self.mw, 'view_detector', None)
+        view = getattr(self.mw, 'preview_canvas', None)
         if view and hasattr(self.mw, 'zoom_label'):
             zoom = view.transform().m11()
             zoom_text = self.mw.get_string("ui_zoom", default="Zoom:")
@@ -216,32 +203,26 @@ class PreviewTester:
         self.mw.current_test_output_dir = output_dir
         self.mw.log("INFO", f"Đang hiển thị kết quả từ: {output_dir}")
         try:
-            det_path = os.path.join(output_dir, "test_detector.png")
-            if os.path.exists(det_path):
-                if getattr(self.mw, 'item_detector', None):
-                    self.mw.scene_detector.removeItem(self.mw.item_detector)
-                self.mw.scene_detector.clear()
-                self.mw.item_detector = self.mw.scene_detector.addPixmap(QPixmap(det_path))
-                
             inp_path = os.path.join(output_dir, "test_inpainter.png")
-            if os.path.exists(inp_path):
-                if getattr(self.mw, 'item_inpainter', None):
-                    self.mw.scene_inpainter.removeItem(self.mw.item_inpainter)
-                self.mw.scene_inpainter.clear()
-                self.mw.item_inpainter = self.mw.scene_inpainter.addPixmap(QPixmap(inp_path))
-                
             if hasattr(self.mw, 'test_image_path'):
                 original_filename = os.path.basename(self.mw.test_image_path)
                 output_filename = os.path.splitext(original_filename)[0] + ".png"
                 ren_path = os.path.join(output_dir, output_filename)
+            else:
+                ren_path = ""
+
+            if hasattr(self.mw, 'preview_canvas'):
+                if os.path.exists(inp_path):
+                    self.mw.preview_canvas.set_base_image(QPixmap(inp_path))
+                elif hasattr(self.mw, 'test_image_path') and os.path.exists(self.mw.test_image_path):
+                    self.mw.preview_canvas.set_base_image(QPixmap(self.mw.test_image_path))
+
                 if os.path.exists(ren_path):
-                    if getattr(self.mw, 'item_render', None):
-                        self.mw.scene_render.removeItem(self.mw.item_render)
-                    self.mw.scene_render.clear()
-                    self.mw.item_render = self.mw.scene_render.addPixmap(QPixmap(ren_path))
-            
+                    self.mw.preview_canvas.set_rendered_image(QPixmap(ren_path))
+                    self.mw.preview_canvas.set_rendered_visible(True)
+
             json_path = os.path.join(output_dir, "test_data.json")
-            if os.path.exists(json_path) and hasattr(self.mw, 'table_ocr') and hasattr(self.mw, 'table_translator'):
+            if os.path.exists(json_path) and hasattr(self.mw, 'preview_canvas'):
                 with open(json_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     
@@ -249,36 +230,26 @@ class PreviewTester:
                 original_texts = data.get("original_texts") or []
                 translated_texts = data.get("translated_texts") or []
                 
-                self.mw.table_ocr.setRowCount(len(bboxes))
-                for i in range(len(bboxes)):
-                    box_str = str(bboxes[i]) if i < len(bboxes) else ""
-                    orig_str = original_texts[i] if i < len(original_texts) else ""
-                    
-                    item_box = QTableWidgetItem(box_str)
-                    item_orig = QTableWidgetItem(orig_str)
-                    item_box.setFlags(item_box.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                    item_orig.setFlags(item_orig.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                    
-                    self.mw.table_ocr.setItem(i, 0, item_box)
-                    self.mw.table_ocr.setItem(i, 1, item_orig)
-                    
-                self.mw.table_translator.setRowCount(len(original_texts))
-                for i in range(len(original_texts)):
-                    orig_str = original_texts[i] if i < len(original_texts) else ""
-                    trans_str = translated_texts[i] if i < len(translated_texts) else ""
-                    
-                    item_orig = QTableWidgetItem(orig_str)
-                    item_trans = QTableWidgetItem(trans_str)
-                    item_orig.setFlags(item_orig.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                    
-                    self.mw.table_translator.setItem(i, 0, item_orig)
-                    self.mw.table_translator.setItem(i, 1, item_trans)
+                self.mw.preview_canvas.add_boxes(bboxes)
+                
+                self.mw.preview_data = {
+                    "bboxes": bboxes,
+                    "original_texts": original_texts,
+                    "translated_texts": translated_texts
+                }
             
             self.fit_image_to_view()
 
         except Exception as e:
-            self.mw.log("ERROR", f"Failed to load preview results: {e}")
-            QMessageBox.critical(self.mw, "Error", f"Could not load the preview results:\n{e}")
+            self.mw.log("ERROR", f"Error displaying test result: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            if hasattr(self.mw, 'run_test_button'):
+                self.mw.run_test_button.setEnabled(True)
+                run_test_text = self.mw.get_string("ui_run_test") if self.mw.get_string("ui_run_test") != "ui_run_test" else "Run Test"
+                self.mw.run_test_button.setText(run_test_text)
+                self.mw.run_test_button.setProperty("lang_id", "ui_run_test")
 
     def on_visual_test_finished(self):
         if hasattr(self.mw, 'run_test_button'):
@@ -286,3 +257,144 @@ class PreviewTester:
             run_text = self.mw.get_string("ui_run_test") if self.mw.get_string("ui_run_test") != "ui_run_test" else "Run Test"
             self.mw.run_test_button.setText(run_text)
             self.mw.run_test_button.setProperty("lang_id", "ui_run_test")
+
+    def on_box_selected(self, box_id):
+        if box_id < 0 or not hasattr(self.mw, 'preview_data'):
+            if hasattr(self.mw, 'preview_inspector'):
+                self.mw.preview_inspector.clear_inspector()
+            return
+            
+        data = self.mw.preview_data
+        bboxes = data.get("bboxes", [])
+        if box_id < len(bboxes):
+            box_data = {
+                "bbox": bboxes[box_id],
+                "original_text": data.get("original_texts", [])[box_id] if box_id < len(data.get("original_texts", [])) else "",
+                "translated_text": data.get("translated_texts", [])[box_id] if box_id < len(data.get("translated_texts", [])) else ""
+            }
+            if hasattr(self.mw, 'preview_inspector'):
+                self.mw.preview_inspector.load_box_data(box_data)
+        else:
+            if hasattr(self.mw, 'preview_inspector'):
+                self.mw.preview_inspector.clear_inspector()
+
+    def _get_single_box_worker(self):
+        if not hasattr(self, 'single_box_worker'):
+            from app.core.desktop.logic.pipeline_runner.single_box_worker import SingleBoxWorker
+            self.single_box_worker = SingleBoxWorker(self.mw)
+        return self.single_box_worker
+
+    def run_single_box_ocr(self):
+        inspector = getattr(self.mw, 'preview_inspector', None)
+        canvas = getattr(self.mw, 'preview_canvas', None)
+        if not inspector or not canvas or canvas.selected_box_index < 0:
+            return
+            
+        box_id = canvas.selected_box_index
+        bbox = self.mw.preview_data["bboxes"][box_id]
+        image_path = getattr(self.mw, 'test_image_path', None)
+        if not image_path:
+            return
+            
+        inspector.btn_rerun_ocr.setEnabled(False)
+        self.mw.log("INFO", f"Đang chạy OCR cho Box {box_id}...")
+        
+        config_dict = self.mw.config_loader.get_config_dict()
+        
+        def callback(result):
+            if result.get("success"):
+                text = result.get("text", "")
+                self.mw.preview_data["original_texts"][box_id] = text
+                # Update UI in main thread
+                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+                QMetaObject.invokeMethod(inspector, "load_box_data", Qt.ConnectionType.QueuedConnection, Q_ARG(dict, {
+                    "bbox": bbox,
+                    "original_text": text,
+                    "translated_text": self.mw.preview_data["translated_texts"][box_id]
+                }))
+                self.mw.log("INFO", f"Hoàn thành OCR Box {box_id}: {text}")
+            else:
+                self.mw.log("ERROR", f"Lỗi OCR Box {box_id}: {result.get('error')}")
+                
+            QMetaObject.invokeMethod(inspector.btn_rerun_ocr, "setEnabled", Qt.ConnectionType.QueuedConnection, Q_ARG(bool, True))
+            
+        self._get_single_box_worker().run_ocr(image_path, bbox, config_dict, callback)
+
+    def run_single_box_translation(self):
+        inspector = getattr(self.mw, 'preview_inspector', None)
+        canvas = getattr(self.mw, 'preview_canvas', None)
+        if not inspector or not canvas or canvas.selected_box_index < 0:
+            return
+            
+        box_id = canvas.selected_box_index
+        text = inspector.txt_original.toPlainText()
+        
+        inspector.btn_rerun_trans.setEnabled(False)
+        self.mw.log("INFO", f"Đang dịch Box {box_id}...")
+        
+        config_dict = self.mw.config_loader.get_config_dict()
+        
+        def callback(result):
+            from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+            if result.get("success"):
+                trans = result.get("text", "")
+                self.mw.preview_data["translated_texts"][box_id] = trans
+                QMetaObject.invokeMethod(inspector, "load_box_data", Qt.ConnectionType.QueuedConnection, Q_ARG(dict, {
+                    "bbox": self.mw.preview_data["bboxes"][box_id],
+                    "original_text": self.mw.preview_data["original_texts"][box_id],
+                    "translated_text": trans
+                }))
+                self.mw.log("INFO", f"Hoàn thành dịch Box {box_id}: {trans}")
+            else:
+                self.mw.log("ERROR", f"Lỗi dịch Box {box_id}: {result.get('error')}")
+                
+            QMetaObject.invokeMethod(inspector.btn_rerun_trans, "setEnabled", Qt.ConnectionType.QueuedConnection, Q_ARG(bool, True))
+            
+        self._get_single_box_worker().run_translation(text, config_dict, callback)
+
+    def run_single_box_render(self):
+        inspector = getattr(self.mw, 'preview_inspector', None)
+        canvas = getattr(self.mw, 'preview_canvas', None)
+        if not inspector or not canvas or canvas.selected_box_index < 0:
+            return
+            
+        box_id = canvas.selected_box_index
+        bbox = self.mw.preview_data["bboxes"][box_id]
+        
+        trans_text = inspector.txt_translated.toPlainText()
+        self.mw.preview_data["translated_texts"][box_id] = trans_text
+        
+        image_path = os.path.join(self.mw.current_test_output_dir, "test_inpainter.png")
+        if not os.path.exists(image_path):
+            image_path = getattr(self.mw, 'test_image_path', None)
+            
+        if not image_path:
+            return
+            
+        inspector.btn_render_box.setEnabled(False)
+        self.mw.log("INFO", f"Đang Render Box {box_id}...")
+        
+        config_dict = self.mw.config_loader.get_config_dict()
+        render_config = config_dict.get("render", {})
+        
+        def callback(result):
+            from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+            from PySide6.QtGui import QPixmap
+            if result.get("success"):
+                output_path = result.get("output_path")
+                # Need to update the canvas rendered image
+                def update_ui():
+                    pixmap = QPixmap(output_path)
+                    canvas.set_rendered_image(pixmap)
+                    canvas.set_rendered_visible(True)
+                    self.mw.log("INFO", f"Hoàn thành Render Box {box_id}")
+                    inspector.btn_render_box.setEnabled(True)
+                
+                # Use QTimer for main thread execution
+                from PySide6.QtCore import QTimer
+                QTimer.singleShot(0, update_ui)
+            else:
+                self.mw.log("ERROR", f"Lỗi Render Box {box_id}: {result.get('error')}")
+                QMetaObject.invokeMethod(inspector.btn_render_box, "setEnabled", Qt.ConnectionType.QueuedConnection, Q_ARG(bool, True))
+            
+        self._get_single_box_worker().run_render(image_path, bbox, trans_text, render_config, callback)

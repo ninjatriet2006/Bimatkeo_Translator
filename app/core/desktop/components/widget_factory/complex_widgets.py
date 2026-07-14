@@ -33,6 +33,8 @@ class ComplexWidgetFactory:
             display_name = value_map.get(val, val)
             button = QPushButton(str(display_name))
             button.setProperty("internal_id", val)
+            button.setProperty("lang_id", val)
+            button.setProperty("lang_type", "enums")
             button.setCheckable(True)
             if val == info.get("default"):
                 button.setChecked(True)
