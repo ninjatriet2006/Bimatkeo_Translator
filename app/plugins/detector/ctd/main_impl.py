@@ -18,7 +18,7 @@ from app.plugins.detector.ctd.detect import detect_text_ctd
 @DetectorFactory.register("ctd")
 class CTDetectorImpl(BaseTextDetector):
     MODELS = [
-        {'key': 'ctd', 'label': 'ctd'},
+        {'key': 'ctd', 'label': 'ctd', 'check_file': 'models/Detector/CTD/ctd.pth'},
     ]
 
     def __init__(self):

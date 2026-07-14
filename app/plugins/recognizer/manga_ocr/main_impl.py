@@ -18,7 +18,7 @@ from app.plugins.recognizer.manga_ocr.recognize import recognize_text_manga_ocr
 @RecognizerFactory.register("manga_ocr")
 class MangaOCRRecognizerImpl(BaseTextRecognizer):
     MODELS = [
-        {'key': 'manga_ocr', 'label': 'manga_ocr'},
+        {'key': 'manga_ocr', 'label': 'manga_ocr', 'check_file': 'models/OCR/Manga_OCR/manga_ocr.pth'},
     ]
 
     def __init__(self):
