@@ -17,6 +17,7 @@ from app.plugins.translator.nllb.translate import translate_nllb
 class NLLBTranslator(BaseOfflineTranslator):
     MODELS = [
         {'key': 'nllb', 'check_file': 'models/Offline Translator/NLLB/pytorch_model.bin', 'source': 'hf://facebook/nllb-200-distilled-600M'},
+        {'key': 'nllb_big', 'check_file': 'models/Offline Translator/NLLB/pytorch_model.bin', 'source': 'hf://facebook/nllb-200-distilled-1.3B'},
     ]
 
     def _perform_translation(self, texts: List[str], src_lang: str, tgt_lang: str) -> List[str]:

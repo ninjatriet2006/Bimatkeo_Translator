@@ -18,6 +18,8 @@ from app.plugins.translator.m2m100.translate import translate_m2m100
 class M2M100Translator(BaseOfflineTranslator):
     MODELS = [
         {'key': 'm2m100', 'check_file': 'models/Offline Translator/M2M100/sentencepiece.model'},
+        {'key': 'm2m100_big', 'check_file': 'models/Offline Translator/M2M100/model.bin'},
+        {'key': 'offline', 'check_file': 'models/Offline Translator/M2M100/sentencepiece.model'},
     ]
     
     def load_weights(self, model_path: str) -> None:
