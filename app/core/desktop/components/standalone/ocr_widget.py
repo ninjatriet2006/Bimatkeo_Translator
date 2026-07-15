@@ -80,13 +80,30 @@ class OCRStandaloneWidget(QWidget):
         self.layout_obj.addWidget(group_result)
 
     def _populate_models(self):
-        det_factories = DetectorFactory.get_registered_providers()
-        for key in det_factories:
-            self.combo_detector.addItem(DetectorFactory.get_display_name(key), key)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+        from app.core.desktop.config import ConfigLoader
+        from app.core.shared_registry import DetectorFactory, RecognizerFactory
+        config_loader = ConfigLoader(project_root)
+        
+        det_keys = DetectorFactory.get_registered_providers()
+        for key in det_keys:
+            label = config_loader.format_display_label(key, "offline_detector")
+            state = config_loader.get_model_state(key, "offline_detector")
+            if state == "NOT_SETUP":
+                label += " (Not Setup)"
+            elif state == "INCOMPLETE":
+                label += " (Incomplete)"
+            self.combo_detector.addItem(label, key)
             
-        rec_factories = RecognizerFactory.get_registered_providers()
-        for key in rec_factories:
-            self.combo_recognizer.addItem(RecognizerFactory.get_display_name(key), key)
+        rec_keys = RecognizerFactory.get_registered_providers()
+        for key in rec_keys:
+            label = config_loader.format_display_label(key, "offline_ocr")
+            state = config_loader.get_model_state(key, "offline_ocr")
+            if state == "NOT_SETUP":
+                label += " (Not Setup)"
+            elif state == "INCOMPLETE":
+                label += " (Incomplete)"
+            self.combo_recognizer.addItem(label, key)
 
     def _on_load_model(self):
         det_key = self.combo_detector.currentData()

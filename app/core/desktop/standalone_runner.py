@@ -25,6 +25,13 @@ class StandaloneWindow(QMainWindow):
         self.resize(800, 600)
         
         self.tool_name = tool_name
+        
+        # Chỉ quét các thư mục plugin cần thiết để khởi động cực nhanh
+        if self.tool_name.lower() == "translator":
+            os.environ["TARGET_PLUGIN_DIRS"] = "translator"
+        elif self.tool_name.lower() == "ocr":
+            os.environ["TARGET_PLUGIN_DIRS"] = "detector,recognizer"
+            
         self._load_tool()
 
     def _load_tool(self):

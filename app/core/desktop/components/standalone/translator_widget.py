@@ -61,9 +61,20 @@ class TranslatorStandaloneWidget(QWidget):
         self.layout_obj.addWidget(group_trans)
 
     def _populate_models(self):
-        factories = TranslatorFactory.get_registered_providers()
-        for key in factories:
-            self.combo_model.addItem(TranslatorFactory.get_display_name(key), key)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+        from app.core.desktop.config import ConfigLoader
+        from app.core.shared_registry import TranslatorFactory
+        config_loader = ConfigLoader(project_root)
+        
+        keys = TranslatorFactory.get_registered_providers()
+        for key in keys:
+            label = config_loader.format_display_label(key, "offline_translator")
+            state = config_loader.get_model_state(key, "offline_translator")
+            if state == "NOT_SETUP":
+                label += " (Not Setup)"
+            elif state == "INCOMPLETE":
+                label += " (Incomplete)"
+            self.combo_model.addItem(label, key)
 
     def _on_load_model(self):
         key = self.combo_model.currentData()

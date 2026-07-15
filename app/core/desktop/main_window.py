@@ -388,8 +388,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         btn_log.clicked.connect(lambda: self._show_standalone_window(self.log_window))
         btn_history.clicked.connect(lambda: self._show_standalone_window(self.history_window))
         btn_preview.clicked.connect(lambda: self._show_standalone_window(self.preview_window))
-        btn_standalone_trans.clicked.connect(lambda: self.launch_standalone_tool("translator"))
-        btn_standalone_ocr.clicked.connect(lambda: self.launch_standalone_tool("ocr"))
+        btn_standalone_trans.clicked.connect(lambda: self.launch_standalone_tool("translator", btn_standalone_trans))
+        btn_standalone_ocr.clicked.connect(lambda: self.launch_standalone_tool("ocr", btn_standalone_ocr))
 
         toolbar_layout.addWidget(btn_queue)
         toolbar_layout.addWidget(btn_log)
@@ -408,12 +408,26 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         main_layout.addWidget(settings_panel, stretch=1)
         main_layout.addWidget(bottom_panel)
 
-    def launch_standalone_tool(self, tool_name: str):
+    def launch_standalone_tool(self, tool_name: str, button=None):
         import subprocess
         import sys
         import os
+        from PySide6.QtCore import QTimer
+        
         runner_script = os.path.join(self.project_base_dir, "app", "core", "desktop", "standalone_runner.py")
         python_exe = getattr(self.config_loader, 'python_executable', sys.executable)
+        
+        if button:
+            original_text = button.text()
+            button.setText("Loading...")
+            button.setEnabled(False)
+            
+            def reset_btn():
+                button.setText(original_text)
+                button.setEnabled(True)
+                
+            # Unlock the button after 3 seconds to prevent double-clicking while waiting for the subprocess
+            QTimer.singleShot(3000, reset_btn)
         
         try:
             # Spawn the tool in a completely separate process
@@ -421,6 +435,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             self.log("INFO", f"Launched standalone tool: {tool_name}")
         except Exception as e:
             self.log("ERROR", f"Failed to launch standalone tool: {e}")
+            if button:
+                reset_btn()
 
     def _show_standalone_window(self, window):
         window.show()

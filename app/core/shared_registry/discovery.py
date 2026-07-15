@@ -20,7 +20,14 @@ def discover_plugins():
     if not os.path.exists(plugins_dir):
         return
         
+    target_dirs = os.environ.get("TARGET_PLUGIN_DIRS")
+    if target_dirs:
+        target_dirs = [d.strip() for d in target_dirs.split(",")]
+        
     for root, dirs, files in os.walk(plugins_dir):
+        if target_dirs and root == plugins_dir:
+            dirs[:] = [d for d in dirs if d in target_dirs]
+            
         for file in files:
             if file.endswith("_impl.py") and not file.startswith("__"):
                 rel_path = os.path.relpath(os.path.join(root, file), project_root)
