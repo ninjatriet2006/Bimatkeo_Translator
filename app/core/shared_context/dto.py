@@ -31,12 +31,5 @@ class PageContext:
     # Multipass Translation Candidates
     stage1_candidates: Optional[List[List[dict]]] = None
     stage2_candidates: Optional[List[List[dict]]] = None
-    
-    # Fork-Join Synchronization Flags
-    trans_done: threading.Event = field(default_factory=threading.Event)
-    inpaint_done: threading.Event = field(default_factory=threading.Event)
-    
-    # Human-in-the-loop Synchronization Flag
-    hitl_lock: threading.Event = field(default_factory=threading.Event)
 
 

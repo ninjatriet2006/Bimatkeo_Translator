@@ -10,11 +10,11 @@ INTEGRITY NOTES (For AI Agents):
 """
 import os
 import cv2
-import queue
+import multiprocessing
 from app.core.shared_context.dto import PageContext
 from app.core.shared_context.utils import set_original_image
 
-def produce(all_files: list, source_dir: str, output_path: str, config_dict: dict, log_callback, q_in: queue.Queue, stop_check_callback=None):
+def produce(all_files: list, source_dir: str, output_path: str, config_dict: dict, log_callback, q_in: multiprocessing.Queue, stop_check_callback=None):
     """
     Nạp file gốc (ảnh hoặc text) vào hàng đợi q_in. Bỏ qua các file đã hoàn thành nếu resume.
     """

@@ -11,11 +11,11 @@ INTEGRITY NOTES (For AI Agents):
 import os
 import cv2
 import json
-import queue
+import multiprocessing
 from app.core.shared_context.dto import PageContext
 from app.core.shared_context.utils import get_original_image, get_inpainted_image
 
-def consume(output_path: str, config_dict: dict, log_callback, q_out: queue.Queue):
+def consume(output_path: str, config_dict: dict, log_callback, q_out: multiprocessing.Queue):
     """
     Lấy kết quả từ q_out và lưu ra file ảnh, txt, hoặc json.
     """
@@ -88,4 +88,3 @@ def consume(output_path: str, config_dict: dict, log_callback, q_out: queue.Queu
                     }, f, ensure_ascii=False, indent=2)
         
         completed += 1
-        q_out.task_done()

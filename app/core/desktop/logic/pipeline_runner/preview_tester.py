@@ -24,7 +24,13 @@ class PreviewTester:
         file_path, _ = QFileDialog.getOpenFileName(self.mw, "Select a Test Image", "", "Image Files (*.png *.jpg *.jpeg *.webp *.bmp)")
         if not file_path:
             return
+        
+        if hasattr(self.mw, 'file_explorer'):
+            self.mw.file_explorer.select_file(file_path)
+        else:
+            self.load_test_image_from_path(file_path)
 
+    def load_test_image_from_path(self, file_path: str):
         self.mw.test_image_path = file_path
         print(f"[Visual Test] Loaded test image: {os.path.basename(file_path)}")
 
@@ -48,6 +54,39 @@ class PreviewTester:
         except Exception as e:
             print(f"[ERROR] Failed to load image file: {e}")
             QMessageBox.critical(self.mw, "Error", f"Could not load the image:\n{e}")
+
+        # Auto-run if fast preview is checked
+        if hasattr(self.mw, 'fast_preview_check') and self.mw.fast_preview_check.isChecked():
+            self.run_visual_test_thread()
+
+    def on_box_created(self, rect):
+        if not hasattr(self.mw, 'preview_data') or "bboxes" not in self.mw.preview_data:
+            self.mw.preview_data = {
+                "bboxes": [],
+                "original_texts": [],
+                "translated_texts": []
+            }
+        
+        # Add new box
+        box_data = [int(rect.x()), int(rect.y()), int(rect.width()), int(rect.height())]
+        self.mw.preview_data["bboxes"].append(box_data)
+        self.mw.preview_data["original_texts"].append("")
+        self.mw.preview_data["translated_texts"].append("")
+        
+        # Update canvas
+        if hasattr(self.mw, 'preview_canvas'):
+            self.mw.preview_canvas.add_boxes(self.mw.preview_data["bboxes"])
+        
+        # Auto trigger OCR for this new box
+        box_id = len(self.mw.preview_data["bboxes"]) - 1
+        if hasattr(self.mw, 'preview_canvas'):
+            # Select the newly created box
+            self.mw.preview_canvas.scene_obj.clearSelection()
+            if box_id in self.mw.preview_canvas.bboxes:
+                self.mw.preview_canvas.bboxes[box_id].setSelected(True)
+        
+        # Trigger run_single_box_ocr automatically
+        self.run_single_box_ocr()
 
     def fit_image_to_view(self):
         view = getattr(self.mw, 'preview_canvas', None)

@@ -8,22 +8,46 @@ INTEGRITY NOTES (For AI Agents):
 - IN = OUT: Receives PageContext from q_edit, calls trans_done.set() when complete.
 =============================================================================
 """
-import threading
+import multiprocessing
 import queue
 from app.core.shared_context.dto import PageContext
 
-class EditWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, editor_translator, log_callback=None, max_request_length=-1, context_window=10, stride_window=5):
+class EditWorker(multiprocessing.Process):
+    def __init__(self, in_q: multiprocessing.Queue, out_q: multiprocessing.Queue, config_dict: dict, log_queue: multiprocessing.Queue):
         super().__init__()
         self.in_q = in_q
-        self.editor_translator = editor_translator
-        self.log_callback = log_callback
-        self.max_request_length = max_request_length
-        self.context_window = max(1, context_window)
-        self.stride_window = max(1, stride_window)
+        self.out_q = out_q
+        self.config_dict = config_dict
+        self.log_queue = log_queue
+        
+        max_len = str(config_dict.get("translator", {}).get("max_request_length", 2000)).replace("none", "2000")
+        self.max_request_length = int(max_len) if max_len else 2000
+        
+        c_win = str(config_dict.get("translator", {}).get("context_window", 10)).replace("none", "10")
+        self.context_window = max(1, int(c_win) if c_win else 10)
+        
+        s_win = str(config_dict.get("translator", {}).get("stride_window", 5)).replace("none", "5")
+        self.stride_window = max(1, int(s_win) if s_win else 5)
+        
         self.daemon = True
 
     def run(self):
+        def _log(level, msg):
+            self.log_queue.put((level, msg))
+            
+        _log("INFO", "Edit Worker Process Started.")
+        
+        # Initialize models INSIDE the new process
+        from app.core.translator.initializer import TranslatorInitializer
+        import os
+        project_root = os.environ.get("PROJECT_ROOT") or os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        
+        api_profiles = self.config_dict.get("api_profiles_resolved", {})
+        
+        _, editor_translator = TranslatorInitializer.initialize(self.config_dict, project_root, api_profiles, _log)
+        self.editor_translator = editor_translator
+        self.log_callback = _log
+        
         stage2_buffer = []
         window_size2 = self.context_window
         stride2 = self.stride_window
@@ -94,8 +118,9 @@ class EditWorker(threading.Thread):
                         best_cands = sorted(line_cands, key=lambda x: x["score"], reverse=True)
                         best_translations.append(best_cands[0]["text"])
                 ctx.translated_texts = best_translations
-            ctx.trans_done.set()
-            self.in_q.task_done()
+                
+            if self.out_q:
+                self.out_q.put(ctx)
 
         while True:
             try:
@@ -112,7 +137,8 @@ class EditWorker(threading.Thread):
                     for p in popped:
                         commit_stage2_page(p)
                         
-                self.in_q.task_done() # For the None token
+                if self.out_q:
+                    self.out_q.put(None)
                 break
                 
             stage2_buffer.append(ctx)

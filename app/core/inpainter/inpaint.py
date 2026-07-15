@@ -8,12 +8,11 @@ INTEGRITY NOTES (For AI Agents):
 - IN = OUT: Receives PageContext from q_inpaint, processes and pushes to q_upscale or sets inpaint_done.
 =============================================================================
 """
-import threading
+import multiprocessing
 import queue
 import gc
 from app.core.shared_context.dto import PageContext
 from app.core.shared_context.utils import get_original_image, get_inpainted_image, get_background_image, set_original_image, set_inpainted_image
-from app.core.inpainter.interfaces import BaseInpainter
 
 try:
     import torch # type: ignore
@@ -25,20 +24,30 @@ def release_gpu_memory():
         torch.cuda.empty_cache()
     gc.collect()
 
-class InpaintWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, inpainter: BaseInpainter | None, log_callback=None, out_q: queue.Queue | None = None):
+class InpaintWorker(multiprocessing.Process):
+    def __init__(self, in_q: multiprocessing.Queue, config_dict: dict, log_queue: multiprocessing.Queue, out_q: multiprocessing.Queue | None = None):
         super().__init__()
         self.in_q = in_q
         self.out_q = out_q
-        self.inpainter = inpainter
-        self.log_callback = log_callback
+        self.config_dict = config_dict
+        self.log_queue = log_queue
         self.daemon = True
 
     def run(self):
+        def _log(level, msg):
+            self.log_queue.put((level, msg))
+            
+        _log("INFO", "Inpaint Worker Process Started.")
+        
+        # Initialize models INSIDE the new process
+        from app.core.inpainter.initializer import InpainterInitializer
+        inpainter, _, _, _ = InpainterInitializer.initialize(self.config_dict, _log)
+        self.inpainter = inpainter
+        self.log_callback = _log
+        
         while True:
             ctx: PageContext = self.in_q.get()
             if ctx is None:
-                self.in_q.task_done()
                 break
             
             if self.log_callback:
@@ -62,8 +71,5 @@ class InpaintWorker(threading.Thread):
 
             if self.out_q:
                 self.out_q.put(ctx)
-            else:
-                ctx.inpaint_done.set()  # Signal completion of this fork
                 
-            self.in_q.task_done()
             release_gpu_memory()

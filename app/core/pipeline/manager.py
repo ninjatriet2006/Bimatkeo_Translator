@@ -31,28 +31,11 @@ class PipelineManager:
         return self.executor.stop(log_callback)
 
     def _initialize_models(self, config_dict: dict, project_root: str, api_profiles: dict | None = None, log_callback=None):
-        """Khởi tạo toàn bộ các module trong Pipeline."""
-        # Setup API profiles for translator
-        if api_profiles is None:
-            api_profiles = {}
-            if "api_profiles" in config_dict:
-                for prof in config_dict["api_profiles"]:
-                    api_profiles[prof.get("name")] = prof
-
-        cloud_ocr, detector, recognizer = OCRInitializer.initialize(config_dict, log_callback)
-        chained_translators, editor_translator = TranslatorInitializer.initialize(config_dict, project_root, api_profiles, log_callback)
-        inpainter, upscaler, enable_upscaler, upscale_ratio = InpainterInitializer.initialize(config_dict, log_callback)
-        renderer = RendererInitializer.initialize(config_dict, log_callback)
-
-        return {
-            "ocr": (cloud_ocr, detector, recognizer),
-            "translator": (chained_translators, editor_translator),
-            "inpainter": (inpainter, upscaler, enable_upscaler, upscale_ratio),
-            "renderer": renderer
-        }
+        """Khởi tạo toàn bộ các module trong Pipeline. (DEPRECATED for multiprocessing)"""
+        pass
 
     def run(self, job, output_path, config_dict, log_callback, is_verbose=False, output_format='png', mtpe_callback=None):
-        """Initializes models and runs the real multi-threaded pipeline."""
+        """Runs the real multi-threaded pipeline."""
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         
         config_bundle = load_all_configs(project_root, config_dict, log_callback)
@@ -60,10 +43,12 @@ class PipelineManager:
         api_profiles = config_bundle["api_profiles"]
         config_dict["skip_languages"] = config_bundle["skip_languages"]
         config_dict["filter_texts"] = config_bundle["filter_texts"]
-
-        models_bundle = self._initialize_models(config_dict, project_root, api_profiles, log_callback)
         
-        return self.executor.run(job, output_path, config_dict, log_callback, models_bundle, is_verbose, output_format, mtpe_callback)
+        # Add api_profiles to config_dict so executor can use them
+        config_dict["api_profiles_resolved"] = api_profiles
+
+        # Pass config_dict to executor instead of models_bundle
+        return self.executor.run(job, output_path, config_dict, log_callback, is_verbose, output_format, mtpe_callback)
 
     def run_single_image_test(self, test_image_path, output_path, config_dict, log_callback, is_verbose=False):
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -73,7 +58,7 @@ class PipelineManager:
         api_profiles = config_bundle["api_profiles"]
         config_dict["skip_languages"] = config_bundle["skip_languages"]
         config_dict["filter_texts"] = config_bundle["filter_texts"]
-
-        models_bundle = self._initialize_models(config_dict, project_root, api_profiles, log_callback)
         
-        return self.executor.run_single_image_test(test_image_path, output_path, config_dict, log_callback, models_bundle, is_verbose)
+        config_dict["api_profiles_resolved"] = api_profiles
+
+        return self.executor.run_single_image_test(test_image_path, output_path, config_dict, log_callback, is_verbose)

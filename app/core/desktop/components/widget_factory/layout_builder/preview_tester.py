@@ -52,8 +52,24 @@ class PreviewTesterBuilderMixin:
         self.mw.limit_zoom_check.setChecked(True)
         self.mw.limit_zoom_check.setToolTip("When checked, zoom is limited between 5% and 800%.")
 
+        from PySide6.QtWidgets import QButtonGroup, QRadioButton
+        self.mw.mode_group = QButtonGroup(self.mw)
+        self.mw.btn_mode_select = QRadioButton("Select")
+        self.mw.btn_mode_select.setChecked(True)
+        self.mw.btn_mode_draw = QRadioButton("Draw Box")
+        self.mw.mode_group.addButton(self.mw.btn_mode_select, 0)
+        self.mw.mode_group.addButton(self.mw.btn_mode_draw, 1)
+        
+        def _on_mode_changed(idx):
+            mode = "select" if idx == 0 else "draw"
+            self.mw.preview_canvas.set_mode(mode)
+            
+        self.mw.mode_group.idClicked.connect(_on_mode_changed)
+
         controls_layout.addWidget(load_button)
         controls_layout.addWidget(self.mw.fast_preview_check)
+        controls_layout.addWidget(self.mw.btn_mode_select)
+        controls_layout.addWidget(self.mw.btn_mode_draw)
         controls_layout.addStretch()
         controls_layout.addWidget(self.mw.zoom_label)
         controls_layout.addWidget(reset_button)
@@ -63,14 +79,19 @@ class PreviewTesterBuilderMixin:
 
         self.mw.preview_splitter = QSplitter(Qt.Orientation.Horizontal)
         
+        from app.core.desktop.components.preview_widgets.file_explorer_panel import FileExplorerPanel
+        self.mw.file_explorer = FileExplorerPanel()
+        
         self.mw.preview_canvas = InteractivePreviewCanvas()
         self.mw.preview_inspector = InspectorPanel()
         
+        self.mw.preview_splitter.addWidget(self.mw.file_explorer)
         self.mw.preview_splitter.addWidget(self.mw.preview_canvas)
         self.mw.preview_splitter.addWidget(self.mw.preview_inspector)
         
-        self.mw.preview_splitter.setStretchFactor(0, 4)
-        self.mw.preview_splitter.setStretchFactor(1, 1)
+        self.mw.preview_splitter.setStretchFactor(0, 1)
+        self.mw.preview_splitter.setStretchFactor(1, 4)
+        self.mw.preview_splitter.setStretchFactor(2, 1)
         
         layout.addWidget(self.mw.preview_splitter, stretch=1)
         
@@ -78,6 +99,8 @@ class PreviewTesterBuilderMixin:
         self.mw.preview_canvas.wheelEvent = self.mw._wheel_event_zoom
 
         self.mw.preview_canvas.box_selected.connect(self.mw.preview_tester.on_box_selected)
+        self.mw.file_explorer.file_selected.connect(self.mw.preview_tester.load_test_image_from_path)
+        self.mw.preview_canvas.box_created.connect(self.mw.preview_tester.on_box_created)
         
         self.mw.preview_inspector.btn_rerun_ocr.clicked.connect(self.mw.preview_tester.run_single_box_ocr)
         self.mw.preview_inspector.btn_rerun_trans.clicked.connect(self.mw.preview_tester.run_single_box_translation)

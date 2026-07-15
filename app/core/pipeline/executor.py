@@ -2,15 +2,16 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.pipeline.executor
-- RESPONSIBILITY: Runs the multi-threaded Fork-Join pipeline execution logic.
+- RESPONSIBILITY: Runs the multi-process Fork-Join pipeline execution logic.
 - CALLED BY: app.core.pipeline.manager
 - CALLS TO: app.core.ocr.ocr.OCRWorker, app.core.translator.translate.TranslateWorker, etc.
-- IN = OUT: Receives initialized models, starts threads, runs produce/consume.
+- IN = OUT: Receives config_dict, starts processes, runs produce/consume.
 =============================================================================
 """
 
 import os
 import queue
+import multiprocessing
 import threading
 
 from app.core.pipeline.producer import produce
@@ -23,29 +24,41 @@ from app.core.inpainter.inpaint import InpaintWorker
 from app.core.inpainter.upscale import UpscalerWorker
 from app.core.renderer.render import RenderWorker
 
+def _log_listener(log_queue: multiprocessing.Queue, log_callback):
+    """Listens for logs from child processes and forwards them to the main UI."""
+    while True:
+        try:
+            msg = log_queue.get()
+            if msg is None:
+                break
+            level, text = msg
+            if log_callback:
+                log_callback(level, text)
+        except EOFError:
+            break
+
 class PipelineExecutor:
-    """Handles the execution of the backend translation process via Fork-Join Queue Architecture."""
+    """Handles the execution of the backend translation process via Multi-process Fork-Join Queue Architecture."""
 
     def __init__(self, app, python_executable, temp_dir):
         self.app = app
         self.python_executable = python_executable
         self.temp_dir = temp_dir
         os.makedirs(self.temp_dir, exist_ok=True)
-        self.process = None
         self._stopped_by_user = False
 
     def is_stopped(self):
         return self._stopped_by_user
 
     def stop(self, log_callback):
-        """Stops the pipeline simulation."""
+        """Stops the pipeline execution."""
         self._stopped_by_user = True
         if log_callback:
             log_callback("PIPELINE", "msg_pipeline_stopped")
         return True
 
-    def run(self, job, output_path, config_dict, log_callback, models_bundle, is_verbose=False, output_format='png', mtpe_callback=None):
-        """Runs the real multi-threaded pipeline."""
+    def run(self, job, output_path, config_dict, log_callback, is_verbose=False, output_format='png', mtpe_callback=None):
+        """Runs the real multi-process pipeline."""
         source_path = job['source_path']
         job_name = os.path.basename(source_path)
         log_callback("PIPELINE", f"msg_pipeline_starting|job_name={job_name}")
@@ -66,69 +79,81 @@ class PipelineExecutor:
             log_callback("WARNING", "msg_pipeline_no_files")
             return True
 
-        # Unpack models
-        cloud_ocr, detector, recognizer = models_bundle.get("ocr", (None, None, None))
-        chained_translators, editor_translator = models_bundle.get("translator", ([], None))
-        inpainter, upscaler, enable_upscaler, upscale_ratio = models_bundle.get("inpainter", (None, None, False, 2))
-        renderer = models_bundle.get("renderer", None)
-
         target_lang = config_dict.get("translator", {}).get("target_lang", "VIN")
-        skip_languages = config_dict.get("skip_languages", {})
-        filter_texts = config_dict.get("filter_texts", [])
 
         try:
             os.makedirs(output_path, exist_ok=True)
             
-            # Initialize Queues for Fork-Join
-            q_in = queue.Queue()
-            q_trans = queue.Queue()
-            q_edit = queue.Queue()
-            q_inpaint = queue.Queue()
-            q_upscale = queue.Queue()
-            q_render = queue.Queue()
-            q_out = queue.Queue()
+            # Initialize multiprocessing Queues
+            q_in = multiprocessing.Queue()
+            q_trans = multiprocessing.Queue()
+            q_edit = multiprocessing.Queue()
+            q_inpaint = multiprocessing.Queue()
+            q_upscale = multiprocessing.Queue()
+            
+            q_trans_done = multiprocessing.Queue()
+            q_inpaint_done = multiprocessing.Queue()
+            
+            q_out = multiprocessing.Queue()
+            
+            log_queue = multiprocessing.Queue()
+            
+            # Start log listener thread
+            log_thread = threading.Thread(target=_log_listener, args=(log_queue, log_callback), daemon=True)
+            log_thread.start()
 
-            # Create Workers
+            # Create Process Workers (Pass config_dict instead of initialized models)
             ocr_worker = OCRWorker(
-                in_q=q_in, out_q_trans=q_trans, out_q_inpaint=q_inpaint, out_q_render=q_render,
-                detector=detector, recognizer=recognizer, log_callback=log_callback,
-                cloud_ocr=cloud_ocr, ocr_config=config_dict.get("ocr", {}), render_config=config_dict.get("render", {})
+                in_q=q_in, out_q_trans=q_trans, out_q_inpaint=q_inpaint,
+                config_dict=config_dict, log_queue=log_queue
             )
             
             trans_worker = TranslateWorker(
                 in_q=q_trans,
-                out_q=q_edit if editor_translator else None,
-                translator_or_chain=chained_translators, 
-                src_lang=config_dict.get("translator", {}).get("source_lang", "JPN"), 
-                tgt_lang=target_lang,
-                log_callback=log_callback,
-                skip_languages=skip_languages,
-                filter_texts=filter_texts,
-                no_text_lang_skip=config_dict.get("translator", {}).get("no_text_lang_skip", False),
-                max_request_length=int(str(config_dict.get("translator", {}).get("max_request_length", 2000)).replace("none", "2000") or 2000),
-                context_window=int(str(config_dict.get("translator", {}).get("context_window", 10)).replace("none", "10") or 10),
-                stride_window=int(str(config_dict.get("translator", {}).get("stride_window", 5)).replace("none", "5") or 5)
+                out_q=q_edit if config_dict.get("translator", {}).get("use_editor", False) else q_trans_done,
+                config_dict=config_dict,
+                log_queue=log_queue
             )
             
-            edit_worker = EditWorker(
-                in_q=q_edit,
-                editor_translator=editor_translator,
-                log_callback=log_callback,
-                max_request_length=int(str(config_dict.get("translator", {}).get("max_request_length", 2000)).replace("none", "2000") or 2000),
-                context_window=int(str(config_dict.get("translator", {}).get("context_window", 10)).replace("none", "10") or 10),
-                stride_window=int(str(config_dict.get("translator", {}).get("stride_window", 5)).replace("none", "5") or 5)
-            ) if editor_translator else None
+            edit_worker = None
+            if config_dict.get("translator", {}).get("use_editor", False):
+                edit_worker = EditWorker(
+                    in_q=q_edit,
+                    out_q=q_trans_done,
+                    config_dict=config_dict,
+                    log_queue=log_queue
+                )
             
-            inpaint_worker = InpaintWorker(q_inpaint, inpainter, log_callback, out_q=q_upscale if enable_upscaler else None)
-            upscale_worker = UpscalerWorker(q_upscale, upscaler, upscale_ratio, log_callback) if enable_upscaler else None
-            render_worker = RenderWorker(q_render, q_out, renderer, log_callback)
+            enable_upscaler = config_dict.get("inpainter", {}).get("upscale", False)
+            inpaint_worker = InpaintWorker(
+                in_q=q_inpaint, 
+                out_q=q_upscale if enable_upscaler else q_inpaint_done,
+                config_dict=config_dict,
+                log_queue=log_queue
+            )
+            
+            upscale_worker = None
+            if enable_upscaler:
+                upscale_worker = UpscalerWorker(
+                    in_q=q_upscale, 
+                    out_q=q_inpaint_done,
+                    config_dict=config_dict,
+                    log_queue=log_queue
+                )
+                
+            render_worker = RenderWorker(
+                q_trans_done=q_trans_done, q_inpaint_done=q_inpaint_done, out_q=q_out, 
+                config_dict=config_dict,
+                log_queue=log_queue
+            )
 
             # Start Workers
-            workers: list[threading.Thread] = [ocr_worker, trans_worker, inpaint_worker, render_worker]
+            workers: list[multiprocessing.Process] = [ocr_worker, trans_worker, inpaint_worker, render_worker]
             if edit_worker:
                 workers.append(edit_worker)
             if upscale_worker:
                 workers.append(upscale_worker)
+            
             for w in workers:
                 w.start()
 
@@ -138,7 +163,7 @@ class PipelineExecutor:
                 source_dir=source_dir,
                 output_path=output_path,
                 config_dict=config_dict,
-                log_callback=log_callback,
+                log_callback=log_callback,  # Producer runs in main process, can use standard callback
                 q_in=q_in,
                 stop_check_callback=self.is_stopped
             )
@@ -151,14 +176,13 @@ class PipelineExecutor:
                 q_out=q_out
             )
 
-            # Wait for all queues to empty
-            join_workers: list[threading.Thread] = [ocr_worker, trans_worker, inpaint_worker, render_worker]
-            if edit_worker:
-                join_workers.append(edit_worker)
-            if upscale_worker:
-                join_workers.append(upscale_worker)
-            for w in join_workers:
+            # Wait for processes
+            for w in workers:
                 w.join()
+
+            # Stop logger
+            log_queue.put(None)
+            log_thread.join()
 
             if self._stopped_by_user:
                 log_callback("WARNING", "msg_pipeline_stopped")
@@ -173,10 +197,10 @@ class PipelineExecutor:
             traceback.print_exc()
             return False
 
-    def run_single_image_test(self, test_image_path, output_path, config_dict, log_callback, models_bundle, is_verbose=False):
+    def run_single_image_test(self, test_image_path, output_path, config_dict, log_callback, is_verbose=False):
         job_dict = {
             'source_path': test_image_path,
             'job_type': config_dict.get('job_type', 'T')
         }
         config_dict['is_single_file'] = True
-        return self.run(job_dict, output_path, config_dict, log_callback, models_bundle, is_verbose, output_format='png')
+        return self.run(job_dict, output_path, config_dict, log_callback, is_verbose, output_format='png')

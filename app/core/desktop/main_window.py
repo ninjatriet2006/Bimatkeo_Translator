@@ -381,16 +381,22 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         btn_log = QPushButton("📜 Console Log")
         btn_history = QPushButton("🕒 History")
         btn_preview = QPushButton("🔍 Preview Tester")
+        btn_standalone_trans = QPushButton("🌐 Translator Tool")
+        btn_standalone_ocr = QPushButton("📝 OCR Tool")
         
         btn_queue.clicked.connect(lambda: self._show_standalone_window(self.queue_window))
         btn_log.clicked.connect(lambda: self._show_standalone_window(self.log_window))
         btn_history.clicked.connect(lambda: self._show_standalone_window(self.history_window))
         btn_preview.clicked.connect(lambda: self._show_standalone_window(self.preview_window))
+        btn_standalone_trans.clicked.connect(lambda: self.launch_standalone_tool("translator"))
+        btn_standalone_ocr.clicked.connect(lambda: self.launch_standalone_tool("ocr"))
 
         toolbar_layout.addWidget(btn_queue)
         toolbar_layout.addWidget(btn_log)
         toolbar_layout.addWidget(btn_history)
         toolbar_layout.addWidget(btn_preview)
+        toolbar_layout.addWidget(btn_standalone_trans)
+        toolbar_layout.addWidget(btn_standalone_ocr)
         toolbar_layout.addStretch()
 
         # Main Studio Settings is now the core central area
@@ -401,6 +407,20 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         main_layout.addLayout(toolbar_layout)
         main_layout.addWidget(settings_panel, stretch=1)
         main_layout.addWidget(bottom_panel)
+
+    def launch_standalone_tool(self, tool_name: str):
+        import subprocess
+        import sys
+        import os
+        runner_script = os.path.join(self.project_base_dir, "app", "core", "desktop", "standalone_runner.py")
+        python_exe = getattr(self.config_loader, 'python_executable', sys.executable)
+        
+        try:
+            # Spawn the tool in a completely separate process
+            subprocess.Popen([python_exe, runner_script, "--tool", tool_name])
+            self.log("INFO", f"Launched standalone tool: {tool_name}")
+        except Exception as e:
+            self.log("ERROR", f"Failed to launch standalone tool: {e}")
 
     def _show_standalone_window(self, window):
         window.show()

@@ -8,12 +8,11 @@ INTEGRITY NOTES (For AI Agents):
 - IN = OUT: Receives PageContext from q_upscale, processes and calls inpaint_done.set().
 =============================================================================
 """
-import threading
+import multiprocessing
 import queue
 import gc
 from app.core.shared_context.dto import PageContext
 from app.core.shared_context.utils import get_original_image, get_inpainted_image, get_background_image, set_original_image, set_inpainted_image
-from app.core.inpainter.interfaces import BaseUpscaler
 
 try:
     import torch # type: ignore
@@ -25,20 +24,31 @@ def release_gpu_memory():
         torch.cuda.empty_cache()
     gc.collect()
 
-class UpscalerWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, upscaler: BaseUpscaler | None, ratio: int, log_callback=None):
+class UpscalerWorker(multiprocessing.Process):
+    def __init__(self, in_q: multiprocessing.Queue, out_q: multiprocessing.Queue, config_dict: dict, log_queue: multiprocessing.Queue):
         super().__init__()
         self.in_q = in_q
-        self.upscaler = upscaler
-        self.ratio = ratio
-        self.log_callback = log_callback
+        self.out_q = out_q
+        self.config_dict = config_dict
+        self.log_queue = log_queue
+        
+        self.ratio = config_dict.get("inpainter", {}).get("upscale_ratio", 2)
         self.daemon = True
 
     def run(self):
+        def _log(level, msg):
+            self.log_queue.put((level, msg))
+            
+        _log("INFO", "Upscale Worker Process Started.")
+        
+        from app.core.inpainter.initializer import InpainterInitializer
+        _, upscaler, _, _ = InpainterInitializer.initialize(self.config_dict, _log)
+        self.upscaler = upscaler
+        self.log_callback = _log
+        
         while True:
             ctx: PageContext = self.in_q.get()
             if ctx is None:
-                self.in_q.task_done()
                 break
                 
             if self.log_callback:
@@ -63,6 +73,6 @@ class UpscalerWorker(threading.Thread):
                     if self.log_callback:
                         self.log_callback("ERROR", f"Upscale Error on {ctx.page_id}: {e}")
 
-            ctx.inpaint_done.set()  # Signal completion of the fork for the RenderWorker to join
-            self.in_q.task_done()
+            if self.out_q:
+                self.out_q.put(ctx)
             release_gpu_memory()

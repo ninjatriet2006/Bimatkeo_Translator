@@ -8,7 +8,7 @@ INTEGRITY NOTES (For AI Agents):
 - IN = OUT: Receives PageContext from q_trans, pushes to q_edit (if Editor exists) or calls trans_done.set().
 =============================================================================
 """
-import threading
+import multiprocessing
 import queue
 import fnmatch
 import re
@@ -19,28 +19,30 @@ try:
 except ImportError:
     detect = None
 
-class TranslateWorker(threading.Thread):
-    def __init__(self, in_q: queue.Queue, out_q: queue.Queue | None, translator_or_chain, src_lang: str, tgt_lang: str, log_callback=None, hitl_callback=None, skip_languages=None, filter_texts=None, no_text_lang_skip=False, max_request_length=-1, context_window=10, stride_window=5):
+class TranslateWorker(multiprocessing.Process):
+    def __init__(self, in_q: multiprocessing.Queue, out_q: multiprocessing.Queue | None, config_dict: dict, log_queue: multiprocessing.Queue):
         super().__init__()
         self.in_q = in_q
         self.out_q = out_q
+        self.config_dict = config_dict
+        self.log_queue = log_queue
         
-        # Determine if we have a single translator or a chain
-        if isinstance(translator_or_chain, list):
-            self.chained_translators = translator_or_chain
-        else:
-            self.chained_translators = [(translator_or_chain, tgt_lang)] if translator_or_chain else []
-            
-        self.src_lang = src_lang
-        self.tgt_lang = tgt_lang
-        self.log_callback = log_callback
-        self.skip_languages = skip_languages or {}
-        self.filter_texts = filter_texts or []
-        self.no_text_lang_skip = no_text_lang_skip
-        self.max_request_length = max_request_length
+        self.src_lang = config_dict.get("translator", {}).get("source_lang", "JPN")
+        self.tgt_lang = config_dict.get("translator", {}).get("target_lang", "VIN")
         
-        self.context_window = max(1, context_window)
-        self.stride_window = max(1, stride_window)
+        self.skip_languages = config_dict.get("skip_languages", {})
+        self.filter_texts = config_dict.get("filter_texts", [])
+        self.no_text_lang_skip = config_dict.get("translator", {}).get("no_text_lang_skip", False)
+        
+        max_len = str(config_dict.get("translator", {}).get("max_request_length", 2000)).replace("none", "2000")
+        self.max_request_length = int(max_len) if max_len else 2000
+        
+        c_win = str(config_dict.get("translator", {}).get("context_window", 10)).replace("none", "10")
+        self.context_window = max(1, int(c_win) if c_win else 10)
+        
+        s_win = str(config_dict.get("translator", {}).get("stride_window", 5)).replace("none", "5")
+        self.stride_window = max(1, int(s_win) if s_win else 5)
+        
         self.daemon = True
 
     def _should_skip_text(self, text, current_tgt_lang):
@@ -91,6 +93,23 @@ class TranslateWorker(threading.Thread):
         return False
 
     def run(self):
+        def _log(level, msg):
+            self.log_queue.put((level, msg))
+            
+        _log("INFO", "Translate Worker Process Started.")
+        
+        # Initialize models INSIDE the new process
+        from app.core.translator.initializer import TranslatorInitializer
+        import os
+        project_root = os.environ.get("PROJECT_ROOT") or os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        
+        # We need the resolved API profiles
+        api_profiles = self.config_dict.get("api_profiles_resolved", {})
+        
+        chained_translators, _ = TranslatorInitializer.initialize(self.config_dict, project_root, api_profiles, _log)
+        self.chained_translators = chained_translators
+        self.log_callback = _log
+        
         stage1_buffer = []
         window_size1 = self.context_window
         stride1 = self.stride_window
@@ -130,7 +149,7 @@ class TranslateWorker(threading.Thread):
                 total_chars = sum(len(t) for t in texts)
                 
                 if self.max_request_length > 0 and total_chars > self.max_request_length and len(texts) > 1:
-                    if self.log_callback:
+                    if self.log_callback is not None:
                         self.log_callback("TRANSLATE", f"Stage 1 payload ({total_chars} chars) exceeds limit. Splitting into 2 batches...")
                     mid = len(texts) // 2
                     _process_recursive(texts[:mid], mapping[:mid])
@@ -138,7 +157,7 @@ class TranslateWorker(threading.Thread):
                     return
                     
                 try:
-                    if self.log_callback:
+                    if self.log_callback is not None:
                         self.log_callback("TRANSLATE", f"Stage 1: Processing batch of {len(texts)} lines ({total_chars} chars).")
                     
                     translated_part = step_translator.translate(texts, self.src_lang, step_tgt_lang, [])
@@ -151,7 +170,7 @@ class TranslateWorker(threading.Thread):
                             if line_idx != -1 and ctx.stage1_candidates is not None:
                                 ctx.stage1_candidates[line_idx].append({"text": text, "score": score})
                 except Exception as e:
-                    if self.log_callback:
+                    if self.log_callback is not None:
                         self.log_callback("ERROR", f"Stage 1 Error: {e}")
 
             _process_recursive(texts_to_translate, page_line_map)
@@ -187,13 +206,9 @@ class TranslateWorker(threading.Thread):
                         commit_stage1_page(p)
                         if self.out_q:
                             self.out_q.put(p)
-                        else:
-                            p.trans_done.set()
-                            self.in_q.task_done()
                             
                 if self.out_q:
                     self.out_q.put(None)
-                self.in_q.task_done()
                 break
                 
             stage1_buffer.append(ctx)
@@ -205,6 +220,3 @@ class TranslateWorker(threading.Thread):
                     commit_stage1_page(p)
                     if self.out_q:
                         self.out_q.put(p)
-                    else:
-                        p.trans_done.set()
-                        self.in_q.task_done()

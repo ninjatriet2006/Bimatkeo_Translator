@@ -42,6 +42,7 @@ class BBoxGraphicsItem(QGraphicsRectItem):
 class InteractivePreviewCanvas(QGraphicsView):
     box_selected = Signal(int)
     box_moved = Signal(int, QRectF)
+    box_created = Signal(QRectF)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -57,7 +58,55 @@ class InteractivePreviewCanvas(QGraphicsView):
         self.rendered_layer.setZValue(1)
         
         self.bboxes = {} # id -> BBoxGraphicsItem
+        self.selected_box_index = -1
         self.scene_obj.selectionChanged.connect(self._on_selection_changed)
+        
+        # Drawing tools
+        self.current_mode = "select" # "select" or "draw"
+        self.temp_rect_item = None
+        self.start_point = None
+
+    def set_mode(self, mode: str):
+        self.current_mode = mode
+        if mode == "draw":
+            self.setDragMode(QGraphicsView.DragMode.NoDrag)
+            self.setCursor(Qt.CursorShape.CrossCursor)
+        else:
+            self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+            self.setCursor(Qt.CursorShape.ArrowCursor)
+
+    def mousePressEvent(self, event):
+        if self.current_mode == "draw" and event.button() == Qt.MouseButton.LeftButton:
+            self.start_point = self.mapToScene(event.pos())
+            self.temp_rect_item = QGraphicsRectItem(QRectF(self.start_point, self.start_point))
+            self.temp_rect_item.setPen(QPen(QColor(0, 0, 255, 200), 2, Qt.PenStyle.DashLine))
+            self.temp_rect_item.setBrush(QBrush(QColor(0, 0, 255, 50)))
+            self.temp_rect_item.setZValue(3)
+            self.scene_obj.addItem(self.temp_rect_item)
+        else:
+            super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self.current_mode == "draw" and self.temp_rect_item and self.start_point:
+            end_point = self.mapToScene(event.pos())
+            rect = QRectF(self.start_point, end_point).normalized()
+            self.temp_rect_item.setRect(rect)
+        else:
+            super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self.current_mode == "draw" and event.button() == Qt.MouseButton.LeftButton:
+            if self.temp_rect_item:
+                rect = self.temp_rect_item.rect()
+                self.scene_obj.removeItem(self.temp_rect_item)
+                self.temp_rect_item = None
+                self.start_point = None
+                
+                # Only emit if the box is big enough
+                if rect.width() > 10 and rect.height() > 10:
+                    self.box_created.emit(rect)
+        else:
+            super().mouseReleaseEvent(event)
 
     def set_base_image(self, pixmap: QPixmap):
         self.base_layer.setPixmap(pixmap)
@@ -91,6 +140,8 @@ class InteractivePreviewCanvas(QGraphicsView):
     def _on_selection_changed(self):
         selected = self.scene_obj.selectedItems()
         if selected and isinstance(selected[0], BBoxGraphicsItem):
-            self.box_selected.emit(selected[0].box_id)
+            self.selected_box_index = selected[0].box_id
+            self.box_selected.emit(self.selected_box_index)
         else:
+            self.selected_box_index = -1
             self.box_selected.emit(-1)
