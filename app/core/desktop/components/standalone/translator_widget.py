@@ -59,6 +59,21 @@ class TranslatorStandaloneWidget(QWidget):
         layout_trans.addWidget(self.txt_target)
         
         self.layout_obj.addWidget(group_trans)
+        
+        # Console Area
+        group_console = QGroupBox("Console Logs")
+        layout_console = QVBoxLayout(group_console)
+        self.txt_console = QTextEdit()
+        self.txt_console.setReadOnly(True)
+        self.txt_console.setStyleSheet("background-color: #1e1e1e; color: #00ff00; font-family: monospace;")
+        layout_console.addWidget(self.txt_console)
+        self.layout_obj.addWidget(group_console)
+
+    def _log(self, level: str, msg: str):
+        def _update():
+            self.txt_console.append(f"[{level}] {msg}")
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(0, _update)
 
     def _populate_models(self):
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
@@ -95,10 +110,10 @@ class TranslatorStandaloneWidget(QWidget):
                 os.environ["PROJECT_ROOT"] = project_root
                 
                 from app.core.translator.initializer import TranslatorInitializer
-                chained, editor = TranslatorInitializer.initialize(config_dict, project_root, {}, log_callback=None)
+                chained, editor = TranslatorInitializer.initialize(config_dict, project_root, {}, log_callback=self._log)
                 
                 if chained and len(chained) > 0:
-                    self.translator_instance = chained[0]
+                    self.translator_instance = chained[0][0]
                     QTimer.singleShot(0, self._on_load_success)
                 else:
                     raise Exception("Failed to load translator")
