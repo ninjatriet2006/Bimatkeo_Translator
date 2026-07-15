@@ -85,6 +85,7 @@ class TranslatorStandaloneWidget(QWidget):
         self.btn_load.setText("Loading...")
         
         def _load():
+            from PySide6.QtCore import QTimer
             try:
                 # Need dummy config dict. For a standalone UI, we might need a basic config
                 config_dict = {"translator": {"model": key}}
@@ -98,12 +99,13 @@ class TranslatorStandaloneWidget(QWidget):
                 
                 if chained and len(chained) > 0:
                     self.translator_instance = chained[0]
-                    QMetaObject.invokeMethod(self, "_on_load_success", Qt.ConnectionType.QueuedConnection)
+                    QTimer.singleShot(0, self._on_load_success)
                 else:
                     raise Exception("Failed to load translator")
                     
             except Exception as e:
-                QMetaObject.invokeMethod(self, "_on_load_fail", Qt.ConnectionType.QueuedConnection, Q_ARG(str, str(e)))
+                err = str(e)
+                QTimer.singleShot(0, lambda e=err: self._on_load_fail(e))
 
         threading.Thread(target=_load, daemon=True).start()
 
@@ -129,11 +131,13 @@ class TranslatorStandaloneWidget(QWidget):
         self.btn_translate.setText("Translating...")
         
         def _trans():
+            from PySide6.QtCore import QTimer
             try:
                 result = self.translator_instance.translate(source_text)
-                QMetaObject.invokeMethod(self, "_on_trans_success", Qt.ConnectionType.QueuedConnection, Q_ARG(str, result))
+                QTimer.singleShot(0, lambda r=result: self._on_trans_success(r))
             except Exception as e:
-                QMetaObject.invokeMethod(self, "_on_trans_fail", Qt.ConnectionType.QueuedConnection, Q_ARG(str, str(e)))
+                err = str(e)
+                QTimer.singleShot(0, lambda e=err: self._on_trans_fail(e))
 
         threading.Thread(target=_trans, daemon=True).start()
 

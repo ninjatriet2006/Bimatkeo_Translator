@@ -116,24 +116,23 @@ class OCRStandaloneWidget(QWidget):
         self.btn_load.setText("Loading...")
         
         def _load():
+            from PySide6.QtCore import QTimer
             try:
                 config_dict = {"ocr": {"detector": det_key, "recognizer": rec_key}}
-                
                 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
                 os.environ["PROJECT_ROOT"] = project_root
                 
                 from app.core.ocr.initializer import OCRInitializer
-                cloud_ocr, detector, recognizer = OCRInitializer.initialize(config_dict, log_callback=None)
-                
-                if detector and recognizer:
-                    self.detector_instance = detector
-                    self.recognizer_instance = recognizer
-                    QMetaObject.invokeMethod(self, "_on_load_success", Qt.ConnectionType.QueuedConnection)
+                cloud_ocr, det, rec = OCRInitializer.initialize(config_dict, log_callback=None)
+                if det and rec:
+                    self.detector_instance = det
+                    self.recognizer_instance = rec
+                    QTimer.singleShot(0, self._on_load_success)
                 else:
-                    raise Exception("Failed to load OCR models")
-                    
+                    raise Exception("Failed to initialize models.")
             except Exception as e:
-                QMetaObject.invokeMethod(self, "_on_load_fail", Qt.ConnectionType.QueuedConnection, Q_ARG(str, str(e)))
+                err = str(e)
+                QTimer.singleShot(0, lambda e=err: self._on_load_fail(e))
 
         threading.Thread(target=_load, daemon=True).start()
 
@@ -149,45 +148,45 @@ class OCRStandaloneWidget(QWidget):
         QMessageBox.critical(self, "Error", f"Failed to load models:\n{error_msg}")
 
     def _on_select_image(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Image", "", "Image Files (*.png *.jpg *.jpeg *.webp *.bmp)")
-        if file_path:
-            self.current_image_path = file_path
-            pixmap = QPixmap(file_path)
-            self.lbl_image.setPixmap(pixmap.scaled(self.lbl_image.width(), self.lbl_image.height(), Qt.AspectRatioMode.KeepAspectRatio))
+        path, _ = QFileDialog.getOpenFileName(self, "Select Image", "", "Images (*.png *.jpg *.jpeg *.bmp)")
+        if path:
+            self.current_image_path = path
+            pixmap = QPixmap(path)
+            # scale down to fit preview
+            scaled = pixmap.scaled(self.lbl_image.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            self.lbl_image.setPixmap(scaled)
+            
             if self.detector_instance and self.recognizer_instance:
                 self.btn_run_ocr.setEnabled(True)
 
     def _on_run_ocr(self):
-        if not self.detector_instance or not self.recognizer_instance or not self.current_image_path:
+        if not self.current_image_path or not self.detector_instance or not self.recognizer_instance:
             return
             
         self.btn_run_ocr.setEnabled(False)
-        self.btn_run_ocr.setText("Running OCR...")
+        self.btn_run_ocr.setText("Processing...")
         self.txt_result.clear()
         
-        def _ocr():
+        def _process():
+            from PySide6.QtCore import QTimer
             try:
                 img = cv2.imread(self.current_image_path)
                 if img is None:
-                    raise Exception("Cannot read image")
-                
-                # Detect
-                bboxes = self.detector_instance.detect(img)
-                
-                # Recognize
-                results = []
-                for box in bboxes:
-                    x, y, w, h = box
-                    cropped = img[y:y+h, x:x+w]
-                    text = self.recognizer_instance.recognize(cropped)
-                    results.append(f"Box {box}: {text}")
+                    raise Exception("Could not read image file.")
                     
-                final_text = "\n".join(results)
-                QMetaObject.invokeMethod(self, "_on_ocr_success", Qt.ConnectionType.QueuedConnection, Q_ARG(str, final_text))
+                bboxes, _, _, _ = self.detector_instance.detect(img)
+                if not bboxes:
+                    QTimer.singleShot(0, lambda r="No text detected.": self._on_ocr_success(r))
+                    return
+                    
+                texts, scores, _ = self.recognizer_instance.recognize(img, bboxes)
+                final_text = "\n".join(texts)
+                QTimer.singleShot(0, lambda r=final_text: self._on_ocr_success(r))
             except Exception as e:
-                QMetaObject.invokeMethod(self, "_on_ocr_fail", Qt.ConnectionType.QueuedConnection, Q_ARG(str, str(e)))
+                err = str(e)
+                QTimer.singleShot(0, lambda e=err: self._on_ocr_fail(e))
 
-        threading.Thread(target=_ocr, daemon=True).start()
+        threading.Thread(target=_process, daemon=True).start()
 
     def _on_ocr_success(self, text: str):
         self.txt_result.setPlainText(text)
