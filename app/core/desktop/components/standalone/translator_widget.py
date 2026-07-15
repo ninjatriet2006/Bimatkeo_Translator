@@ -29,11 +29,17 @@ class TranslatorStandaloneWidget(QWidget):
         group_config = QGroupBox("Configuration")
         layout_config = QHBoxLayout(group_config)
         
+        self.combo_category = QComboBox()
+        self.combo_category.addItems(["Offline", "Online"])
+        self.combo_category.currentTextChanged.connect(self._on_category_changed)
+        
         self.combo_model = QComboBox()
         self.btn_load = QPushButton("Load Model")
         self.btn_load.clicked.connect(self._on_load_model)
         
-        layout_config.addWidget(QLabel("Translator Model:"))
+        layout_config.addWidget(QLabel("Category:"))
+        layout_config.addWidget(self.combo_category)
+        layout_config.addWidget(QLabel("Model/Profile:"))
         layout_config.addWidget(self.combo_model, stretch=1)
         layout_config.addWidget(self.btn_load)
         self.layout_obj.addWidget(group_config)
@@ -75,21 +81,45 @@ class TranslatorStandaloneWidget(QWidget):
         from PySide6.QtCore import QTimer
         QTimer.singleShot(0, _update)
 
-    def _populate_models(self):
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-        from app.core.desktop.config import ConfigLoader
-        from app.core.shared_registry import TranslatorFactory
-        config_loader = ConfigLoader(project_root)
+    def _get_api_profiles(self):
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
+        path = os.path.join(project_root, ".config", "configs", "api_profiles.yaml")
+        if os.path.exists(path):
+            import yaml
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return yaml.safe_load(f) or {}
+            except:
+                pass
+        return {}
+
+    def _on_category_changed(self, category: str):
+        self._populate_models(category)
+
+    def _populate_models(self, category: str = "Offline"):
+        self.combo_model.clear()
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
         
-        keys = TranslatorFactory.get_registered_providers()
-        for key in keys:
-            label = config_loader.format_display_label(key, "offline_translator")
-            state = config_loader.get_model_state(key, "offline_translator")
-            if state == "NOT_SETUP":
-                label += " (Not Setup)"
-            elif state == "INCOMPLETE":
-                label += " (Incomplete)"
-            self.combo_model.addItem(label, key)
+        if category == "Offline":
+            from app.core.desktop.config import ConfigLoader
+            config_loader = ConfigLoader(project_root)
+            
+            keys = config_loader.list_field_keys("offline_translator")
+            for key in keys:
+                label = config_loader.format_display_label(key, "offline_translator")
+                state = config_loader.get_model_state(key, "offline_translator")
+                if state == "NOT_SETUP":
+                    label += " (Not Setup)"
+                elif state == "INCOMPLETE":
+                    label += " (Incomplete)"
+                self.combo_model.addItem(label, key)
+        else:
+            profiles = self._get_api_profiles()
+            for prof_name, prof_data in profiles.items():
+                if isinstance(prof_data, dict) and prof_data.get("type") != "Pool":
+                    provider = prof_data.get("translator", "openai")
+                    label = f"{prof_name} ({provider})"
+                    self.combo_model.addItem(label, prof_name)
 
     def _on_load_model(self):
         key = self.combo_model.currentData()
@@ -102,12 +132,30 @@ class TranslatorStandaloneWidget(QWidget):
         def _load():
             from PySide6.QtCore import QTimer
             try:
-                # Need dummy config dict. For a standalone UI, we might need a basic config
-                config_dict = {"translator": {"model": key}}
-                
                 # Fetch project root to resolve paths
-                project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+                project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
                 os.environ["PROJECT_ROOT"] = project_root
+                
+                category = self.combo_category.currentText()
+                if category == "Offline":
+                    config_dict = {
+                        "translator": {
+                            "translator_category": "Offline",
+                            "translator": key
+                        }
+                    }
+                else:
+                    profiles = self._get_api_profiles()
+                    prof_data = profiles.get(key, {})
+                    config_dict = {
+                        "translator": {
+                            "translator_category": "Online",
+                            "translator": prof_data.get("translator", "openai"),
+                            "ai_endpoint": prof_data.get("endpoint", ""),
+                            "ai_model": prof_data.get("model", ""),
+                            "ai_api_key": prof_data.get("key", "")
+                        }
+                    }
                 
                 from app.core.translator.initializer import TranslatorInitializer
                 chained, editor = TranslatorInitializer.initialize(config_dict, project_root, {}, log_callback=self._log)

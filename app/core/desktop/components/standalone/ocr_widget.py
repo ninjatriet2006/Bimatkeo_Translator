@@ -95,12 +95,11 @@ class OCRStandaloneWidget(QWidget):
         QTimer.singleShot(0, _update)
 
     def _populate_models(self):
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
         from app.core.desktop.config import ConfigLoader
-        from app.core.shared_registry import DetectorFactory, RecognizerFactory
         config_loader = ConfigLoader(project_root)
         
-        det_keys = DetectorFactory.get_registered_providers()
+        det_keys = config_loader.list_field_keys("offline_detector")
         for key in det_keys:
             label = config_loader.format_display_label(key, "offline_detector")
             state = config_loader.get_model_state(key, "offline_detector")
@@ -110,7 +109,7 @@ class OCRStandaloneWidget(QWidget):
                 label += " (Incomplete)"
             self.combo_detector.addItem(label, key)
             
-        rec_keys = RecognizerFactory.get_registered_providers()
+        rec_keys = config_loader.list_field_keys("offline_ocr")
         for key in rec_keys:
             label = config_loader.format_display_label(key, "offline_ocr")
             state = config_loader.get_model_state(key, "offline_ocr")
@@ -134,7 +133,7 @@ class OCRStandaloneWidget(QWidget):
             from PySide6.QtCore import QTimer
             try:
                 config_dict = {"ocr": {"detector": det_key, "recognizer": rec_key}}
-                project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+                project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
                 os.environ["PROJECT_ROOT"] = project_root
                 
                 from app.core.ocr.initializer import OCRInitializer
