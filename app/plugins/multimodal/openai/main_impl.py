@@ -16,8 +16,11 @@ from app.core.api.interfaces import BaseMultimodal
 from .translate import translate_openai
 
 @MultimodalFactory.register("openai")
+@MultimodalFactory.register("felo_search")
 @TranslatorFactory.register("openai")
+@TranslatorFactory.register("felo_search")
 @CloudOCRFactory.register("openai")
+@CloudOCRFactory.register("felo_search")
 class OpenAIProvider(BaseMultimodal, BaseAPITranslator, BaseCloudOCR):
     MODELS = [
         {'key': 'openai', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://api.openai.com/v1', 'endpoint_inference': []},
@@ -25,10 +28,11 @@ class OpenAIProvider(BaseMultimodal, BaseAPITranslator, BaseCloudOCR):
         {'key': 'groq', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://api.groq.com/openai/v1', 'endpoint_inference': []},
         {'key': 'custom_openai', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'endpoint_inference': []},
         {'key': 'felo', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v1', 'endpoint_inference': []},
+        {'key': 'felo_search', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v1', 'endpoint_inference': []},
     ]
 
     def __init__(self):
-        super(BaseAPITranslator, self).__init__()
+        BaseAPITranslator.__init__(self)
 
     @classmethod
     def get_supported_services(cls) -> list[str]:

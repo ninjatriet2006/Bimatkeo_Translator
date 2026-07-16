@@ -170,15 +170,9 @@ class TranslatorStandaloneWidget(QWidget):
 
     def _get_api_profiles(self):
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
-        path = os.path.join(project_root, ".config", "configs", "api_profiles.yaml")
-        if os.path.exists(path):
-            import yaml
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    return yaml.safe_load(f) or {}
-            except:
-                pass
-        return {}
+        from app.core.api.profile.profile_storage import load_api_profiles
+        return load_api_profiles(project_root)
+
 
     def _on_category_changed(self, category: str):
         self._populate_models(category)
@@ -238,17 +232,13 @@ class TranslatorStandaloneWidget(QWidget):
                 
         # Load system prompts
         self.combo_sys_prompt.clear()
-        prompt_path = os.path.join(project_root, ".config", "configs", "system_prompt.yaml")
-        if os.path.exists(prompt_path):
-            import yaml
-            try:
-                with open(prompt_path, 'r', encoding='utf-8') as f:
-                    data = yaml.safe_load(f)
-                    if data and "profiles" in data:
-                        for p in data["profiles"].keys():
-                            self.combo_sys_prompt.addItem(p)
-            except:
-                pass
+        from app.core.desktop.config import ConfigLoader
+        config_loader = ConfigLoader(project_root)
+        sys_prompts = config_loader.system_prompts.get("profiles", {})
+        if sys_prompts:
+            from app.core.desktop.components.ui_utils import natural_sort_key
+            for p in sorted(sys_prompts.keys(), key=natural_sort_key):
+                self.combo_sys_prompt.addItem(p)
 
     def _on_profile_selected(self):
         category = self.combo_category.currentText()

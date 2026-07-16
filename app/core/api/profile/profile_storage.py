@@ -15,8 +15,21 @@ def get_api_profiles_file_path(project_base_dir: str) -> str:
     os.makedirs(base_dir, exist_ok=True)
     return os.path.join(base_dir, 'api_profiles.yaml')
 
-def load_api_profiles(main_window) -> dict:
-    path = get_api_profiles_file_path(main_window.project_base_dir)
+def _get_yaml_config_path(project_base_dir: str, filename: str) -> str:
+    return os.path.join(project_base_dir, '.config', 'configs', filename)
+
+def _save_yaml_config(project_base_dir: str, filename: str, data: dict):
+    path = _get_yaml_config_path(project_base_dir, filename)
+    from ruamel.yaml import YAML
+    yaml = YAML()
+    yaml.preserve_quotes = True
+    yaml.default_flow_style = False
+    with open(path, 'w', encoding='utf-8') as f:
+        yaml.dump(data, f)
+
+def load_api_profiles(context) -> dict:
+    project_base_dir = context.project_base_dir if hasattr(context, 'project_base_dir') else context
+    path = get_api_profiles_file_path(project_base_dir)
     if os.path.exists(path):
         from ruamel.yaml import YAML
         yaml = YAML()
@@ -27,7 +40,7 @@ def load_api_profiles(main_window) -> dict:
                 data = yaml.load(f) or {}
             
             # Automigrate pool_profiles.yaml
-            pool_path = main_window._get_yaml_config_path('pool_profiles.yaml')
+            pool_path = _get_yaml_config_path(project_base_dir, 'pool_profiles.yaml')
             if os.path.exists(pool_path):
                 try:
                     with open(pool_path, 'r', encoding='utf-8') as f:
@@ -38,7 +51,7 @@ def load_api_profiles(main_window) -> dict:
                             data[k] = {"type": "Pool", "service": "Translator", "fallback_list": v}
                             changed = True
                     if changed:
-                        main_window._save_yaml_config('api_profiles.yaml', data)
+                        _save_yaml_config(project_base_dir, 'api_profiles.yaml', data)
                     os.rename(pool_path, pool_path + ".migrated")
                 except Exception as e:
                     import logging
@@ -49,7 +62,7 @@ def load_api_profiles(main_window) -> dict:
             logging.getLogger("APIProfile").error(f"Failed to load API profiles: {e}")
     
     from dotenv import load_dotenv
-    load_dotenv(os.path.join(main_window.project_base_dir, ".env"))
+    load_dotenv(os.path.join(project_base_dir, ".env"))
 
     return {
         "My Custom API": {
@@ -60,5 +73,6 @@ def load_api_profiles(main_window) -> dict:
         }
     }
 
-def save_api_profiles(main_window, profiles: dict):
-    main_window._save_yaml_config('api_profiles.yaml', profiles)
+def save_api_profiles(context, profiles: dict):
+    project_base_dir = context.project_base_dir if hasattr(context, 'project_base_dir') else context
+    _save_yaml_config(project_base_dir, 'api_profiles.yaml', profiles)

@@ -15,17 +15,14 @@ from app.core.api.interfaces import BaseMultimodal
 from .translate import translate_felo_search
 
 @MultimodalFactory.register("felo_v2")
-@MultimodalFactory.register("felo_search")
 @TranslatorFactory.register("felo_v2")
-@TranslatorFactory.register("felo_search")
 class FeloSearchProvider(BaseMultimodal, BaseAPITranslator):
     MODELS = [
-        {'key': 'felo_v2', 'check_file': 'app/plugins/multimodal/felo_search/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v2/chat', 'endpoint_inference': []},
-        {'key': 'felo_search', 'check_file': 'app/plugins/multimodal/felo_search/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v2/chat', 'endpoint_inference': []},
+        {'key': 'felo_v2', 'check_file': 'app/plugins/multimodal/felo_search/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v2/chat', 'endpoint_inference': [], 'static_models': ['felo-search']},
     ]
 
     def __init__(self):
-        super(BaseAPITranslator, self).__init__()
+        BaseAPITranslator.__init__(self)
 
     @classmethod
     def get_supported_services(cls) -> list[str]:

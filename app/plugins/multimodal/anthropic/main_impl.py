@@ -20,12 +20,12 @@ from .translate import translate_anthropic
 @TranslatorFactory.register("custom_anthropic")
 class AnthropicProvider(BaseMultimodal, BaseAPITranslator):
     MODELS = [
-        {'key': 'anthropic', 'check_file': 'app/plugins/multimodal/anthropic/main_impl.py', 'default_endpoint': 'https://api.anthropic.com', 'endpoint_inference': []},
-        {'key': 'custom_anthropic', 'check_file': 'app/plugins/multimodal/anthropic/main_impl.py', 'endpoint_inference': []},
+        {'key': 'anthropic', 'check_file': 'app/plugins/multimodal/anthropic/main_impl.py', 'default_endpoint': 'https://api.anthropic.com', 'endpoint_inference': [], 'static_models': ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307']},
+        {'key': 'custom_anthropic', 'check_file': 'app/plugins/multimodal/anthropic/main_impl.py', 'endpoint_inference': [], 'static_models': ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307']},
     ]
 
     def __init__(self):
-        super(BaseAPITranslator, self).__init__()
+        BaseAPITranslator.__init__(self)
 
     @classmethod
     def get_supported_services(cls) -> list[str]:

@@ -29,7 +29,7 @@ class GeminiProvider(BaseMultimodal, BaseAPITranslator, BaseCloudOCR):
 
     def __init__(self):
         # Khởi tạo properties cho Translator
-        super(BaseAPITranslator, self).__init__()
+        BaseAPITranslator.__init__(self)
         # Khởi tạo properties cho OCR
         self.api_key = ""
         self.log_callback = None
