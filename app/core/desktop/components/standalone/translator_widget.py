@@ -435,9 +435,7 @@ class TranslatorStandaloneWidget(QWidget):
         def _test():
             from app.core.shared_registry import TranslatorFactory
             try:
-                import app.plugins.translator.openai.main_impl
-                import app.plugins.translator.gemini.main_impl
-                import app.plugins.translator.felo.main_impl
+
                 
                 translator = TranslatorFactory.create(ai_provider)
                 translator.load_weights({
@@ -459,3 +457,22 @@ class TranslatorStandaloneWidget(QWidget):
             QMessageBox.information(self, "Success", message)
         else:
             QMessageBox.critical(self, "Error", message)
+
+if __name__ == "__main__":
+    import sys
+    import os
+    workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
+    if workspace_root not in sys.path:
+        sys.path.insert(0, workspace_root)
+        
+    os.environ["TARGET_PLUGIN_DIRS"] = "translator"
+    
+    from PySide6.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    window = TranslatorStandaloneWidget()
+    window.resize(800, 600)
+    window.setWindowTitle("Standalone Translator")
+    window.show()
+    sys.exit(app.exec())
+

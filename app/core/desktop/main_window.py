@@ -383,6 +383,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         btn_preview = QPushButton("🔍 Preview Tester")
         btn_standalone_trans = QPushButton("🌐 Translator Tool")
         btn_standalone_ocr = QPushButton("📝 OCR Tool")
+        btn_standalone_inpaint = QPushButton("🖌️ Inpaint Tool")
+        btn_standalone_diffusion = QPushButton("✨ Diffusion Tool")
+        btn_standalone_render = QPushButton("🎨 Render Tool")
         
         btn_queue.clicked.connect(lambda: self._show_standalone_window(self.queue_window))
         btn_log.clicked.connect(lambda: self._show_standalone_window(self.log_window))
@@ -390,6 +393,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         btn_preview.clicked.connect(lambda: self._show_standalone_window(self.preview_window))
         btn_standalone_trans.clicked.connect(lambda: self.launch_standalone_tool("translator", btn_standalone_trans))
         btn_standalone_ocr.clicked.connect(lambda: self.launch_standalone_tool("ocr", btn_standalone_ocr))
+        btn_standalone_inpaint.clicked.connect(lambda: self.launch_standalone_tool("inpaint", btn_standalone_inpaint))
+        btn_standalone_diffusion.clicked.connect(lambda: self.launch_standalone_tool("diffusion", btn_standalone_diffusion))
+        btn_standalone_render.clicked.connect(lambda: self.launch_standalone_tool("render", btn_standalone_render))
 
         toolbar_layout.addWidget(btn_queue)
         toolbar_layout.addWidget(btn_log)
@@ -397,6 +403,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         toolbar_layout.addWidget(btn_preview)
         toolbar_layout.addWidget(btn_standalone_trans)
         toolbar_layout.addWidget(btn_standalone_ocr)
+        toolbar_layout.addWidget(btn_standalone_inpaint)
+        toolbar_layout.addWidget(btn_standalone_diffusion)
+        toolbar_layout.addWidget(btn_standalone_render)
         toolbar_layout.addStretch()
 
         # Main Studio Settings is now the core central area
@@ -414,28 +423,42 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         import os
         from PySide6.QtCore import QTimer
         
-        runner_script = os.path.join(self.project_base_dir, "app", "core", "desktop", "standalone_runner.py")
+        script_map = {
+            "translator": "translator_widget.py",
+            "ocr": "ocr_widget.py",
+            "inpaint": "inpaint_widget.py",
+            "diffusion": "diffusion_widget.py",
+            "render": "render_widget.py"
+        }
+        script_name = script_map.get(tool_name)
+        if not script_name:
+            self.log("ERROR", f"Unknown standalone tool: {tool_name}")
+            return
+            
+        script_path = os.path.join(self.project_base_dir, "app", "core", "desktop", "components", "standalone", script_name)
         python_exe = getattr(self.config_loader, 'python_executable', sys.executable)
         
+        reset_btn = None
         if button:
             original_text = button.text()
             button.setText("Loading...")
             button.setEnabled(False)
             
-            def reset_btn():
+            def reset_btn_func():
                 button.setText(original_text)
                 button.setEnabled(True)
                 
+            reset_btn = reset_btn_func
             # Unlock the button after 3 seconds to prevent double-clicking while waiting for the subprocess
             QTimer.singleShot(3000, reset_btn)
         
         try:
             # Spawn the tool in a completely separate process
-            subprocess.Popen([python_exe, runner_script, "--tool", tool_name])
+            subprocess.Popen([python_exe, script_path])
             self.log("INFO", f"Launched standalone tool: {tool_name}")
         except Exception as e:
             self.log("ERROR", f"Failed to launch standalone tool: {e}")
-            if button:
+            if reset_btn:
                 reset_btn()
 
     def _show_standalone_window(self, window):

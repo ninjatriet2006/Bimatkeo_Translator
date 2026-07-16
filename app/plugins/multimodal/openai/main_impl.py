@@ -24,6 +24,7 @@ class OpenAIProvider(BaseMultimodal, BaseAPITranslator, BaseCloudOCR):
         {'key': 'deepseek', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://api.deepseek.com', 'endpoint_inference': []},
         {'key': 'groq', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://api.groq.com/openai/v1', 'endpoint_inference': []},
         {'key': 'custom_openai', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'endpoint_inference': []},
+        {'key': 'felo', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v1', 'endpoint_inference': []},
     ]
 
     def __init__(self):
@@ -74,3 +75,12 @@ class GroqProvider(OpenAIProvider):
 class CustomOpenAIProvider(OpenAIProvider):
     """Custom OpenAI-compatible endpoints."""
     pass
+
+@MultimodalFactory.register("felo")
+@TranslatorFactory.register("felo")
+class FeloProvider(OpenAIProvider):
+    """Felo API wrapper."""
+    @classmethod
+    def get_supported_services(cls) -> list[str]:
+        return ["Translator"] # Felo API doesn't officially support multimodal vision/OCR
+

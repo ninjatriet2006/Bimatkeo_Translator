@@ -220,3 +220,22 @@ class OCRStandaloneWidget(QWidget):
         self.btn_run_ocr.setEnabled(True)
         self.btn_run_ocr.setText("Run OCR")
         QMessageBox.critical(self, "Error", f"OCR failed:\n{error_msg}")
+
+if __name__ == "__main__":
+    import sys
+    import os
+    workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
+    if workspace_root not in sys.path:
+        sys.path.insert(0, workspace_root)
+        
+    os.environ["TARGET_PLUGIN_DIRS"] = "detector,recognizer"
+    
+    from PySide6.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    window = OCRStandaloneWidget()
+    window.resize(800, 600)
+    window.setWindowTitle("Standalone OCR")
+    window.show()
+    sys.exit(app.exec())
+
