@@ -45,8 +45,8 @@ class OpenAIProvider(BaseMultimodal, BaseAPITranslator, BaseCloudOCR):
 
     def load_model(self, api_key: str, endpoint: str | None = None, model_name: str | None = None, **kwargs) -> None:
         self.key = api_key
-        self.endpoint = endpoint
-        self.model = model_name
+        self.endpoint = endpoint or ""
+        self.model = model_name or ""
         self.timeout = kwargs.get("timeout", 10)
 
     def recognize_full_page(self, image, lang: str = "en") -> list[dict]:

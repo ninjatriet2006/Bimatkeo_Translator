@@ -8,12 +8,14 @@ INTEGRITY NOTES (For AI Agents):
 - IN = OUT: Nhận API config, prompt, text; trả về JSON string kết quả.
 =============================================================================
 """
+from typing import Any
+
 def translate_gemini(translator_instance, system_prompt: str, user_text: str, images: list[str] | None = None) -> str:
     headers = {
         "Content-Type": "application/json"
     }
     
-    parts = [{"text": user_text}]
+    parts: list[dict[str, Any]] = [{"text": user_text}]
     if images:
         for img_b64 in images:
             parts.append({
