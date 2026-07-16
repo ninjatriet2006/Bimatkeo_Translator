@@ -59,7 +59,6 @@ def update_ocr_visibility(main_window):
                     default_ep = api_ocr_registry[provider].get('default_endpoint', '')
                     if default_ep:
                         entry.setText(default_ep)
-                        main_window.current_settings['ocr_api_endpoint'] = default_ep
                         main_window._on_setting_changed('ocr_api_endpoint')
 
 def on_ocr_category_changed(main_window):

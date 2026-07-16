@@ -32,23 +32,32 @@ class PromptBuilder:
         try:
             with open(prompt_file, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f)
+                
+                profile_data = {}
                 if data and "profiles" in data:
                     profile_data = data["profiles"].get(self.profile_name, {})
-                    # Fallback to default if profile not found but roles exist globally (old structure)
-                    if not profile_data and self.profile_name == "None":
-                        profile_data = data
+                    
+                    if not profile_data:
+                        # Fallback if profile not found or is "None"
+                        if "example" in data["profiles"]:
+                            profile_data = data["profiles"]["example"]
+                        elif data["profiles"]:
+                            profile_data = next(iter(data["profiles"].values()))
+                elif data:
+                    # Old structure fallback
+                    profile_data = data
 
-                    if "role_description" in profile_data:
-                        role_desc = profile_data["role_description"].strip()
-                    else:
-                        raise ValueError(f"Thiếu 'role_description' trong profile '{self.profile_name}' của file {prompt_file}")
-                        
-                    if "json_schema_rules" in profile_data:
-                        raw_rules = profile_data["json_schema_rules"].strip()
-                        json_rules = raw_rules.replace("{", "{{").replace("}", "}}")
-                    else:
-                        raise ValueError(f"Thiếu 'json_schema_rules' trong profile '{self.profile_name}' của file {prompt_file}")
-                        
+                if "role_description" in profile_data:
+                    role_desc = profile_data["role_description"].strip()
+                else:
+                    raise ValueError(f"Thiếu 'role_description' trong profile '{self.profile_name}' của file {prompt_file}")
+                    
+                if "json_schema_rules" in profile_data:
+                    raw_rules = profile_data["json_schema_rules"].strip()
+                    json_rules = raw_rules.replace("{", "{{").replace("}", "}}")
+                else:
+                    raise ValueError(f"Thiếu 'json_schema_rules' trong profile '{self.profile_name}' của file {prompt_file}")
+                    
         except (yaml.YAMLError, OSError) as e:
             raise RuntimeError(f"Lỗi khi đọc file system_prompt.yaml: {e}")
             

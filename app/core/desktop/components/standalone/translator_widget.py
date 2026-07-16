@@ -11,7 +11,7 @@ INTEGRITY NOTES (For AI Agents):
 import os
 import threading
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, 
-                               QPushButton, QComboBox, QLabel, QMessageBox, QGroupBox)
+                               QPushButton, QComboBox, QLabel, QMessageBox, QGroupBox, QLineEdit)
 from PySide6.QtCore import Qt, QMetaObject, Q_ARG, Signal
 from app.core.shared_registry import TranslatorFactory
 
@@ -19,6 +19,8 @@ class TranslatorStandaloneWidget(QWidget):
     log_signal = Signal(str, str)
     load_success_signal = Signal()
     load_fail_signal = Signal(str)
+    trans_success_signal = Signal(str)
+    trans_fail_signal = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -27,6 +29,8 @@ class TranslatorStandaloneWidget(QWidget):
         self.log_signal.connect(self._on_log)
         self.load_success_signal.connect(self._on_load_success)
         self.load_fail_signal.connect(self._on_load_fail)
+        self.trans_success_signal.connect(self._on_trans_success)
+        self.trans_fail_signal.connect(self._on_trans_fail)
         
         self._setup_ui()
         self._populate_models()
@@ -43,19 +47,57 @@ class TranslatorStandaloneWidget(QWidget):
         self.combo_category.currentTextChanged.connect(self._on_category_changed)
         
         self.combo_model = QComboBox()
+        self.combo_model.currentIndexChanged.connect(self._on_profile_selected)
+        
+        layout_config_top = QHBoxLayout()
+        layout_config_top.addWidget(QLabel("Category:"))
+        layout_config_top.addWidget(self.combo_category)
+        layout_config_top.addWidget(QLabel("Model/Profile:"))
+        layout_config_top.addWidget(self.combo_model, stretch=1)
+        
+        layout_config.addLayout(layout_config_top)
+        
+        # Extended config fields (Online APIs)
+        self.extended_config_widget = QWidget()
+        self.extended_config_layout = QHBoxLayout(self.extended_config_widget)
+        self.extended_config_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.combo_sys_prompt = QComboBox()
+        self.txt_endpoint = QLineEdit()
+        self.txt_model = QLineEdit()
+        self.txt_key = QLineEdit()
+        self.txt_key.setEchoMode(QLineEdit.EchoMode.Password)
+        
+        self.extended_config_layout.addWidget(QLabel("Sys Prompt:"))
+        self.extended_config_layout.addWidget(self.combo_sys_prompt)
+        self.extended_config_layout.addWidget(QLabel("Endpoint:"))
+        self.extended_config_layout.addWidget(self.txt_endpoint)
+        self.extended_config_layout.addWidget(QLabel("Model:"))
+        self.extended_config_layout.addWidget(self.txt_model)
+        self.extended_config_layout.addWidget(QLabel("Key:"))
+        self.extended_config_layout.addWidget(self.txt_key)
+        
+        layout_config.addWidget(self.extended_config_widget)
+        
         self.btn_load = QPushButton("Load Model")
         self.btn_load.clicked.connect(self._on_load_model)
-        
-        layout_config.addWidget(QLabel("Category:"))
-        layout_config.addWidget(self.combo_category)
-        layout_config.addWidget(QLabel("Model/Profile:"))
-        layout_config.addWidget(self.combo_model, stretch=1)
         layout_config.addWidget(self.btn_load)
+        
         self.layout_obj.addWidget(group_config)
 
         # Translation Area
         group_trans = QGroupBox("Translation")
         layout_trans = QVBoxLayout(group_trans)
+        
+        # Languages Area
+        layout_langs = QHBoxLayout()
+        self.combo_src_lang = QComboBox()
+        self.combo_tgt_lang = QComboBox()
+        layout_langs.addWidget(QLabel("Source:"))
+        layout_langs.addWidget(self.combo_src_lang)
+        layout_langs.addWidget(QLabel("Target:"))
+        layout_langs.addWidget(self.combo_tgt_lang)
+        layout_trans.addLayout(layout_langs)
         
         self.txt_source = QTextEdit()
         self.txt_source.setPlaceholderText("Enter source text here...")
@@ -129,6 +171,52 @@ class TranslatorStandaloneWidget(QWidget):
                     provider = prof_data.get("provider", "openai")
                     label = f"{prof_name} ({provider})"
                     self.combo_model.addItem(label, prof_name)
+                    
+        # Load languages
+        self.combo_src_lang.clear()
+        self.combo_tgt_lang.clear()
+        import app.core.desktop.main_window as mw_module
+        if mw_module.LANGUAGES:
+            self.combo_src_lang.addItem("Auto-Detect", "auto")
+            for name, code in sorted(mw_module.LANGUAGES.items()):
+                if code != "auto":
+                    self.combo_src_lang.addItem(name, code)
+                    self.combo_tgt_lang.addItem(name, code)
+            
+            # Default to Auto -> Vietnamese if available
+            self.combo_src_lang.setCurrentIndex(0)
+            tgt_idx = self.combo_tgt_lang.findData("VIN")
+            if tgt_idx >= 0:
+                self.combo_tgt_lang.setCurrentIndex(tgt_idx)
+                
+        # Load system prompts
+        self.combo_sys_prompt.clear()
+        prompt_path = os.path.join(project_root, ".config", "configs", "system_prompt.yaml")
+        if os.path.exists(prompt_path):
+            import yaml
+            try:
+                with open(prompt_path, 'r', encoding='utf-8') as f:
+                    data = yaml.safe_load(f)
+                    if data and "profiles" in data:
+                        for p in data["profiles"].keys():
+                            self.combo_sys_prompt.addItem(p)
+            except:
+                pass
+
+    def _on_profile_selected(self):
+        category = self.combo_category.currentText()
+        if category == "Online":
+            key = self.combo_model.currentData()
+            if key:
+                profiles = self._get_api_profiles()
+                prof_data = profiles.get(key, {})
+                self.txt_endpoint.setText(prof_data.get("endpoint", ""))
+                self.txt_model.setText(prof_data.get("model", ""))
+                self.txt_key.setText(prof_data.get("key", ""))
+            
+            self.extended_config_widget.setVisible(True)
+        else:
+            self.extended_config_widget.setVisible(False)
 
     def _on_load_model(self):
         key = self.combo_model.currentData()
@@ -146,23 +234,34 @@ class TranslatorStandaloneWidget(QWidget):
                 os.environ["PROJECT_ROOT"] = project_root
                 
                 category = self.combo_category.currentText()
+                sys_prompt = self.combo_sys_prompt.currentText() or "None"
+                
                 if category == "Offline":
                     config_dict = {
                         "translator": {
                             "translator_category": "Offline",
-                            "translator": key
+                            "translator": key,
+                            "system_prompt_profile": sys_prompt
                         }
                     }
                 else:
                     profiles = self._get_api_profiles()
                     prof_data = profiles.get(key, {})
+                    endpoint = self.txt_endpoint.text().strip() or prof_data.get("endpoint", "")
+                    model = self.txt_model.text().strip() or prof_data.get("model", "")
+                    api_key = self.txt_key.text().strip() or prof_data.get("key", "")
+                    
+                    if not model or not api_key or (not endpoint and prof_data.get("provider") != "gemini"):
+                        raise ValueError(f"Thiếu tham số cấu hình cho API Online. Vui lòng nhập đầy đủ Endpoint (trừ Gemini), Model và API Key cho profile '{key}'.")
+                        
                     config_dict = {
                         "translator": {
                             "translator_category": "Online",
                             "translator": prof_data.get("provider", "openai"),
-                            "ai_endpoint": prof_data.get("endpoint", ""),
-                            "ai_model": prof_data.get("model", ""),
-                            "ai_api_key": prof_data.get("key", "")
+                            "ai_endpoint": endpoint,
+                            "ai_model": model,
+                            "ai_api_key": api_key,
+                            "system_prompt_profile": sys_prompt
                         }
                     }
                 
@@ -203,13 +302,21 @@ class TranslatorStandaloneWidget(QWidget):
         self.btn_translate.setText("Translating...")
         
         def _trans():
-            from PySide6.QtCore import QTimer
             try:
-                result = self.translator_instance.translate(source_text)
-                QTimer.singleShot(0, lambda r=result: self._on_trans_success(r))
+                src_lang = self.combo_src_lang.currentData() or "auto"
+                tgt_lang = self.combo_tgt_lang.currentData() or "VIN"
+                # BaseTranslator interface: translate(texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None)
+                results = self.translator_instance.translate([source_text], src_lang, tgt_lang)
+                
+                if results and len(results) > 0:
+                    res = results[0]
+                    final_text = res.get("text", "") if isinstance(res, dict) else str(res)
+                else:
+                    final_text = ""
+                
+                self.trans_success_signal.emit(final_text)
             except Exception as e:
-                err = str(e)
-                QTimer.singleShot(0, lambda e=err: self._on_trans_fail(e))
+                self.trans_fail_signal.emit(str(e))
 
         threading.Thread(target=_trans, daemon=True).start()
 

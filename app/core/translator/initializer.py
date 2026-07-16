@@ -130,7 +130,7 @@ class TranslatorInitializer:
                         "key": api_info.get('api_key', api_info.get('key', '')),
                         "max_retries": translator_dict.get('max_retries', 3),
                         "glossary_path": translator_dict.get('glossary_path', ''),
-                        "system_prompt_profile": "editor",
+                        "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None'),
                         "project_base_dir": project_root
                     })
                 else:
@@ -154,7 +154,7 @@ class TranslatorInitializer:
                             "key": translator_dict.get('ai_api_key', translator_dict.get('ai_key', '')),
                             "max_retries": translator_dict.get('max_retries', 3),
                             "glossary_path": translator_dict.get('glossary_path', ''),
-                            "system_prompt_profile": "editor",
+                            "system_prompt_profile": translator_dict.get('system_prompt_profile', 'None'),
                             "project_base_dir": project_root
                         })
             except Exception as e:

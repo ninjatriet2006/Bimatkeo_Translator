@@ -66,7 +66,6 @@ def update_translator_visibility(main_window):
                     default_ep = ai_registry[ai_provider].get('default_endpoint', '')
                     if default_ep:
                         entry.setText(default_ep)
-                        main_window.current_settings['ai_endpoint'] = default_ep
                         main_window._on_setting_changed('ai_endpoint')
 
 def on_translator_category_changed(main_window):

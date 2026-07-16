@@ -61,13 +61,13 @@ class EditWorker(multiprocessing.Process):
             
             for ctx in window:
                 if ctx.stage2_candidates is None:
-                    ctx.stage2_candidates = [[] for _ in range(len(ctx.translated_texts or []))]
+                    ctx.stage2_candidates = [[] for _ in range(len(ctx.original_texts or []))]
                     
-                if not ctx.translated_texts:
+                if not ctx.original_texts:
                     texts_to_translate.append(f"[Trang {ctx.page_id}: Silent Panel / Không có thoại]")
                     page_line_map.append((ctx, -1))
                 else:
-                    for i, t in enumerate(ctx.translated_texts):
+                    for i, t in enumerate(ctx.original_texts):
                         texts_to_translate.append(t)
                         page_line_map.append((ctx, i))
                         
@@ -81,18 +81,18 @@ class EditWorker(multiprocessing.Process):
                 total_chars = sum(len(t) for t in texts)
                 
                 if self.max_request_length > 0 and total_chars > self.max_request_length and len(texts) > 1:
-                    if self.log_callback:
-                        self.log_callback("TRANSLATE", f"Stage 2 payload ({total_chars} chars) exceeds limit. Splitting into 2 batches...")
+                    self.log_callback("TRANSLATE", f"Stage 2 payload ({total_chars} chars) exceeds limit. Splitting into 2 batches...")
                     mid = len(texts) // 2
                     _process_recursive(texts[:mid], mapping[:mid])
                     _process_recursive(texts[mid:], mapping[mid:])
                     return
                     
                 try:
-                    if self.log_callback:
-                        self.log_callback("TRANSLATE", f"Stage 2 (Double Check): Editing batch of {len(texts)} lines ({total_chars} chars).")
+                    self.log_callback("TRANSLATE", f"Stage 2 (Double Check): Retranslating batch of {len(texts)} lines ({total_chars} chars) from source.")
                     
-                    translated_part = self.editor_translator.translate(texts, "vi", "vi", [])
+                    src_lang = self.config_dict.get("translator", {}).get("source_lang", "auto")
+                    tgt_lang = self.config_dict.get("translator", {}).get("target_lang", "ENG")
+                    translated_part = self.editor_translator.translate(texts, src_lang, tgt_lang, [])
                     
                     for j, (ctx, line_idx) in enumerate(mapping):
                         if j < len(translated_part):
@@ -102,8 +102,7 @@ class EditWorker(multiprocessing.Process):
                             if line_idx != -1 and ctx.stage2_candidates is not None:
                                 ctx.stage2_candidates[line_idx].append({"text": text, "score": score})
                 except Exception as e:
-                    if self.log_callback:
-                        self.log_callback("ERROR", f"Stage 2 Error: {e}")
+                    self.log_callback("ERROR", f"Stage 2 Error: {e}")
 
             _process_recursive(texts_to_translate, page_line_map)
 
