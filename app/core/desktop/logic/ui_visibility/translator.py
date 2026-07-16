@@ -61,9 +61,15 @@ def update_translator_visibility(main_window):
             else:
                 entry.setEnabled(False)
                 entry.setReadOnly(True)
-                ai_registry = getattr(main_window.config_loader, 'model_registry', {}).get('ai_translator', {})
-                if ai_provider in ai_registry:
-                    default_ep = ai_registry[ai_provider].get('default_endpoint', '')
+                from app.core.shared_registry import TranslatorFactory
+                from app.core.translator.base_api import BaseAPITranslator
+                ai_registry = TranslatorFactory.get_all_registered_models(BaseAPITranslator)
+                
+                # Convert list of dicts to dict by key
+                ai_registry_dict = {item['key']: item for item in ai_registry if 'key' in item}
+                
+                if ai_provider in ai_registry_dict:
+                    default_ep = ai_registry_dict[ai_provider].get('default_endpoint', '')
                     if default_ep:
                         entry.setText(default_ep)
                         main_window._on_setting_changed('ai_endpoint')

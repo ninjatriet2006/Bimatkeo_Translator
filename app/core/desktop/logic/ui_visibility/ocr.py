@@ -54,9 +54,15 @@ def update_ocr_visibility(main_window):
             else:
                 entry.setEnabled(False)
                 entry.setReadOnly(True)
-                api_ocr_registry = main_window.config_loader.model_registry.get('api_ocr', {})
-                if provider in api_ocr_registry:
-                    default_ep = api_ocr_registry[provider].get('default_endpoint', '')
+                from app.core.shared_registry import MultimodalFactory
+                from app.core.ocr.interfaces import BaseCloudOCR
+                api_ocr_registry = MultimodalFactory.get_all_registered_models(BaseCloudOCR)
+                
+                # Convert list of dicts to dict by key
+                api_ocr_registry_dict = {item['key']: item for item in api_ocr_registry if 'key' in item}
+                
+                if provider in api_ocr_registry_dict:
+                    default_ep = api_ocr_registry_dict[provider].get('default_endpoint', '')
                     if default_ep:
                         entry.setText(default_ep)
                         main_window._on_setting_changed('ocr_api_endpoint')

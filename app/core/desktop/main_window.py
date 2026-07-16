@@ -386,6 +386,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         btn_standalone_inpaint = QPushButton("🖌️ Inpaint Tool")
         btn_standalone_diffusion = QPushButton("✨ Diffusion Tool")
         btn_standalone_render = QPushButton("🎨 Render Tool")
+        btn_close_all_standalone = QPushButton("❌ Close Standalones")
         
         btn_queue.clicked.connect(lambda: self._show_standalone_window(self.queue_window))
         btn_log.clicked.connect(lambda: self._show_standalone_window(self.log_window))
@@ -396,6 +397,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         btn_standalone_inpaint.clicked.connect(lambda: self.launch_standalone_tool("inpaint", btn_standalone_inpaint))
         btn_standalone_diffusion.clicked.connect(lambda: self.launch_standalone_tool("diffusion", btn_standalone_diffusion))
         btn_standalone_render.clicked.connect(lambda: self.launch_standalone_tool("render", btn_standalone_render))
+        btn_close_all_standalone.clicked.connect(self.close_all_standalones)
 
         toolbar_layout.addWidget(btn_queue)
         toolbar_layout.addWidget(btn_log)
@@ -406,6 +408,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         toolbar_layout.addWidget(btn_standalone_inpaint)
         toolbar_layout.addWidget(btn_standalone_diffusion)
         toolbar_layout.addWidget(btn_standalone_render)
+        toolbar_layout.addWidget(btn_close_all_standalone)
         toolbar_layout.addStretch()
 
         # Main Studio Settings is now the core central area
@@ -457,38 +460,47 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             # Spawn the tool in a completely separate process using module import to fix sys.path
             module_path = f"app.core.desktop.components.standalone.{script_name.replace('.py', '')}"
             import threading
+            import platform
+            
+            kwargs = {}
+            if platform.system() == "Windows":
+                kwargs['creationflags'] = getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0x00000200)
+            else:
+                kwargs['start_new_session'] = True
             
             proc = subprocess.Popen(
                 [python_exe, "-m", module_path], 
                 cwd=self.project_base_dir,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                **kwargs
             )
             
+            if not hasattr(self, 'standalone_processes'):
+                self.standalone_processes = []
+            self.standalone_processes.append(proc)
+            
             if reset_btn:
-                def monitor_process():
-                    try:
-                        if proc.stdout:
-                            for line in proc.stdout:
-                                print(line, end="")
-                                if "STANDALONE_READY" in line:
-                                    QTimer.singleShot(0, reset_btn)
-                    except Exception:
-                        pass
-                    # Fallback in case of exit or error
-                    QTimer.singleShot(0, reset_btn)
-                    
-                threading.Thread(target=monitor_process, daemon=True).start()
-                # Maximum 15s wait
-                QTimer.singleShot(15000, reset_btn)
+                # Wait a fixed amount of time for the tool to load before re-enabling button
+                QTimer.singleShot(2500, reset_btn)
                 
             self.log("INFO", f"Launched standalone tool: {tool_name}")
         except Exception as e:
             self.log("ERROR", f"Failed to launch standalone tool: {e}")
             if reset_btn:
                 reset_btn()
+
+    def close_all_standalones(self):
+        if not hasattr(self, 'standalone_processes'):
+            return
+        alive_procs = []
+        for proc in self.standalone_processes:
+            if proc.poll() is None:
+                proc.terminate()
+            else:
+                alive_procs.append(proc)
+        self.standalone_processes = [p for p in self.standalone_processes if p.poll() is None]
+        self.log("INFO", "Requested to close all standalone tools.")
 
     def _show_standalone_window(self, window):
         window.show()
