@@ -69,20 +69,53 @@ class BaseAPITranslator(BaseTranslator):
                 return result
         except urllib.error.HTTPError as e:
             err_body = e.read().decode('utf-8', errors='ignore')
+            
+            # Khởi tạo thông báo lỗi chuẩn hoá
+            friendly_err = f"Lỗi HTTP {e.code}: {e.reason}"
+            
+            try:
+                err_json = json.loads(err_body)
+                if 'error' in err_json:
+                    # Parse chuẩn OpenAI / Gemini
+                    err_data = err_json['error']
+                    if isinstance(err_data, dict):
+                        err_msg = err_data.get('message', str(err_data))
+                        err_code = err_data.get('code', '')
+                        err_type = err_data.get('type', '')
+                    else:
+                        err_msg = str(err_data)
+                        err_code = ''
+                        err_type = ''
+                        
+                    if e.code == 401 or err_type == "unauthorized" or "API_KEY_INVALID" in err_body or "Invalid API Key" in err_msg or "API key not valid" in err_msg:
+                        friendly_err = "API Key không hợp lệ hoặc đã hết hạn."
+                    elif e.code == 429 or err_type == "insufficient_quota" or "exceeded your current quota" in err_msg:
+                        friendly_err = "Đã hết hạn mức token (Quota Exceeded) hoặc bị giới hạn lượt gọi (Rate Limit)."
+                    elif e.code == 404:
+                        friendly_err = "Không tìm thấy Endpoint hoặc Model (404 Not Found). Vui lòng kiểm tra lại URL."
+                    else:
+                        friendly_err = f"{friendly_err}\nChi tiết: {err_msg}"
+                else:
+                    # Parse chuẩn Felo / Java Spring backend
+                    if "Invalid API Key" in err_body:
+                        friendly_err = "API Key không hợp lệ."
+                    elif e.code == 404:
+                        friendly_err = "Không tìm thấy Endpoint hoặc Model (404 Not Found)."
+            except Exception:
+                if "Invalid API Key" in err_body:
+                    friendly_err = "API Key không hợp lệ."
+            
             if getattr(self, '_test_mode', False):
-                try:
-                    err_json = json.loads(err_body)
-                    if 'error' in err_json:
-                        err_msg = err_json['error'].get('message', str(err_json['error']))
-                        raise RuntimeError(f"HTTP Error {e.code}: {e.reason}\nMessage: {err_msg}")
-                except Exception:
-                    pass
-                raise RuntimeError(f"HTTP Error {e.code}: {e.reason}\n{err_body[:500]}")
+                raise RuntimeError(friendly_err)
             
             if e.code == 429:
                 if self.log_callback:
                     self.log_callback("WARNING", f"Rate Limit Exceeded (429). Response: {err_body}")
                 raise RuntimeError(f"HTTP_429_TOO_MANY_REQUESTS: {err_body}")
+                
+            if "API Key không hợp lệ" in friendly_err or "Đã hết hạn mức" in friendly_err:
+                # Ngắt lỗi nghiêm trọng không cho retry vô nghĩa
+                raise RuntimeError(f"CRITICAL_API_ERROR: {friendly_err}")
                 
             if self.log_callback:
                 self.log_callback("ERROR", f"API Request Error: {e}\nResponse: {err_body}")
@@ -146,6 +179,11 @@ class BaseAPITranslator(BaseTranslator):
                         if self.log_callback:
                             self.log_callback("WARNING", f"API Rate Limit (429). Sleeping for 15 seconds... (attempt {retry_count + 1}/{max_retries + 1})")
                         time.sleep(15)
+                    elif "CRITICAL_API_ERROR:" in err_str:
+                        # Ngắt hoàn toàn quá trình dịch vì lỗi nghiêm trọng (Invalid Key, Quota Exceeded)
+                        if self.log_callback:
+                            self.log_callback("ERROR", f"Critical API Error: {err_str.replace('CRITICAL_API_ERROR: ', '')}")
+                        break
                     else:
                         if self.log_callback:
                             self.log_callback("WARNING", f"API Error: {e}")

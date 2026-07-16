@@ -21,6 +21,9 @@ class TranslatorStandaloneWidget(QWidget):
     load_fail_signal = Signal(str)
     trans_success_signal = Signal(str)
     trans_fail_signal = Signal(str)
+    fetch_success_signal = Signal(list)
+    fetch_fail_signal = Signal(str)
+    test_result_signal = Signal(bool, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -31,6 +34,9 @@ class TranslatorStandaloneWidget(QWidget):
         self.load_fail_signal.connect(self._on_load_fail)
         self.trans_success_signal.connect(self._on_trans_success)
         self.trans_fail_signal.connect(self._on_trans_fail)
+        self.fetch_success_signal.connect(self._on_fetch_success)
+        self.fetch_fail_signal.connect(self._on_fetch_fail)
+        self.test_result_signal.connect(self._on_test_result)
         
         self._setup_ui()
         self._populate_models()
@@ -40,7 +46,7 @@ class TranslatorStandaloneWidget(QWidget):
         
         # Config Area
         group_config = QGroupBox("Configuration")
-        layout_config = QHBoxLayout(group_config)
+        layout_config = QVBoxLayout(group_config)
         
         self.combo_category = QComboBox()
         self.combo_category.addItems(["Offline", "Online"])
@@ -59,23 +65,45 @@ class TranslatorStandaloneWidget(QWidget):
         
         # Extended config fields (Online APIs)
         self.extended_config_widget = QWidget()
-        self.extended_config_layout = QHBoxLayout(self.extended_config_widget)
+        self.extended_config_layout = QVBoxLayout(self.extended_config_widget)
         self.extended_config_layout.setContentsMargins(0, 0, 0, 0)
         
+        row1 = QHBoxLayout()
         self.combo_sys_prompt = QComboBox()
+        row1.addWidget(QLabel("Sys Prompt:"))
+        row1.addWidget(self.combo_sys_prompt, stretch=1)
+        
+        row2 = QHBoxLayout()
         self.txt_endpoint = QLineEdit()
-        self.txt_model = QLineEdit()
+        row2.addWidget(QLabel("Endpoint:"))
+        row2.addWidget(self.txt_endpoint, stretch=1)
+        
+        row3 = QHBoxLayout()
+        self.txt_model = QComboBox()
+        self.txt_model.setEditable(True)
+        row3.addWidget(QLabel("Model:"))
+        row3.addWidget(self.txt_model, stretch=1)
+        
+        self.btn_fetch = QPushButton("Fetch")
+        self.btn_fetch.setFixedWidth(50)
+        self.btn_fetch.clicked.connect(self._on_fetch_models)
+        row3.addWidget(self.btn_fetch)
+        
+        self.btn_test = QPushButton("Test")
+        self.btn_test.setFixedWidth(50)
+        self.btn_test.clicked.connect(self._on_test_api)
+        row3.addWidget(self.btn_test)
+        
+        row4 = QHBoxLayout()
         self.txt_key = QLineEdit()
         self.txt_key.setEchoMode(QLineEdit.EchoMode.Password)
+        row4.addWidget(QLabel("Key:"))
+        row4.addWidget(self.txt_key, stretch=1)
         
-        self.extended_config_layout.addWidget(QLabel("Sys Prompt:"))
-        self.extended_config_layout.addWidget(self.combo_sys_prompt)
-        self.extended_config_layout.addWidget(QLabel("Endpoint:"))
-        self.extended_config_layout.addWidget(self.txt_endpoint)
-        self.extended_config_layout.addWidget(QLabel("Model:"))
-        self.extended_config_layout.addWidget(self.txt_model)
-        self.extended_config_layout.addWidget(QLabel("Key:"))
-        self.extended_config_layout.addWidget(self.txt_key)
+        self.extended_config_layout.addLayout(row1)
+        self.extended_config_layout.addLayout(row2)
+        self.extended_config_layout.addLayout(row3)
+        self.extended_config_layout.addLayout(row4)
         
         layout_config.addWidget(self.extended_config_widget)
         
@@ -211,7 +239,7 @@ class TranslatorStandaloneWidget(QWidget):
                 profiles = self._get_api_profiles()
                 prof_data = profiles.get(key, {})
                 self.txt_endpoint.setText(prof_data.get("endpoint", ""))
-                self.txt_model.setText(prof_data.get("model", ""))
+                self.txt_model.setCurrentText(prof_data.get("model", ""))
                 self.txt_key.setText(prof_data.get("key", ""))
             
             self.extended_config_widget.setVisible(True)
@@ -248,7 +276,7 @@ class TranslatorStandaloneWidget(QWidget):
                     profiles = self._get_api_profiles()
                     prof_data = profiles.get(key, {})
                     endpoint = self.txt_endpoint.text().strip() or prof_data.get("endpoint", "")
-                    model = self.txt_model.text().strip() or prof_data.get("model", "")
+                    model = self.txt_model.currentText().strip() or prof_data.get("model", "")
                     api_key = self.txt_key.text().strip() or prof_data.get("key", "")
                     
                     if not model or not api_key or (not endpoint and prof_data.get("provider") != "gemini"):
@@ -329,3 +357,105 @@ class TranslatorStandaloneWidget(QWidget):
         self.btn_translate.setEnabled(True)
         self.btn_translate.setText("Translate")
         QMessageBox.critical(self, "Error", f"Translation failed:\n{error_msg}")
+
+    def _on_fetch_models(self):
+        key_profile = self.combo_model.currentData()
+        if not key_profile:
+            return
+            
+        profiles = self._get_api_profiles()
+        prof_data = profiles.get(key_profile, {})
+        ai_provider = prof_data.get("provider", "openai")
+        
+        endpoint = self.txt_endpoint.text().strip() or prof_data.get("endpoint", "")
+        key = self.txt_key.text().strip() or prof_data.get("key", "")
+        
+        if not endpoint and ai_provider != 'gemini':
+            QMessageBox.warning(self, "Warning", "No API Endpoint URL provided. Please enter a valid URL.")
+            return
+
+        self.btn_fetch.setEnabled(False)
+        self.btn_fetch.setText("...")
+
+        def _fetch():
+            from app.core.api.manager import fetch_remote_ai_models
+            try:
+                models = fetch_remote_ai_models(endpoint, key, ai_provider)
+                self.fetch_success_signal.emit(models)
+            except Exception as e:
+                self.fetch_fail_signal.emit(str(e))
+
+        threading.Thread(target=_fetch, daemon=True).start()
+
+    def _on_fetch_success(self, models: list):
+        self.btn_fetch.setEnabled(True)
+        self.btn_fetch.setText("Fetch")
+        if models:
+            current_text = self.txt_model.currentText()
+            self.txt_model.clear()
+            self.txt_model.addItem("Auto")
+            self.txt_model.addItems(models)
+            if current_text and (current_text in models or current_text == "Auto"):
+                self.txt_model.setCurrentText(current_text)
+            else:
+                self.txt_model.setCurrentText("Auto")
+            QMessageBox.information(self, "Success", f"Fetched {len(models)} models successfully.")
+        else:
+            QMessageBox.warning(self, "Warning", "No models found.")
+
+    def _on_fetch_fail(self, error_msg: str):
+        self.btn_fetch.setEnabled(True)
+        self.btn_fetch.setText("Fetch")
+        QMessageBox.critical(self, "Error", f"Failed to fetch models:\n{error_msg}")
+
+    def _on_test_api(self):
+        key_profile = self.combo_model.currentData()
+        if not key_profile:
+            return
+            
+        profiles = self._get_api_profiles()
+        prof_data = profiles.get(key_profile, {})
+        ai_provider = prof_data.get("provider", "openai")
+        
+        endpoint = self.txt_endpoint.text().strip() or prof_data.get("endpoint", "")
+        key = self.txt_key.text().strip() or prof_data.get("key", "")
+        model_name = self.txt_model.currentText().strip() or prof_data.get("model", "")
+        
+        if not model_name or model_name == "Auto":
+            QMessageBox.warning(self, "Warning", "Please select a specific model to test.")
+            return
+
+        if not endpoint and ai_provider != 'gemini':
+            QMessageBox.warning(self, "Warning", "No API Endpoint URL provided.")
+            return
+
+        self.btn_test.setEnabled(False)
+        self.btn_test.setText("...")
+
+        def _test():
+            from app.core.shared_registry import TranslatorFactory
+            try:
+                import app.plugins.translator.openai.main_impl
+                import app.plugins.translator.gemini.main_impl
+                import app.plugins.translator.felo.main_impl
+                
+                translator = TranslatorFactory.create(ai_provider)
+                translator.load_weights({
+                    "endpoint": endpoint,
+                    "key": key,
+                    "model": model_name
+                })
+                success, msg = translator.test_connection()
+                self.test_result_signal.emit(success, msg)
+            except Exception as e:
+                self.test_result_signal.emit(False, str(e))
+
+        threading.Thread(target=_test, daemon=True).start()
+
+    def _on_test_result(self, success: bool, message: str):
+        self.btn_test.setEnabled(True)
+        self.btn_test.setText("Test")
+        if success:
+            QMessageBox.information(self, "Success", message)
+        else:
+            QMessageBox.critical(self, "Error", message)
