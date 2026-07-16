@@ -187,12 +187,14 @@ class TranslatorStandaloneWidget(QWidget):
         self.combo_model.clear()
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
         
+        from app.core.desktop.components.ui_utils import natural_sort_key
+        
         if category == "Offline":
             from app.core.desktop.config import ConfigLoader
             config_loader = ConfigLoader(project_root)
             
             keys = config_loader.list_field_keys("offline_translator")
-            for key in keys:
+            for key in sorted(keys, key=natural_sort_key):
                 label = config_loader.format_display_label(key, "offline_translator")
                 state = config_loader.get_model_state(key, "offline_translator")
                 if state == "NOT_SETUP":
@@ -202,7 +204,7 @@ class TranslatorStandaloneWidget(QWidget):
                 self.combo_model.addItem(label, key)
         else:
             profiles = self._get_api_profiles()
-            for prof_name, prof_data in profiles.items():
+            for prof_name, prof_data in sorted(profiles.items(), key=lambda x: natural_sort_key(x[0])):
                 if isinstance(prof_data, dict) and prof_data.get("type") != "Pool":
                     provider = prof_data.get("provider", "openai")
                     label = f"{prof_name} ({provider})"
