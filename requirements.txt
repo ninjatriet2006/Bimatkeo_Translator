@@ -12,3 +12,4 @@ diffusers
 transformers
 accelerate
 pyspellchecker==0.9.0
+anthropic>=0.30.0

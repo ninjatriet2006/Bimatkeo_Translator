@@ -453,8 +453,9 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             QTimer.singleShot(3000, reset_btn)
         
         try:
-            # Spawn the tool in a completely separate process
-            subprocess.Popen([python_exe, script_path])
+            # Spawn the tool in a completely separate process using module import to fix sys.path
+            module_path = f"app.core.desktop.components.standalone.{script_name.replace('.py', '')}"
+            subprocess.Popen([python_exe, "-m", module_path], cwd=self.project_base_dir)
             self.log("INFO", f"Launched standalone tool: {tool_name}")
         except Exception as e:
             self.log("ERROR", f"Failed to launch standalone tool: {e}")

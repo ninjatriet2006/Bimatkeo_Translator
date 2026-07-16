@@ -54,3 +54,17 @@ Kira AI:
   model: ''
   key: ''
   max_retries: 1
+Felo Search v2:
+  type: Standalone
+  service: Translator
+  provider: felo_search
+  endpoint: 'https://openapi.felo.ai/v2/chat'
+  model: ''
+  key: ''
+Claude Custom:
+  type: Standalone
+  service: Translator
+  provider: custom_anthropic
+  endpoint: 'https://api.anthropic.com'
+  model: 'claude-3-5-sonnet-20241022'
+  key: ''
