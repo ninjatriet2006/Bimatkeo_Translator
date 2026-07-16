@@ -11,6 +11,7 @@ INTEGRITY NOTES (For AI Agents):
 from PySide6.QtWidgets import QMessageBox, QComboBox, QInputDialog
 from .mapping import get_profile_mapping
 from app.core.api.profile.profile_storage import load_api_profiles, save_api_profiles
+from app.core.desktop.components.ui_utils import natural_sort_key
 
 
 def clear_api_widgets_generic(main_window, service: str):
@@ -85,7 +86,7 @@ def delete_api_profile_generic(main_window, service: str):
         if hasattr(main_window, 'app_logger'):
             main_window.app_logger.log("SUCCESS", f"Đã xóa hồ sơ '{profile_name}'.")
 
-        filtered_profiles = [name for name, p in profiles.items() if p.get("type", "Standalone") == "Standalone" and p.get("service", "Translator") == service]
+        filtered_profiles = sorted([name for name, p in profiles.items() if p.get("type", "Standalone") == "Standalone" and p.get("service", "Translator") == service], key=natural_sort_key)
 
         combo.blockSignals(True)
         combo.clear()
@@ -135,7 +136,7 @@ def save_api_profile_generic(main_window, service: str):
     }
     save_api_profiles(main_window, profiles)
 
-    filtered_profiles = [name for name, p in profiles.items() if p.get("type", "Standalone") == "Standalone" and p.get("service", "Translator") == service]
+    filtered_profiles = sorted([name for name, p in profiles.items() if p.get("type", "Standalone") == "Standalone" and p.get("service", "Translator") == service], key=natural_sort_key)
     combo.blockSignals(True)
     combo.clear()
     combo.addItem("--- Select ---")

@@ -8,6 +8,11 @@ INTEGRITY NOTES (For AI Agents):
 - IN = OUT: Defines logic for app.core.desktop.components.ui_utils.
 =============================================================================
 """
+import re
+
+def natural_sort_key(s):
+    return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
+
 def build_grouped_settings_tabs(config_data, tab_order):
     """
     Groups configuration settings by their 'group' attribute and orders them

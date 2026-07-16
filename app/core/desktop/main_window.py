@@ -444,18 +444,46 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             button.setText("Loading...")
             button.setEnabled(False)
             
+            reset_btn_called = [False]
             def reset_btn_func():
-                button.setText(original_text)
-                button.setEnabled(True)
+                if not reset_btn_called[0]:
+                    reset_btn_called[0] = True
+                    button.setText(original_text)
+                    button.setEnabled(True)
                 
             reset_btn = reset_btn_func
-            # Unlock the button after 3 seconds to prevent double-clicking while waiting for the subprocess
-            QTimer.singleShot(3000, reset_btn)
         
         try:
             # Spawn the tool in a completely separate process using module import to fix sys.path
             module_path = f"app.core.desktop.components.standalone.{script_name.replace('.py', '')}"
-            subprocess.Popen([python_exe, "-m", module_path], cwd=self.project_base_dir)
+            import threading
+            
+            proc = subprocess.Popen(
+                [python_exe, "-m", module_path], 
+                cwd=self.project_base_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1
+            )
+            
+            if reset_btn:
+                def monitor_process():
+                    try:
+                        if proc.stdout:
+                            for line in proc.stdout:
+                                print(line, end="")
+                                if "STANDALONE_READY" in line:
+                                    QTimer.singleShot(0, reset_btn)
+                    except Exception:
+                        pass
+                    # Fallback in case of exit or error
+                    QTimer.singleShot(0, reset_btn)
+                    
+                threading.Thread(target=monitor_process, daemon=True).start()
+                # Maximum 15s wait
+                QTimer.singleShot(15000, reset_btn)
+                
             self.log("INFO", f"Launched standalone tool: {tool_name}")
         except Exception as e:
             self.log("ERROR", f"Failed to launch standalone tool: {e}")

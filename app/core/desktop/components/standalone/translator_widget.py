@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
                                QPushButton, QComboBox, QLabel, QMessageBox, QGroupBox, QLineEdit)
 from PySide6.QtCore import Qt, QMetaObject, Q_ARG, Signal
 from app.core.shared_registry import TranslatorFactory
+from app.core.desktop.components.ui_utils import natural_sort_key
 
 class TranslatorStandaloneWidget(QWidget):
     log_signal = Signal(str, str)
@@ -401,7 +402,7 @@ class TranslatorStandaloneWidget(QWidget):
             current_text = self.txt_model.currentText()
             self.txt_model.clear()
             self.txt_model.addItem("Auto")
-            self.txt_model.addItems(models)
+            self.txt_model.addItems(sorted(models, key=natural_sort_key))
             if current_text and (current_text in models or current_text == "Auto"):
                 self.txt_model.setCurrentText(current_text)
             else:
@@ -481,5 +482,6 @@ if __name__ == "__main__":
     window.resize(800, 600)
     window.setWindowTitle("Standalone Translator")
     window.show()
+    print("STANDALONE_READY", flush=True)
     sys.exit(app.exec())
 

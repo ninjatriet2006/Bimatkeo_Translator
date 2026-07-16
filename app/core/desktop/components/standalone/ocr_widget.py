@@ -237,5 +237,6 @@ if __name__ == "__main__":
     window.resize(800, 600)
     window.setWindowTitle("Standalone OCR")
     window.show()
+    print("STANDALONE_READY", flush=True)
     sys.exit(app.exec())
 

@@ -229,4 +229,5 @@ if __name__ == "__main__":
     window.resize(1000, 600)
     window.setWindowTitle("Standalone Diffusion")
     window.show()
+    print("STANDALONE_READY", flush=True)
     sys.exit(app.exec())

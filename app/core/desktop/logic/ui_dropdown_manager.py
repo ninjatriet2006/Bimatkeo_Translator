@@ -11,10 +11,7 @@ INTEGRITY NOTES (For AI Agents):
 from PySide6.QtWidgets import QComboBox
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
-import re
-
-def natural_sort_key(s):
-    return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
+from app.core.desktop.components.ui_utils import natural_sort_key
 
 class UIDropdownManager:
     def __init__(self, main_window):
@@ -320,7 +317,7 @@ class UIDropdownManager:
             lang_combo.addItem("No Supported Targets")
             lang_combo.setEnabled(False)
         else:
-            for name in sorted(supported_display_names):
+            for name in sorted(supported_display_names, key=natural_sort_key):
                 lang_combo.addItem(name, mw_module.LANGUAGES[name])
             lang_combo.setEnabled(True)
         lang_combo.blockSignals(False)

@@ -10,6 +10,7 @@ INTEGRITY NOTES (For AI Agents):
 """
 import os
 import string
+from app.core.desktop.components.ui_utils import natural_sort_key
 
 class ThemeManager:
     def __init__(self, main_window):
@@ -21,7 +22,7 @@ class ThemeManager:
         self.mw.available_themes["Default Qt"] = {"name": "Default Qt", "style": {}}
 
         if not os.path.isdir(themes_dir):
-            self.mw.theme_combobox.addItems(sorted(self.mw.available_themes.keys()))
+            self.mw.theme_combobox.addItems(sorted(self.mw.available_themes.keys(), key=natural_sort_key))
             return
 
         from ruamel.yaml import YAML
@@ -39,7 +40,7 @@ class ThemeManager:
                 except Exception as e:
                     print(f"Warning: Could not load theme file {filename}. Error: {e}")
 
-        self.mw.theme_combobox.addItems(sorted(self.mw.available_themes.keys()))
+        self.mw.theme_combobox.addItems(sorted(self.mw.available_themes.keys(), key=natural_sort_key))
 
     def apply_theme(self, theme_name: str):
         if hasattr(self.mw, 'font_scale_combobox'):

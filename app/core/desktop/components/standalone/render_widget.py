@@ -266,4 +266,5 @@ if __name__ == "__main__":
     window.resize(1000, 700)
     window.setWindowTitle("Standalone Render")
     window.show()
+    print("STANDALONE_READY", flush=True)
     sys.exit(app.exec())

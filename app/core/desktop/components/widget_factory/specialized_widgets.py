@@ -17,6 +17,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
 
 from app.core.desktop.components.widgets_helper import DynamicHeightListWidget, NoScrollComboBox, SearchableComboBox
+from app.core.desktop.components.ui_utils import natural_sort_key
 from app.core.desktop.constants import INSTALL_NEW_FONT, UPDATE_ALL_FONTS
 
 class SpecializedWidgetFactory:
@@ -64,7 +65,7 @@ class SpecializedWidgetFactory:
                     filtered_profiles.append(name)
 
         combo.addItem("--- Select ---")
-        combo.addItems(filtered_profiles)
+        combo.addItems(sorted(filtered_profiles, key=natural_sort_key))
         
         default_val = self.mw.current_settings.get(info['key'], info.get("default", ""))
         combo.setCurrentText(str(default_val) if default_val else "--- Select ---")
@@ -99,7 +100,7 @@ class SpecializedWidgetFactory:
         filtered_pools = list(pools.keys())
             
         combo.addItem("--- Select ---")
-        combo.addItems(filtered_pools)
+        combo.addItems(sorted(filtered_pools, key=natural_sort_key))
         
         default_val = self.mw.current_settings.get(info['key'], info.get("default", ""))
         combo.setCurrentText(str(default_val) if default_val else "--- Select ---")
@@ -329,7 +330,7 @@ class SpecializedWidgetFactory:
 
         lang_combo = NoScrollComboBox()
         lang_items = [name for name, code in mw_module.LANGUAGES.items() if code != 'auto']
-        lang_combo.addItems(sorted(lang_items))
+        lang_combo.addItems(sorted(lang_items, key=natural_sort_key))
 
         translator_combo = NoScrollComboBox()
 

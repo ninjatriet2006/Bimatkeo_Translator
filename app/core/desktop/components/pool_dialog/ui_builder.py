@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (QVBoxLayout, QHBoxLayout, QLabel,
                                QGroupBox, QFormLayout, QWidget)
 from PySide6.QtCore import Qt
 from app.core.desktop.components.widgets_helper import SearchableComboBox
+from app.core.desktop.components.ui_utils import natural_sort_key
 
 def build_ui(dialog):
     def _(key, default):
@@ -89,7 +90,7 @@ def build_ui(dialog):
     existing_layout.addWidget(lbl_add_existing)
     
     dialog.existing_api_combo = QComboBox()
-    dialog.existing_api_combo.addItems(list(dialog.api_profiles.keys()))
+    dialog.existing_api_combo.addItems(sorted(list(dialog.api_profiles.keys()), key=natural_sort_key))
     existing_layout.addWidget(dialog.existing_api_combo, stretch=1)
     
     dialog.add_existing_btn = QPushButton(_("ui_btn_add", "Add"))
