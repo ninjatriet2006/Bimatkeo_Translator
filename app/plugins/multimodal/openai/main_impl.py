@@ -27,8 +27,8 @@ class OpenAIProvider(BaseMultimodal, BaseAPITranslator, BaseCloudOCR):
         {'key': 'deepseek', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://api.deepseek.com', 'endpoint_inference': []},
         {'key': 'groq', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://api.groq.com/openai/v1', 'endpoint_inference': []},
         {'key': 'custom_openai', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'endpoint_inference': []},
-        {'key': 'felo', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v1', 'endpoint_inference': []},
-        {'key': 'felo_search', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v1', 'endpoint_inference': []},
+        {'key': 'felo', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v1', 'endpoint_inference': [], 'static_models': ['felo-search']},
+        {'key': 'felo_search', 'check_file': 'app/plugins/multimodal/openai/main_impl.py', 'default_endpoint': 'https://openapi.felo.ai/v1', 'endpoint_inference': [], 'static_models': ['felo-search']},
     ]
 
     def __init__(self):

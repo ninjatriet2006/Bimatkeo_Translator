@@ -55,7 +55,7 @@ def update_translator_visibility(main_window):
     if ai_endpoint_widget:
         entry = ai_endpoint_widget if isinstance(ai_endpoint_widget, QLineEdit) else ai_endpoint_widget.findChild(QLineEdit)
         if entry:
-            if ai_provider == 'custom_openai':
+            if ai_provider.startswith('custom_'):
                 entry.setEnabled(True)
                 entry.setReadOnly(False)
             else:

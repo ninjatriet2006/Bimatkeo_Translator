@@ -48,7 +48,7 @@ def update_ocr_visibility(main_window):
     if endpoint_widget:
         entry = endpoint_widget if isinstance(endpoint_widget, QLineEdit) else endpoint_widget.findChild(QLineEdit)
         if entry:
-            if provider == 'custom_ocr':
+            if provider.startswith('custom_'):
                 entry.setEnabled(True)
                 entry.setReadOnly(False)
             else:
