@@ -211,10 +211,19 @@ class TranslatorStandaloneWidget(QWidget):
         # Load languages
         self.combo_src_lang.clear()
         self.combo_tgt_lang.clear()
-        import app.core.desktop.main_window as mw_module
-        if mw_module.LANGUAGES:
+        
+        from app.core.desktop.config import ConfigLoader
+        config_loader = ConfigLoader(project_root)
+        languages = config_loader.languages
+        
+        if not languages:
+            import app.core.desktop.main_window as mw_module
+            languages = mw_module.LANGUAGES
+            
+        if languages:
+            from app.core.desktop.components.ui_utils import natural_sort_key
             self.combo_src_lang.addItem("Auto-Detect", "auto")
-            for name, code in sorted(mw_module.LANGUAGES.items()):
+            for name, code in sorted(languages.items(), key=lambda x: natural_sort_key(x[0])):
                 if code != "auto":
                     self.combo_src_lang.addItem(name, code)
                     self.combo_tgt_lang.addItem(name, code)

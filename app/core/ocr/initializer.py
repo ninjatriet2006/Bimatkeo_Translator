@@ -29,7 +29,7 @@ class OCRInitializer:
         recognizer = None
         
         if ocr_category == "AI / Online":
-            api_ocr_name = config_dict.get("api_ocr", "gemini_ocr")
+            api_ocr_name = config_dict.get("api_ocr", "gemini")
             api_key = config_dict.get("ocr_api_key", config_dict.get("api_ocr_key", ""))
             endpoint = config_dict.get("ocr_api_endpoint", "")
             model_name = config_dict.get("ocr_api_model", "")

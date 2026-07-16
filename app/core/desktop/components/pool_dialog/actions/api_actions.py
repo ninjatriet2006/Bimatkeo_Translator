@@ -41,7 +41,7 @@ def add_new_to_pool(dialog):
         
     endpoint = dialog.new_api_endpoint.text().strip()
     if dialog.service == "OCR":
-        provider = "gemini_ocr" # OCR currently relies mostly on gemini models or custom, default to gemini_ocr
+        provider = "gemini" # OCR currently relies mostly on gemini models or custom, default to gemini
     else:
         from app.core.api.manager import infer_ai_provider
         provider = infer_ai_provider(endpoint)

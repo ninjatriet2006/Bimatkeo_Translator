@@ -28,7 +28,7 @@ Test Pool:
 Test:
   type: Standalone
   service: OCR
-  provider: gemini_ocr
+  provider: gemini
   endpoint: ''
   model: ''
   key: ''
