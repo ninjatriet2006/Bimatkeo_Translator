@@ -12,13 +12,22 @@ import os
 import threading
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, 
                                QPushButton, QComboBox, QLabel, QMessageBox, QGroupBox)
-from PySide6.QtCore import Qt, QMetaObject, Q_ARG
+from PySide6.QtCore import Qt, QMetaObject, Q_ARG, Signal
 from app.core.shared_registry import TranslatorFactory
 
 class TranslatorStandaloneWidget(QWidget):
+    log_signal = Signal(str, str)
+    load_success_signal = Signal()
+    load_fail_signal = Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.translator_instance = None
+        
+        self.log_signal.connect(self._on_log)
+        self.load_success_signal.connect(self._on_load_success)
+        self.load_fail_signal.connect(self._on_load_fail)
+        
         self._setup_ui()
         self._populate_models()
 
@@ -76,10 +85,10 @@ class TranslatorStandaloneWidget(QWidget):
         self.layout_obj.addWidget(group_console)
 
     def _log(self, level: str, msg: str):
-        def _update():
-            self.txt_console.append(f"[{level}] {msg}")
-        from PySide6.QtCore import QTimer
-        QTimer.singleShot(0, _update)
+        self.log_signal.emit(level, msg)
+
+    def _on_log(self, level: str, msg: str):
+        self.txt_console.append(f"[{level}] {msg}")
 
     def _get_api_profiles(self):
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
@@ -117,7 +126,7 @@ class TranslatorStandaloneWidget(QWidget):
             profiles = self._get_api_profiles()
             for prof_name, prof_data in profiles.items():
                 if isinstance(prof_data, dict) and prof_data.get("type") != "Pool":
-                    provider = prof_data.get("translator", "openai")
+                    provider = prof_data.get("provider", "openai")
                     label = f"{prof_name} ({provider})"
                     self.combo_model.addItem(label, prof_name)
 
@@ -130,7 +139,7 @@ class TranslatorStandaloneWidget(QWidget):
         self.btn_load.setText("Loading...")
         
         def _load():
-            from PySide6.QtCore import QTimer
+            from PySide6.QtCore import QMetaObject, Qt
             try:
                 # Fetch project root to resolve paths
                 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
@@ -150,7 +159,7 @@ class TranslatorStandaloneWidget(QWidget):
                     config_dict = {
                         "translator": {
                             "translator_category": "Online",
-                            "translator": prof_data.get("translator", "openai"),
+                            "translator": prof_data.get("provider", "openai"),
                             "ai_endpoint": prof_data.get("endpoint", ""),
                             "ai_model": prof_data.get("model", ""),
                             "ai_api_key": prof_data.get("key", "")
@@ -162,13 +171,13 @@ class TranslatorStandaloneWidget(QWidget):
                 
                 if chained and len(chained) > 0:
                     self.translator_instance = chained[0][0]
-                    QTimer.singleShot(0, self._on_load_success)
+                    self.load_success_signal.emit()
                 else:
                     raise Exception("Failed to load translator")
                     
             except Exception as e:
                 err = str(e)
-                QTimer.singleShot(0, lambda e=err: self._on_load_fail(e))
+                self.load_fail_signal.emit(err)
 
         threading.Thread(target=_load, daemon=True).start()
 

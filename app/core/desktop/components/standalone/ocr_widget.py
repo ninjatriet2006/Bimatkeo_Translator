@@ -12,18 +12,27 @@ import os
 import threading
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, 
                                QPushButton, QComboBox, QLabel, QMessageBox, QGroupBox, QFileDialog)
-from PySide6.QtCore import Qt, QMetaObject, Q_ARG
+from PySide6.QtCore import Qt, QMetaObject, Q_ARG, Signal
 from PySide6.QtGui import QPixmap
 from app.core.shared_registry import DetectorFactory, RecognizerFactory
 import cv2
 import numpy as np
 
 class OCRStandaloneWidget(QWidget):
+    log_signal = Signal(str, str)
+    load_success_signal = Signal()
+    load_fail_signal = Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.detector_instance = None
         self.recognizer_instance = None
         self.current_image_path = None
+        
+        self.log_signal.connect(self._on_log)
+        self.load_success_signal.connect(self._on_load_success)
+        self.load_fail_signal.connect(self._on_load_fail)
+        
         self._setup_ui()
         self._populate_models()
 
@@ -89,10 +98,10 @@ class OCRStandaloneWidget(QWidget):
         self.layout_obj.addWidget(group_console)
 
     def _log(self, level: str, msg: str):
-        def _update():
-            self.txt_console.append(f"[{level}] {msg}")
-        from PySide6.QtCore import QTimer
-        QTimer.singleShot(0, _update)
+        self.log_signal.emit(level, msg)
+
+    def _on_log(self, level: str, msg: str):
+        self.txt_console.append(f"[{level}] {msg}")
 
     def _populate_models(self):
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
@@ -130,7 +139,7 @@ class OCRStandaloneWidget(QWidget):
         self.btn_load.setText("Loading...")
         
         def _load():
-            from PySide6.QtCore import QTimer
+            from PySide6.QtCore import QMetaObject, Qt
             try:
                 config_dict = {"ocr": {"detector": det_key, "recognizer": rec_key}}
                 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../"))
@@ -141,12 +150,12 @@ class OCRStandaloneWidget(QWidget):
                 if det and rec:
                     self.detector_instance = det
                     self.recognizer_instance = rec
-                    QTimer.singleShot(0, self._on_load_success)
+                    self.load_success_signal.emit()
                 else:
                     raise Exception("Failed to initialize models.")
             except Exception as e:
                 err = str(e)
-                QTimer.singleShot(0, lambda e=err: self._on_load_fail(e))
+                self.load_fail_signal.emit(err)
 
         threading.Thread(target=_load, daemon=True).start()
 
