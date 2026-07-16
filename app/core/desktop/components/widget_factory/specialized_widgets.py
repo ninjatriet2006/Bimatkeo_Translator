@@ -34,8 +34,35 @@ class SpecializedWidgetFactory:
         combo = SearchableComboBox()
         profiles = self.mw._load_api_profiles()
         
-        filtered_profiles = [name for name, p in profiles.items() if p.get("type", p.get("group", "Standalone")) == "Standalone" and p.get("service", "Translator") == service]
+        filtered_profiles = []
+        from app.core.shared_registry import MultimodalFactory
+        
+        for name, p in profiles.items():
+            if p.get("type", p.get("group", "Standalone")) != "Standalone":
+                continue
+                
+            # Trạch xuất provider để kiểm tra năng lực
+            provider = p.get("provider", "")
             
+            # Nếu profile cũ còn giữ key 'service', vẫn tôn trọng nó
+            if "service" in p:
+                if p["service"] == service:
+                    filtered_profiles.append(name)
+            else:
+                # Cơ chế mới: Kiểm tra Provider có support service này không
+                supported = False
+                multimodal_class = MultimodalFactory.get_class(provider)
+                if multimodal_class and hasattr(multimodal_class, "get_supported_services"):
+                    if service in multimodal_class.get_supported_services():
+                        supported = True
+                else:
+                    # Fallback cho các provider cũ chưa nâng cấp
+                    if service == "Translator":
+                        supported = True # Đa số là Translator
+                        
+                if supported:
+                    filtered_profiles.append(name)
+
         combo.addItem("--- Select ---")
         combo.addItems(filtered_profiles)
         

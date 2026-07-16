@@ -19,7 +19,8 @@ from .implementations import (
     ColorizerFactory,
     CloudOCRFactory,
     DiffusionMainModelFactory,
-    DiffusionBaseModelFactory
+    DiffusionBaseModelFactory,
+    MultimodalFactory
 )
 from .discovery import discover_plugins
 
@@ -34,7 +35,8 @@ __all__ = [
     "ColorizerFactory",
     "CloudOCRFactory",
     "DiffusionMainModelFactory",
-    "DiffusionBaseModelFactory"
+    "DiffusionBaseModelFactory",
+    "MultimodalFactory"
 ]
 
 # Tự động scan và nạp các plugin vào registry ngay khi package được load

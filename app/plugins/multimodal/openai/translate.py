@@ -8,16 +8,25 @@ INTEGRITY NOTES (For AI Agents):
 - IN = OUT: Nhận API config, prompt, text; trả về JSON string kết quả.
 =============================================================================
 """
-def translate_openai(translator_instance, system_prompt: str, user_text: str) -> str:
+def translate_openai(translator_instance, system_prompt: str, user_text: str, images: list[str] | None = None) -> str:
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {translator_instance.key}"
     }
+    
+    user_content = [{"type": "text", "text": user_text}]
+    if images:
+        for img_b64 in images:
+            user_content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}
+            })
+            
     data = {
         "model": translator_instance.model,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_text}
+            {"role": "user", "content": user_content if images else user_text}
         ],
         "temperature": 0.3,
         "response_format": {"type": "json_object"}

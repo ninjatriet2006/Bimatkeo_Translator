@@ -143,7 +143,11 @@ class BaseAPITranslator(BaseTranslator):
         finally:
             self._test_mode = False
 
-    def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None) -> List[Union[str, dict]]:
+    def _call_api(self, system_prompt: str, user_text: str, images: List[str] | None = None) -> str:
+        """Thực hiện HTTP request tới API server. Lớp con bắt buộc phải override."""
+        raise NotImplementedError
+
+    def translate(self, texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None, images: List[str] | None = None) -> List[Union[str, dict]]:
         if not texts:
             return cast(List[Union[str, dict]], texts)
             
@@ -172,7 +176,7 @@ class BaseAPITranslator(BaseTranslator):
             
             while retry_count <= max_retries:
                 try:
-                    raw_response = self._call_api(system_prompt, combined_text)
+                    raw_response = self._call_api(system_prompt, combined_text, images=images)
                 except Exception as e:
                     err_str = str(e)
                     if "HTTP_429_TOO_MANY_REQUESTS" in err_str:
@@ -283,8 +287,3 @@ class BaseAPITranslator(BaseTranslator):
         # Simply pass through the translated list
         translated_list = all_translated_list
         return cast(List[Union[str, dict]], translated_list)
-
-    def _call_api(self, system_prompt: str, user_text: str) -> str:
-        raise NotImplementedError
-
-

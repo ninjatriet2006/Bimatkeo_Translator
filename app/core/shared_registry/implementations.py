@@ -50,3 +50,6 @@ class DiffusionMainModelFactory(BaseFactory):
 
 class DiffusionBaseModelFactory(BaseFactory):
     _registry: Dict[str, Type[Any]] = {}
+
+class MultimodalFactory(BaseFactory):
+    _registry: Dict[str, Type[Any]] = {}
