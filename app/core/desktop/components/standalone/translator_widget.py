@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
 import threading
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, 
-                               QPushButton, QComboBox, QLabel, QMessageBox, QGroupBox, QLineEdit)
+                               QPushButton, QComboBox, QLabel, QMessageBox, QGroupBox, QLineEdit, QCompleter)
 from PySide6.QtCore import Qt, QMetaObject, Q_ARG, Signal
 from app.core.shared_registry import TranslatorFactory
 from app.core.desktop.components.ui_utils import natural_sort_key
@@ -129,6 +129,17 @@ class TranslatorStandaloneWidget(QWidget):
         layout_langs = QHBoxLayout()
         self.combo_src_lang = QComboBox()
         self.combo_tgt_lang = QComboBox()
+        
+        self._enable_search_for_combo(self.combo_model)
+        self._enable_search_for_combo(self.combo_sys_prompt)
+        self._enable_search_for_combo(self.combo_src_lang)
+        self._enable_search_for_combo(self.combo_tgt_lang)
+        # self.txt_model is already editable, but let's enable filter for it if needed:
+        if not self.txt_model.isEditable():
+            self._enable_search_for_combo(self.txt_model)
+        else:
+            self._enable_search_for_combo(self.txt_model)
+
         layout_langs.addWidget(QLabel("Source:"))
         layout_langs.addWidget(self.combo_src_lang)
         layout_langs.addWidget(QLabel("Target:"))
@@ -161,6 +172,14 @@ class TranslatorStandaloneWidget(QWidget):
         self.txt_console.setStyleSheet("background-color: #1e1e1e; color: #00ff00; font-family: monospace;")
         layout_console.addWidget(self.txt_console)
         self.layout_obj.addWidget(group_console)
+
+    def _enable_search_for_combo(self, combo: QComboBox):
+        combo.setEditable(True)
+        combo.setInsertPolicy(QComboBox.NoInsert)
+        completer = combo.completer()
+        if completer:
+            completer.setCompletionMode(QCompleter.PopupCompletion)
+            completer.setFilterMode(Qt.MatchContains)
 
     def _log(self, level: str, msg: str):
         self.log_signal.emit(level, msg)
@@ -342,14 +361,19 @@ class TranslatorStandaloneWidget(QWidget):
             try:
                 src_lang = self.combo_src_lang.currentData() or "auto"
                 tgt_lang = self.combo_tgt_lang.currentData() or "VIN"
-                # BaseTranslator interface: translate(texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None)
-                results = self.translator_instance.translate([source_text], src_lang, tgt_lang)
                 
-                if results and len(results) > 0:
-                    res = results[0]
-                    final_text = res.get("text", "") if isinstance(res, dict) else str(res)
-                else:
-                    final_text = ""
+                # Tách thành từng dòng/đoạn để hệ thống tự động phân chia (chunking) theo giới hạn ký tự
+                source_lines = source_text.split('\n')
+                
+                # BaseTranslator interface: translate(texts: List[str], src_lang: str, tgt_lang: str, context_texts: List[str] | None = None)
+                results = self.translator_instance.translate(source_lines, src_lang, tgt_lang)
+                
+                final_lines = []
+                if results:
+                    for res in results:
+                        final_lines.append(res.get("text", "") if isinstance(res, dict) else str(res))
+                
+                final_text = "\n".join(final_lines)
                 
                 self.trans_success_signal.emit(final_text)
             except Exception as e:

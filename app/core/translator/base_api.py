@@ -153,13 +153,25 @@ class BaseAPITranslator(BaseTranslator):
             
         system_prompt = self.prompt_builder.build_prompt(src_lang, tgt_lang)
         
-        # Build single chunk of texts without splitting limit
+        # Phân chia đoạn (chunking) an toàn dựa trên giới hạn ký tự
+        chunks = []
         current_chunk = []
+        current_length = 0
+        MAX_CHARS_PER_CHUNK = 3000
             
         for i, t in enumerate(texts):
-            current_chunk.append(f"Line {i+1}: {t}")
+            line_str = f"Line {i+1}: {t}"
+            # Nếu chunk hiện tại đã có dòng và việc thêm dòng này sẽ vượt quá giới hạn
+            if current_chunk and current_length + len(line_str) > MAX_CHARS_PER_CHUNK:
+                chunks.append(current_chunk)
+                current_chunk = []
+                current_length = 0
+                
+            current_chunk.append(line_str)
+            current_length += len(line_str)
             
-        chunks = [current_chunk] if current_chunk else []
+        if current_chunk:
+            chunks.append(current_chunk)
             
         all_translated_list = []
         

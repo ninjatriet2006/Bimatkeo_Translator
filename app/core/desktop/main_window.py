@@ -471,8 +471,10 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             proc = subprocess.Popen(
                 [python_exe, "-m", module_path], 
                 cwd=self.project_base_dir,
-                stdout=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
+                text=True,
+                bufsize=1,
                 **kwargs
             )
             
@@ -481,8 +483,14 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             self.standalone_processes.append(proc)
             
             if reset_btn:
-                # Wait a fixed amount of time for the tool to load before re-enabling button
-                QTimer.singleShot(2500, reset_btn)
+                def wait_for_ready():
+                    if proc.stdout:
+                        for line in iter(proc.stdout.readline, ''):
+                            if "STANDALONE_READY" in line:
+                                break
+                    QTimer.singleShot(0, reset_btn)
+                
+                threading.Thread(target=wait_for_ready, daemon=True).start()
                 
             self.log("INFO", f"Launched standalone tool: {tool_name}")
         except Exception as e:

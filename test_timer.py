@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication, QPushButton
-from PySide6.QtCore import QMetaObject, Qt
+from PySide6.QtCore import QTimer
 import threading
 import time
 
@@ -10,9 +10,9 @@ btn.show()
 
 def bg_thread():
     time.sleep(1)
-    print("Invoking...")
-    QMetaObject.invokeMethod(btn, "setText", Qt.QueuedConnection, "Done")
-    print("Invoked!")
+    print("Calling QTimer.singleShot...")
+    QTimer.singleShot(0, lambda: btn.setText("Done"))
+    print("Called!")
     time.sleep(1)
     app.quit()
 

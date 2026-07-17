@@ -27,6 +27,6 @@ def translate_felo(translator_instance, system_prompt: str, user_text: str) -> s
         
     result = translator_instance._make_request(url, headers, data)
     try:
-        return result["data"]["answer"].strip()
-    except KeyError:
-        return ""
+        return result.get("data", {}).get("answer", str(result)).strip()
+    except Exception as e:
+        return f'{{"content": "ERROR: Felo API returned unexpected format: {str(e)} - {result}"}}'
