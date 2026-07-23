@@ -175,11 +175,11 @@ class TranslatorStandaloneWidget(QWidget):
 
     def _enable_search_for_combo(self, combo: QComboBox):
         combo.setEditable(True)
-        combo.setInsertPolicy(QComboBox.NoInsert)
+        combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         completer = combo.completer()
         if completer:
-            completer.setCompletionMode(QCompleter.PopupCompletion)
-            completer.setFilterMode(Qt.MatchContains)
+            completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+            completer.setFilterMode(Qt.MatchFlag.MatchContains)
 
     def _log(self, level: str, msg: str):
         self.log_signal.emit(level, msg)

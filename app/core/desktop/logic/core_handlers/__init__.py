@@ -11,7 +11,6 @@ INTEGRITY NOTES (For AI Agents):
 
 from .api_profile import ApiProfileHandlersMixin
 from .ui_visibility import UIVisibilityHandlersMixin
-from .ai_models import AIModelsHandlersMixin
 from .config_io import ConfigIOHandlersMixin
 from .fonts import FontHandlersMixin
 from .models_updater import ModelsUpdaterHandlersMixin
@@ -26,7 +25,6 @@ from .themes import ThemeHandlersMixin
 class HandlersMixin(
     ApiProfileHandlersMixin,
     UIVisibilityHandlersMixin,
-    AIModelsHandlersMixin,
     ConfigIOHandlersMixin,
     FontHandlersMixin,
     ModelsUpdaterHandlersMixin,

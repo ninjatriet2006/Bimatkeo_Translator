@@ -155,23 +155,109 @@ class SpecializedWidgetFactory:
             
         layout.addWidget(combo, stretch=1)
         
-        fetch_text = self.mw.get_string("ui_btn_fetch") if self.mw.get_string("ui_btn_fetch") != "ui_btn_fetch" else info.get("button_text", "Fetch")
-        fetch_btn = QPushButton(fetch_text)
-        fetch_btn.setProperty("lang_id", "ui_btn_fetch")
-        fetch_btn.setProperty("lang_type", "ui")
-        fetch_btn.setFixedWidth(50)
-        fetch_btn.clicked.connect(lambda: self.mw._fetch_ai_models(fetch_btn))
-        layout.addWidget(fetch_btn)
+        btn_fetch = QPushButton("Fetch")
+        btn_fetch.setFixedWidth(50)
+        btn_fetch.setCursor(Qt.CursorShape.PointingHandCursor)
         
-        test_text = self.mw.get_string("ui_btn_test") if self.mw.get_string("ui_btn_test") != "ui_btn_test" else "Test"
-        test_btn = QPushButton(test_text)
-        test_btn.setProperty("lang_id", "ui_btn_test")
-        test_btn.setProperty("lang_type", "ui")
-        test_btn.setFixedWidth(50)
-        test_btn.setToolTip("Test API Endpoint & Key with this model")
-        test_btn.clicked.connect(lambda: self.mw._test_ai_model(test_btn, combo))
-        layout.addWidget(test_btn)
+        btn_test = QPushButton("Test")
+        btn_test.setFixedWidth(50)
+        btn_test.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        if info.get('key') == 'ocr_api_model':
+            api_name_field = 'ocr_api_name'
+            endpoint_field = 'ocr_api_endpoint'
+            key_field = 'ocr_api_key'
+        else:
+            api_name_field = 'api_name'
+            endpoint_field = 'ai_endpoint'
+            key_field = 'ai_key'
+
+        def _get_api_name():
+            api_name = ""
+            if api_name_field in self.mw.setting_widgets:
+                api_name = self.mw.setting_widgets[api_name_field].currentData()
+                if not api_name:
+                    api_name = self.mw.setting_widgets[api_name_field].currentText()
+            return api_name
+
+        def _get_endpoint():
+            return self.mw.setting_widgets[endpoint_field].text() if endpoint_field in self.mw.setting_widgets else ""
+
+        def _get_key():
+            return self.mw.setting_widgets[key_field].text() if key_field in self.mw.setting_widgets else ""
+
+        def on_fetch():
+            from app.core.desktop.components.standalone.translator_widget import TranslatorStandaloneWidget
+            if not hasattr(self.mw, '_temp_standalone_widget'):
+                self.mw._temp_standalone_widget = TranslatorStandaloneWidget()
+            
+            standalone = self.mw._temp_standalone_widget
+            api_name = _get_api_name()
+            
+            standalone.combo_model.clear()
+            if api_name:
+                standalone.combo_model.addItem(api_name, api_name)
+                standalone.combo_model.setCurrentIndex(0)
+                
+            standalone.txt_endpoint.setText(_get_endpoint())
+            standalone.txt_key.setText(_get_key())
+            
+            def handle_fetch_success(models):
+                if models:
+                    current_text = combo.currentText()
+                    combo.clear()
+                    combo.addItem("Auto")
+                    from app.core.desktop.components.ui_utils import natural_sort_key
+                    combo.addItems(sorted(models, key=natural_sort_key))
+                    if current_text and (current_text in models or current_text == "Auto"):
+                        combo.setCurrentText(current_text)
+                    else:
+                        combo.setCurrentText("Auto")
+            
+            try:
+                standalone.fetch_success_signal.disconnect()
+                standalone.fetch_fail_signal.disconnect()
+            except Exception:
+                pass
+                
+            standalone.fetch_success_signal.connect(standalone._on_fetch_success)
+            standalone.fetch_fail_signal.connect(standalone._on_fetch_fail)
+            standalone.fetch_success_signal.connect(handle_fetch_success)
+            
+            standalone._on_fetch_models()
+            
+        def on_test():
+            from app.core.desktop.components.standalone.translator_widget import TranslatorStandaloneWidget
+            if not hasattr(self.mw, '_temp_standalone_widget'):
+                self.mw._temp_standalone_widget = TranslatorStandaloneWidget()
+            
+            standalone = self.mw._temp_standalone_widget
+            api_name = _get_api_name()
+            
+            standalone.combo_model.clear()
+            if api_name:
+                standalone.combo_model.addItem(api_name, api_name)
+                standalone.combo_model.setCurrentIndex(0)
+                
+            standalone.txt_endpoint.setText(_get_endpoint())
+            standalone.txt_key.setText(_get_key())
+            standalone.txt_model.setCurrentText(combo.currentText())
+            
+            try:
+                standalone.test_result_signal.disconnect()
+            except Exception:
+                pass
+            standalone.test_result_signal.connect(standalone._on_test_result)
+            
+            standalone._on_test_api()
+
+        btn_fetch.clicked.connect(on_fetch)
+        btn_test.clicked.connect(on_test)
         
+        if info.get('key') in ['ai_model', 'ocr_api_model']:
+            layout.addWidget(btn_fetch)
+            layout.addWidget(btn_test)
+            
         self.mw.widget_references[info['key']] = combo
         return container
 

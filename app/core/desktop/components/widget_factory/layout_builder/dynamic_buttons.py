@@ -8,10 +8,13 @@ INTEGRITY NOTES (For AI Agents):
 - IN = OUT: Adds dynamic action buttons to layouts and routes their events.
 =============================================================================
 """
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QColorDialog
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QColorDialog, QLineEdit
 from PySide6.QtCore import QTimer
+from typing import Any
 
 class DynamicButtonsBuilderMixin:
+    mw: Any
+
     def setup_dynamic_action_buttons(self, key: str, combo_box, right_layout):
         btn_container = QWidget()
         btn_layout = QHBoxLayout(btn_container)
@@ -58,7 +61,7 @@ class DynamicButtonsBuilderMixin:
         combo_box.currentIndexChanged.connect(lambda idx, k=key: self.mw._update_dynamic_btns(k))
         QTimer.singleShot(0, lambda k=key: self.mw._update_dynamic_btns(k))
 
-    def handle_widget_button_click(self, key: str, associated_widget: QWidget):
+    def handle_widget_button_click(self, key: str, associated_widget: QLineEdit):
         if key in ["font_color", "outline_color"]:
             current_color = associated_widget.text()
             if not current_color: current_color = "000000" if key == "font_color" else "FFFFFF"
@@ -68,8 +71,3 @@ class DynamicButtonsBuilderMixin:
                 new_color_hex = color.name()[1:]
                 associated_widget.setText(new_color_hex)
                 self.mw._on_setting_changed(key)
-        
-        elif key == "ai_model":
-            button = associated_widget.parent().findChild(QPushButton)
-            if button:
-                self.mw._fetch_ai_models(button)

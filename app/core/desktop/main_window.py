@@ -73,9 +73,6 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
     log_signal = Signal(str, str)
     pipeline_finished_signal = Signal()
     pipeline_progress_signal = Signal(int, int, str)
-    models_fetched_signal = Signal(list, object)
-    fetch_finished_signal = Signal(object)
-    test_finished_signal = Signal(bool, str, object)
     visual_test_finished_signal = Signal()
     visual_test_result_signal = Signal(str)
 
@@ -212,9 +209,6 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         # Connect custom signals to their slots
         self.pipeline_finished_signal.connect(self._on_pipeline_finished)
         self.pipeline_progress_signal.connect(self._update_progress_bar)
-        self.models_fetched_signal.connect(self._on_models_fetched)
-        self.fetch_finished_signal.connect(self._on_fetch_finished)
-        self.test_finished_signal.connect(self._on_test_finished)
         self.visual_test_finished_signal.connect(self._on_visual_test_finished)
         self.visual_test_result_signal.connect(self._display_test_result)
         # Apply saved theme if exists

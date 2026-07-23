@@ -10,6 +10,7 @@ INTEGRITY NOTES (For AI Agents):
 """
 STUDIO_UI_MAP = \
 {   'General & Translator': {   'processing_device': {   'widget': 'segmented_button', 'values': ['cpu', 'cuda'], 'default': 'cpu'},
+                                'source_lang': {   'widget': 'optionmenu_languages'},
                                 'target_lang': {   'widget': 'optionmenu_languages'},
                                 'translator_category': {   'widget': 'segmented_button', 'values': ['offline', 'api'], 'default': 'offline'},
                                 'ai_mode': {'widget': 'segmented_button', 'values': ['standalone', 'pool'], 'default': 'standalone'},
