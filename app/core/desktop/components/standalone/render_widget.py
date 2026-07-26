@@ -49,19 +49,34 @@ class RenderStandaloneWidget(QWidget):
         
         # Config Area
         group_config = QGroupBox("Configuration")
+        group_config.setProperty("lang_id", "ui_configuration")
+        group_config.setProperty("lang_type", "ui")
         layout_config = QHBoxLayout(group_config)
         
         self.combo_detector = QComboBox()
         self.combo_recognizer = QComboBox()
         self.combo_renderer = QComboBox()
         self.btn_load = QPushButton("Load Models")
+        self.btn_load.setProperty("lang_id", "ui_btn_load_models")
+        self.btn_load.setProperty("lang_type", "ui")
         self.btn_load.clicked.connect(self._on_load_model)
         
-        layout_config.addWidget(QLabel("Det:"))
+        lbl_det = QLabel("Det:")
+        lbl_det.setProperty("lang_id", "ui_detector")
+        lbl_det.setProperty("lang_type", "ui")
+        layout_config.addWidget(lbl_det)
         layout_config.addWidget(self.combo_detector)
-        layout_config.addWidget(QLabel("Rec:"))
+        
+        lbl_rec = QLabel("Rec:")
+        lbl_rec.setProperty("lang_id", "ui_recognizer")
+        lbl_rec.setProperty("lang_type", "ui")
+        layout_config.addWidget(lbl_rec)
         layout_config.addWidget(self.combo_recognizer)
-        layout_config.addWidget(QLabel("Render:"))
+        
+        lbl_ren = QLabel("Render:")
+        lbl_ren.setProperty("lang_id", "ui_render_engine")
+        lbl_ren.setProperty("lang_type", "ui")
+        layout_config.addWidget(lbl_ren)
         layout_config.addWidget(self.combo_renderer)
         layout_config.addWidget(self.btn_load)
         
@@ -69,9 +84,13 @@ class RenderStandaloneWidget(QWidget):
         
         # Action Group
         group_action = QGroupBox("Select Image & Texts")
+        group_action.setProperty("lang_id", "ui_select_image_texts")
+        group_action.setProperty("lang_type", "ui")
         layout_action = QVBoxLayout()
         
         self.btn_select_image = QPushButton("1. Select Image (Auto-Detect Text)")
+        self.btn_select_image.setProperty("lang_id", "ui_btn_select_image_autodetect")
+        self.btn_select_image.setProperty("lang_type", "ui")
         self.btn_select_image.clicked.connect(self._on_select_image)
         layout_action.addWidget(self.btn_select_image)
         
@@ -80,6 +99,8 @@ class RenderStandaloneWidget(QWidget):
         layout_action.addWidget(self.txt_lines)
         
         self.btn_run = QPushButton("2. Run Render")
+        self.btn_run.setProperty("lang_id", "ui_btn_run_render")
+        self.btn_run.setProperty("lang_type", "ui")
         self.btn_run.setEnabled(False)
         self.btn_run.clicked.connect(self._on_run)
         layout_action.addWidget(self.btn_run)
@@ -87,10 +108,14 @@ class RenderStandaloneWidget(QWidget):
         # Display Area
         disp_layout = QHBoxLayout()
         self.lbl_image_orig = QLabel("Original")
+        self.lbl_image_orig.setProperty("lang_id", "ui_original")
+        self.lbl_image_orig.setProperty("lang_type", "ui")
         self.lbl_image_orig.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_image_orig.setStyleSheet("border: 1px solid #ccc; background-color: #f0f0f0;")
         
         self.lbl_image_res = QLabel("Result")
+        self.lbl_image_res.setProperty("lang_id", "ui_result")
+        self.lbl_image_res.setProperty("lang_type", "ui")
         self.lbl_image_res.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_image_res.setStyleSheet("border: 1px solid #ccc; background-color: #f0f0f0;")
         

@@ -14,32 +14,33 @@ class ApiProfileHandlersMixin:
     def _api_profile_mgr(self):
         if not hasattr(self, '__api_profile_mgr'):
             from app.core.desktop.logic.api_profile.manager import ApiProfileManager
-            self.__api_profile_mgr = ApiProfileManager(self)
+            base_dir = getattr(self, 'project_base_dir', '.')
+            self.__api_profile_mgr = ApiProfileManager(base_dir)
         return self.__api_profile_mgr
 
     def _get_api_profiles_file_path(self) -> str:
         return self._api_profile_mgr.get_api_profiles_file_path()
 
     def _load_api_profiles(self) -> dict:
-        return self._api_profile_mgr.load_api_profiles()
+        return self._api_profile_mgr.load_api_profiles(self)
 
     def _save_api_profiles(self, profiles: dict):
-        self._api_profile_mgr.save_api_profiles(profiles)
+        self._api_profile_mgr.save_api_profiles(profiles, self)
 
     def _get_profile_mapping(self, service: str) -> dict:
         return self._api_profile_mgr.get_profile_mapping(service)
 
     def _save_api_profile_generic(self, service: str):
-        self._api_profile_mgr.save_api_profile_generic(service)
+        self._api_profile_mgr.save_api_profile_generic(self, service)
 
     def _delete_api_profile_generic(self, service: str):
-        self._api_profile_mgr.delete_api_profile_generic(service)
+        self._api_profile_mgr.delete_api_profile_generic(self, service)
 
     def _clear_api_widgets_generic(self, service: str):
-        self._api_profile_mgr.clear_api_widgets_generic(service)
+        self._api_profile_mgr.clear_api_widgets_generic(self, service)
 
     def _on_api_profile_changed_generic(self, profile_name: str, service: str):
-        self._api_profile_mgr.on_api_profile_changed_generic(profile_name, service)
+        self._api_profile_mgr.on_api_profile_changed_generic(self, profile_name, service)
 
     def _get_pool_profiles_file_path(self) -> str:
         return self._get_yaml_config_path('pool_profiles.yaml')  # type: ignore

@@ -47,16 +47,24 @@ class PreviewTesterBuilderMixin:
         reset_button.clicked.connect(self.mw._fit_image_to_view)
 
         self.mw.zoom_label = QLabel("Zoom: 100%")
+        self.mw.zoom_label.setProperty("lang_id", "ui_zoom")
+        self.mw.zoom_label.setProperty("lang_type", "ui")
 
         self.mw.limit_zoom_check = QCheckBox("Limit Zoom")
+        self.mw.limit_zoom_check.setProperty("lang_id", "ui_limit_zoom")
+        self.mw.limit_zoom_check.setProperty("lang_type", "ui")
         self.mw.limit_zoom_check.setChecked(True)
         self.mw.limit_zoom_check.setToolTip("When checked, zoom is limited between 5% and 800%.")
 
         from PySide6.QtWidgets import QButtonGroup, QRadioButton
         self.mw.mode_group = QButtonGroup(self.mw)
         self.mw.btn_mode_select = QRadioButton("Select")
+        self.mw.btn_mode_select.setProperty("lang_id", "ui_mode_select")
+        self.mw.btn_mode_select.setProperty("lang_type", "ui")
         self.mw.btn_mode_select.setChecked(True)
         self.mw.btn_mode_draw = QRadioButton("Draw Box")
+        self.mw.btn_mode_draw.setProperty("lang_id", "ui_mode_draw")
+        self.mw.btn_mode_draw.setProperty("lang_type", "ui")
         self.mw.mode_group.addButton(self.mw.btn_mode_select, 0)
         self.mw.mode_group.addButton(self.mw.btn_mode_draw, 1)
         

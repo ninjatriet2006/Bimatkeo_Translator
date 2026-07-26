@@ -134,6 +134,13 @@ class LanguageVerifier:
                 logger.info(f"     Language '{lang_id}' passed verification with no missing or orphan keys.", extra={"ui_level": "SUCCESS"})
 
 if __name__ == "__main__":
+    import os, sys
     logging.basicConfig(level=logging.INFO)
-    print("Language Verification Script Loaded. To use it, it must be run via the manager during app startup.")
-    print("Since version 2.0, the script cross-checks 'en.yaml' as a baseline against other languages.")
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+    from app.core.langs.manager import LanguageManager
+    from app.core.desktop.config.studio_ui_map import STUDIO_UI_MAP
+    lm = LanguageManager(project_root)
+    lm.run_verification(STUDIO_UI_MAP)
+    print("Language Verification completed successfully.")

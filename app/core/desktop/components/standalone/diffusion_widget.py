@@ -45,16 +45,27 @@ class DiffusionStandaloneWidget(QWidget):
         
         # Config Area
         group_config = QGroupBox("Configuration")
+        group_config.setProperty("lang_id", "ui_configuration")
+        group_config.setProperty("lang_type", "ui")
         layout_config = QHBoxLayout(group_config)
         
         self.combo_detector = QComboBox()
         self.combo_diffusion = QComboBox()
         self.btn_load = QPushButton("Load Models")
+        self.btn_load.setProperty("lang_id", "ui_btn_load_models")
+        self.btn_load.setProperty("lang_type", "ui")
         self.btn_load.clicked.connect(self._on_load_model)
         
-        layout_config.addWidget(QLabel("Detector:"))
+        lbl_det = QLabel("Detector:")
+        lbl_det.setProperty("lang_id", "ui_detector")
+        lbl_det.setProperty("lang_type", "ui")
+        layout_config.addWidget(lbl_det)
         layout_config.addWidget(self.combo_detector, stretch=1)
-        layout_config.addWidget(QLabel("Diffusion Model:"))
+        
+        lbl_diff = QLabel("Diffusion Model:")
+        lbl_diff.setProperty("lang_id", "ui_diffusion_model")
+        lbl_diff.setProperty("lang_type", "ui")
+        layout_config.addWidget(lbl_diff)
         layout_config.addWidget(self.combo_diffusion, stretch=1)
         layout_config.addWidget(self.btn_load)
         
@@ -62,12 +73,19 @@ class DiffusionStandaloneWidget(QWidget):
         
         # Action Group
         group_action = QGroupBox("Select Image & Run")
+        group_action.setProperty("lang_id", "ui_select_image_run")
+        group_action.setProperty("lang_type", "ui")
         layout_action = QVBoxLayout()
         
         btn_layout = QHBoxLayout()
         self.btn_select_image = QPushButton("Select Image")
+        self.btn_select_image.setProperty("lang_id", "ui_btn_select_image")
+        self.btn_select_image.setProperty("lang_type", "ui")
         self.btn_select_image.clicked.connect(self._on_select_image)
+        
         self.btn_run = QPushButton("Run Diffusion")
+        self.btn_run.setProperty("lang_id", "ui_btn_run_diffusion")
+        self.btn_run.setProperty("lang_type", "ui")
         self.btn_run.setEnabled(False)
         self.btn_run.clicked.connect(self._on_run)
         
@@ -78,10 +96,14 @@ class DiffusionStandaloneWidget(QWidget):
         # Display Area
         disp_layout = QHBoxLayout()
         self.lbl_image_orig = QLabel("Original")
+        self.lbl_image_orig.setProperty("lang_id", "ui_original")
+        self.lbl_image_orig.setProperty("lang_type", "ui")
         self.lbl_image_orig.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_image_orig.setStyleSheet("border: 1px solid #ccc; background-color: #f0f0f0;")
         
         self.lbl_image_res = QLabel("Result")
+        self.lbl_image_res.setProperty("lang_id", "ui_result")
+        self.lbl_image_res.setProperty("lang_type", "ui")
         self.lbl_image_res.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_image_res.setStyleSheet("border: 1px solid #ccc; background-color: #f0f0f0;")
         

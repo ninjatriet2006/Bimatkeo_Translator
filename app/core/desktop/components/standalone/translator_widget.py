@@ -54,6 +54,8 @@ class TranslatorStandaloneWidget(QWidget):
         
         # Config Area
         group_config = QGroupBox("Configuration")
+        group_config.setProperty("lang_id", "ui_configuration")
+        group_config.setProperty("lang_type", "ui")
         layout_config = QVBoxLayout(group_config)
         
         self.combo_category = QComboBox()
@@ -64,9 +66,16 @@ class TranslatorStandaloneWidget(QWidget):
         self.combo_model.currentIndexChanged.connect(self._on_profile_selected)
         
         layout_config_top = QHBoxLayout()
-        layout_config_top.addWidget(QLabel("Category:"))
+        lbl_cat = QLabel("Category:")
+        lbl_cat.setProperty("lang_id", "ui_category")
+        lbl_cat.setProperty("lang_type", "ui")
+        layout_config_top.addWidget(lbl_cat)
         layout_config_top.addWidget(self.combo_category)
-        layout_config_top.addWidget(QLabel("Model/Profile:"))
+        
+        lbl_mod = QLabel("Model/Profile:")
+        lbl_mod.setProperty("lang_id", "ui_model_profile")
+        lbl_mod.setProperty("lang_type", "ui")
+        layout_config_top.addWidget(lbl_mod)
         layout_config_top.addWidget(self.combo_model, stretch=1)
         
         layout_config.addLayout(layout_config_top)
@@ -78,26 +87,39 @@ class TranslatorStandaloneWidget(QWidget):
         
         row1 = QHBoxLayout()
         self.combo_sys_prompt = QComboBox()
-        row1.addWidget(QLabel("Sys Prompt:"))
+        lbl_sp = QLabel("Sys Prompt:")
+        lbl_sp.setProperty("lang_id", "ui_sys_prompt")
+        lbl_sp.setProperty("lang_type", "ui")
+        row1.addWidget(lbl_sp)
         row1.addWidget(self.combo_sys_prompt, stretch=1)
         
         row2 = QHBoxLayout()
         self.txt_endpoint = QLineEdit()
-        row2.addWidget(QLabel("Endpoint:"))
+        lbl_ep = QLabel("Endpoint:")
+        lbl_ep.setProperty("lang_id", "ui_endpoint")
+        lbl_ep.setProperty("lang_type", "ui")
+        row2.addWidget(lbl_ep)
         row2.addWidget(self.txt_endpoint, stretch=1)
         
         row3 = QHBoxLayout()
         self.txt_model = QComboBox()
         self.txt_model.setEditable(True)
-        row3.addWidget(QLabel("Model:"))
+        lbl_m = QLabel("Model:")
+        lbl_m.setProperty("lang_id", "ui_model")
+        lbl_m.setProperty("lang_type", "ui")
+        row3.addWidget(lbl_m)
         row3.addWidget(self.txt_model, stretch=1)
         
         self.btn_fetch = QPushButton("Fetch")
+        self.btn_fetch.setProperty("lang_id", "ui_btn_fetch")
+        self.btn_fetch.setProperty("lang_type", "ui")
         self.btn_fetch.setFixedWidth(50)
         self.btn_fetch.clicked.connect(self._on_fetch_models)
         row3.addWidget(self.btn_fetch)
         
         self.btn_test = QPushButton("Test")
+        self.btn_test.setProperty("lang_id", "ui_btn_test")
+        self.btn_test.setProperty("lang_type", "ui")
         self.btn_test.setFixedWidth(50)
         self.btn_test.clicked.connect(self._on_test_api)
         row3.addWidget(self.btn_test)
@@ -105,7 +127,10 @@ class TranslatorStandaloneWidget(QWidget):
         row4 = QHBoxLayout()
         self.txt_key = QLineEdit()
         self.txt_key.setEchoMode(QLineEdit.EchoMode.Password)
-        row4.addWidget(QLabel("Key:"))
+        lbl_k = QLabel("Key:")
+        lbl_k.setProperty("lang_id", "ui_key")
+        lbl_k.setProperty("lang_type", "ui")
+        row4.addWidget(lbl_k)
         row4.addWidget(self.txt_key, stretch=1)
         
         self.extended_config_layout.addLayout(row1)
@@ -116,6 +141,8 @@ class TranslatorStandaloneWidget(QWidget):
         layout_config.addWidget(self.extended_config_widget)
         
         self.btn_load = QPushButton("Load Model")
+        self.btn_load.setProperty("lang_id", "ui_btn_load_model")
+        self.btn_load.setProperty("lang_type", "ui")
         self.btn_load.clicked.connect(self._on_load_model)
         layout_config.addWidget(self.btn_load)
         
@@ -123,6 +150,8 @@ class TranslatorStandaloneWidget(QWidget):
 
         # Translation Area
         group_trans = QGroupBox("Translation")
+        group_trans.setProperty("lang_id", "ui_translation")
+        group_trans.setProperty("lang_type", "ui")
         layout_trans = QVBoxLayout(group_trans)
         
         # Languages Area
@@ -134,24 +163,35 @@ class TranslatorStandaloneWidget(QWidget):
         self._enable_search_for_combo(self.combo_sys_prompt)
         self._enable_search_for_combo(self.combo_src_lang)
         self._enable_search_for_combo(self.combo_tgt_lang)
-        # self.txt_model is already editable, but let's enable filter for it if needed:
         if not self.txt_model.isEditable():
             self._enable_search_for_combo(self.txt_model)
         else:
             self._enable_search_for_combo(self.txt_model)
 
-        layout_langs.addWidget(QLabel("Source:"))
+        lbl_src = QLabel("Source:")
+        lbl_src.setProperty("lang_id", "ui_source")
+        lbl_src.setProperty("lang_type", "ui")
+        layout_langs.addWidget(lbl_src)
         layout_langs.addWidget(self.combo_src_lang)
-        layout_langs.addWidget(QLabel("Target:"))
+
+        lbl_tgt = QLabel("Target:")
+        lbl_tgt.setProperty("lang_id", "ui_target")
+        lbl_tgt.setProperty("lang_type", "ui")
+        layout_langs.addWidget(lbl_tgt)
         layout_langs.addWidget(self.combo_tgt_lang)
         layout_trans.addLayout(layout_langs)
         
         self.txt_source = QTextEdit()
         self.txt_source.setPlaceholderText("Enter source text here...")
-        layout_trans.addWidget(QLabel("Source Text:"))
+        lbl_src_txt = QLabel("Source Text:")
+        lbl_src_txt.setProperty("lang_id", "ui_source_text")
+        lbl_src_txt.setProperty("lang_type", "ui")
+        layout_trans.addWidget(lbl_src_txt)
         layout_trans.addWidget(self.txt_source)
         
         self.btn_translate = QPushButton("Translate")
+        self.btn_translate.setProperty("lang_id", "ui_btn_translate")
+        self.btn_translate.setProperty("lang_type", "ui")
         self.btn_translate.setEnabled(False)
         self.btn_translate.clicked.connect(self._on_translate)
         layout_trans.addWidget(self.btn_translate)
@@ -159,13 +199,18 @@ class TranslatorStandaloneWidget(QWidget):
         self.txt_target = QTextEdit()
         self.txt_target.setPlaceholderText("Translated text will appear here...")
         self.txt_target.setReadOnly(True)
-        layout_trans.addWidget(QLabel("Target Text:"))
+        lbl_tgt_txt = QLabel("Target Text:")
+        lbl_tgt_txt.setProperty("lang_id", "ui_target_text")
+        lbl_tgt_txt.setProperty("lang_type", "ui")
+        layout_trans.addWidget(lbl_tgt_txt)
         layout_trans.addWidget(self.txt_target)
         
         self.layout_obj.addWidget(group_trans)
         
         # Console Area
         group_console = QGroupBox("Console Logs")
+        group_console.setProperty("lang_id", "ui_console_logs")
+        group_console.setProperty("lang_type", "ui")
         layout_console = QVBoxLayout(group_console)
         self.txt_console = QTextEdit()
         self.txt_console.setReadOnly(True)

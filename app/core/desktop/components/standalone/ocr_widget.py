@@ -41,16 +41,27 @@ class OCRStandaloneWidget(QWidget):
         
         # Config Area
         group_config = QGroupBox("Configuration")
+        group_config.setProperty("lang_id", "ui_configuration")
+        group_config.setProperty("lang_type", "ui")
         layout_config = QHBoxLayout(group_config)
         
         self.combo_detector = QComboBox()
         self.combo_recognizer = QComboBox()
         self.btn_load = QPushButton("Load Models")
+        self.btn_load.setProperty("lang_id", "ui_btn_load_models")
+        self.btn_load.setProperty("lang_type", "ui")
         self.btn_load.clicked.connect(self._on_load_model)
         
-        layout_config.addWidget(QLabel("Detector:"))
+        lbl_det = QLabel("Detector:")
+        lbl_det.setProperty("lang_id", "ui_detector")
+        lbl_det.setProperty("lang_type", "ui")
+        layout_config.addWidget(lbl_det)
         layout_config.addWidget(self.combo_detector, stretch=1)
-        layout_config.addWidget(QLabel("Recognizer:"))
+        
+        lbl_rec = QLabel("Recognizer:")
+        lbl_rec.setProperty("lang_id", "ui_recognizer")
+        lbl_rec.setProperty("lang_type", "ui")
+        layout_config.addWidget(lbl_rec)
         layout_config.addWidget(self.combo_recognizer, stretch=1)
         layout_config.addWidget(self.btn_load)
         
@@ -58,13 +69,19 @@ class OCRStandaloneWidget(QWidget):
         
         # Action Group
         group_action = QGroupBox("2. Process Image")
+        group_action.setProperty("lang_id", "ui_process_image")
+        group_action.setProperty("lang_type", "ui")
         layout_action = QVBoxLayout()
         
         self.btn_select_image = QPushButton("Select Image")
+        self.btn_select_image.setProperty("lang_id", "ui_btn_select_image")
+        self.btn_select_image.setProperty("lang_type", "ui")
         self.btn_select_image.clicked.connect(self._on_select_image)
         layout_action.addWidget(self.btn_select_image)
         
         self.lbl_image = QLabel("No image selected")
+        self.lbl_image.setProperty("lang_id", "ui_no_image_selected")
+        self.lbl_image.setProperty("lang_type", "ui")
         self.lbl_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_image.setMinimumSize(400, 300)
         self.lbl_image.setStyleSheet("border: 1px solid #ccc; background-color: #f0f0f0;")
@@ -75,9 +92,13 @@ class OCRStandaloneWidget(QWidget):
         
         # Result Group
         group_result = QGroupBox("3. Results")
+        group_result.setProperty("lang_id", "ui_results")
+        group_result.setProperty("lang_type", "ui")
         layout_result = QVBoxLayout()
         
         self.btn_run_ocr = QPushButton("Run OCR")
+        self.btn_run_ocr.setProperty("lang_id", "ui_btn_run_ocr")
+        self.btn_run_ocr.setProperty("lang_type", "ui")
         self.btn_run_ocr.setEnabled(False)
         self.btn_run_ocr.clicked.connect(self._on_run_ocr)
         layout_result.addWidget(self.btn_run_ocr)
@@ -90,6 +111,8 @@ class OCRStandaloneWidget(QWidget):
 
         # Console Area
         group_console = QGroupBox("Console Logs")
+        group_console.setProperty("lang_id", "ui_console_logs")
+        group_console.setProperty("lang_type", "ui")
         layout_console = QVBoxLayout(group_console)
         self.txt_console = QTextEdit()
         self.txt_console.setReadOnly(True)

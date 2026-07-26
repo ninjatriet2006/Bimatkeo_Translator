@@ -24,6 +24,8 @@ class SearchableFontInstallDialog(QDialog):
 
     def init_ui(self, default_font):
         self.setWindowTitle("Cài đặt Phông chữ từ Google Fonts")
+        self.setProperty("lang_id", "ui_font_dialog_title")
+        self.setProperty("lang_type", "ui")
         self.resize(380, 480)
         
         layout = QVBoxLayout(self)
@@ -31,6 +33,8 @@ class SearchableFontInstallDialog(QDialog):
         layout.setContentsMargins(15, 15, 15, 15)
 
         lbl = QLabel("Tìm kiếm hoặc nhập trực tiếp tên phông chữ từ Google Fonts để cài đặt:", self)
+        lbl.setProperty("lang_id", "ui_font_dialog_instruction")
+        lbl.setProperty("lang_type", "ui")
         lbl.setWordWrap(True)
         layout.addWidget(lbl)
 
@@ -51,11 +55,15 @@ class SearchableFontInstallDialog(QDialog):
         btn_layout.addStretch()
 
         self.btn_install = QPushButton("Cài đặt", self)
+        self.btn_install.setProperty("lang_id", "ui_btn_install")
+        self.btn_install.setProperty("lang_type", "ui")
         self.btn_install.setDefault(True)
         self.btn_install.clicked.connect(self.on_install_clicked)
         btn_layout.addWidget(self.btn_install)
 
         self.btn_cancel = QPushButton("Hủy bỏ", self)
+        self.btn_cancel.setProperty("lang_id", "ui_btn_cancel")
+        self.btn_cancel.setProperty("lang_type", "ui")
         self.btn_cancel.clicked.connect(self.reject)
         btn_layout.addWidget(self.btn_cancel)
 

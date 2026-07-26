@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.logic.core_handlers.__init__
-- RESPONSIBILITY: Aggregate all core handler Mixins into a single HandlersMixin.
+- RESPONSIBILITY: Provide HandlersController composite handler class for composition inside TranslatorStudioApp.
 - CALLED BY: app.core.desktop.main_window.TranslatorStudioApp
 - CALLS TO: All split mixin modules in this directory.
-- IN = OUT: Provides a unified facade for PySide6 MainWindow to inherit from.
+- IN = OUT: Instantiated via composition inside TranslatorStudioApp instead of multiple inheritance.
 =============================================================================
 """
 
@@ -22,7 +22,7 @@ from .job_queue import JobQueueHandlersMixin
 from .export import ExportHandlersMixin
 from .themes import ThemeHandlersMixin
 
-class HandlersMixin(
+class HandlersController(
     ApiProfileHandlersMixin,
     UIVisibilityHandlersMixin,
     ConfigIOHandlersMixin,
@@ -37,6 +37,23 @@ class HandlersMixin(
     ThemeHandlersMixin
 ):
     """
-    Unified HandlersMixin built from 13 split domain-specific mixins.
+    Unified HandlersController built from domain-specific handler mixins for explicit composition.
     """
-    pass
+    def __init__(self, app=None):
+        self.app = app
+
+    def __getattr__(self, name):
+        app = self.__dict__.get('app')
+        if app is not None:
+            for cls in type(app).__mro__:
+                if name in cls.__dict__:
+                    return getattr(app, name)
+            if name in app.__dict__:
+                return app.__dict__[name]
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+
+
+# Backward compatibility facade alias
+HandlersMixin = HandlersController
+

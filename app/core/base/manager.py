@@ -3,7 +3,7 @@
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.base.manager
 - RESPONSIBILITY: Central application configuration management for the core.
-- CALLED BY: main.py, app.core.verify_utils
+- CALLED BY: main.py, app.core.verify_utils, app.core.desktop.config
 - CALLS TO: app.core.base.base_loader
 - IN = OUT: Main entry point for loading settings, delegating to base config.
 =============================================================================

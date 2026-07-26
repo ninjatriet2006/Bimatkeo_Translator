@@ -14,17 +14,18 @@ class JobQueueHandlersMixin:
     def job_queue_ui_manager(self):
         if not hasattr(self, '_job_queue_ui_manager_obj'):
             from app.core.desktop.logic.job_queue_manager import JobQueueUIManager
-            self._job_queue_ui_manager_obj = JobQueueUIManager(self)
+            base_dir = getattr(self, 'project_base_dir', '.')
+            self._job_queue_ui_manager_obj = JobQueueUIManager(base_dir)
         return self._job_queue_ui_manager_obj
 
     def _show_queue_context_menu(self, position):
-        return self.job_queue_ui_manager.show_queue_context_menu(position)
+        return self.job_queue_ui_manager.show_queue_context_menu(self, position)
 
     def _resume_selected_jobs(self):
-        return self.job_queue_ui_manager.resume_selected_jobs()
+        return self.job_queue_ui_manager.resume_selected_jobs(self)
 
     def _restart_selected_jobs(self):
-        return self.job_queue_ui_manager.restart_selected_jobs()
+        return self.job_queue_ui_manager.restart_selected_jobs(self)
 
     def _show_history_context_menu(self, position):
-        return self.job_queue_ui_manager.show_history_context_menu(position)
+        return self.job_queue_ui_manager.show_history_context_menu(self, position)

@@ -28,11 +28,15 @@ class FileExplorerPanel(QWidget):
         
         # Header
         self.lbl_header = QLabel("File List", self)
+        self.lbl_header.setProperty("lang_id", "ui_file_list")
+        self.lbl_header.setProperty("lang_type", "ui")
         self.lbl_header.setStyleSheet("font-weight: bold;")
         self.layout_obj.addWidget(self.lbl_header)
         
         # Select Folder Button
         self.btn_select_folder = QPushButton("Select Folder", self)
+        self.btn_select_folder.setProperty("lang_id", "ui_select_folder")
+        self.btn_select_folder.setProperty("lang_type", "ui")
         self.btn_select_folder.clicked.connect(self._on_select_folder)
         self.layout_obj.addWidget(self.btn_select_folder)
         

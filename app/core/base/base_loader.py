@@ -29,7 +29,16 @@ class BaseConfigLoader:
 
     def _load_backend_schema(self):
         fallback_path = os.path.join(self.project_base_dir, ".config", "configs", "schema_fallback.yaml")
-        return load_backend_schema(getattr(self, "cache_path", ""), fallback_path)
+        if not os.path.exists(fallback_path):
+            fallback_path = os.path.join(self.project_base_dir, "default_configs", "configs", "schema_fallback.yaml")
+        if not os.path.exists(fallback_path):
+            fallback_path = os.path.join(self.project_base_dir, ".config", "configs", "studio_config.yaml")
+        if not os.path.exists(fallback_path):
+            fallback_path = os.path.join(self.project_base_dir, "default_configs", "configs", "studio_config.yaml")
+        schema = load_backend_schema(getattr(self, "cache_path", ""), fallback_path)
+        if not schema:
+            schema = {"properties": {}}
+        return schema
 
     def _parse_schema_output(self, stdout: str):
         return parse_schema_output(stdout)

@@ -58,3 +58,11 @@ def extract_hardcoded_ui_keys(project_base_dir: str) -> dict:
                     print(f"[ui_verify] Error reading file {file_path}: {e}")
                     
     return hardcoded_keys
+
+if __name__ == "__main__":
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+    keys = extract_hardcoded_ui_keys(project_root)
+    print(f"Extracted UI Strings count: {len(keys.get('ui_strings', []))}")
+    print(f"Extracted Messages count: {len(keys.get('messages', []))}")
+    print(f"Extracted Tasks count: {len(keys.get('tasks', []))}")
+    print("UI Verification Script completed successfully.")

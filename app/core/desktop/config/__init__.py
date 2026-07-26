@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.config.__init__
-- RESPONSIBILITY: __init__.py module logic.
-- CALLED BY: Various
-- CALLS TO: Various
-- IN = OUT: Defines logic for app.core.desktop.config.__init__.
+- RESPONSIBILITY: Configuration loader entry point delegating core config management to app.core.base.manager.ConfigManager via composition.
+- CALLED BY: app.core.desktop.main_window, app.core.desktop.logic.*
+- CALLS TO: app.core.base.manager.ConfigManager, app.core.desktop.config.base_loader
+- IN = OUT: Instantiates ConfigManager via composition and builds complete desktop configuration.
 =============================================================================
 """
 # type: ignore

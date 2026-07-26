@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.config.base_loader
-- RESPONSIBILITY: base_loader.py module logic.
-- CALLED BY: Various
-- CALLS TO: Various
-- IN = OUT: Defines logic for app.core.desktop.config.base_loader.
+- RESPONSIBILITY: Base configuration loader for desktop UI, delegating core configuration to app.core.base.manager.ConfigManager via composition.
+- CALLED BY: app.core.desktop.config.ConfigLoader
+- CALLS TO: app.core.base.manager.ConfigManager, app.core.langs.manager
+- IN = OUT: Composes ConfigManager and loads desktop-specific UI maps and language settings.
 =============================================================================
 """
 # type: ignore
@@ -21,18 +21,13 @@ _exe_ext = ".exe" if _os_suffix == "win" else ""
 
 from app.core.base.env import get_python_executable
 from app.core.base import BaseConfigLoader
+from app.core.base.manager import ConfigManager
 
 from typing import Callable
 
 class ConfigLoaderBase(BaseConfigLoader):
     _default_log_colors: Callable
     _build_full_config_data: Callable
-    # NOTE: _DEFAULT_CHECKS is now DERIVED from the model registry at runtime
-    # (see RegistryMixin.load_registry, called early in __init__, which sets
-    # self._DEFAULT_CHECKS as an instance attribute). This class-level value is
-    # only a safe empty fallback so attribute access never raises if the
-    # registry hasn't loaded yet. Do NOT add model definitions here -- the
-    # single source of truth is dynamic Plugin Factories (app.core.shared_registry).
     _DEFAULT_CHECKS = {}
 
     def __init__(self, project_base_dir):
@@ -40,6 +35,10 @@ class ConfigLoaderBase(BaseConfigLoader):
         self.python_executable = get_python_executable(self.project_base_dir)
         self.cache_path = os.path.join(self.project_base_dir, "temp", "schema_cache.json")
         
+        # Delegate core configuration management to Base ConfigManager via composition
+        self.base_config_manager = ConfigManager(self.project_base_dir)
+        self.backend_schema = self.base_config_manager.backend_schema
+
         # Ensure directories exist and migrate old root files early
         config_dir = os.path.join(self.project_base_dir, ".config")
         
@@ -67,8 +66,6 @@ class ConfigLoaderBase(BaseConfigLoader):
         self.localization = self.language_manager.localization
 
         # Load the model registry FIRST (single source of truth).
-        # This derives self._DEFAULT_CHECKS and registry-based groups/capabilities
-        # before repair/capabilities/schema logic consumes them.
         self.load_registry()  # type: ignore
 
         # Expose attributes from translator capabilities YAML
@@ -77,9 +74,6 @@ class ConfigLoaderBase(BaseConfigLoader):
         
         self.translator_groups = capabilities_data.get("TRANSLATOR_GROUPS", {})
         self.log_colors = capabilities_data.get("LOG_COLORS", self._default_log_colors())
-
-
-        self.backend_schema = self._load_backend_schema()
 
         # Run config initialization and repair before building data
         self._initialize_and_repair_config()  # type: ignore
@@ -92,14 +86,22 @@ class ConfigLoaderBase(BaseConfigLoader):
         self.app_language = self.language_manager.resolve_app_language(self.oldsession_config)
         self.ui_map = self.language_manager.apply_language_to_ui_map(self.ui_map, self.app_language)
 
-        # The data is built and stored directly as attributes, not through getter methods
+        # Build factory defaults and full config data
         self.factory_defaults = self._parse_factory_defaults()
         self.full_config_data = self._build_full_config_data()
 
-        # Run the one-time model fallback sweep (once per machine). Repairs any
-        # stored profile/default that points at a deleted or not-set-up model.
-        # No-op after the first successful run on this machine. Never raises.
+        # Run model fallback sweep
         self.optimize_profiles_once()  # type: ignore
+
+    def _load_backend_schema(self):
+        if hasattr(self, 'base_config_manager') and self.base_config_manager:
+            return self.base_config_manager.backend_schema
+        return super()._load_backend_schema()
+
+    def _parse_factory_defaults(self):
+        if hasattr(self, 'base_config_manager') and self.base_config_manager:
+            return self.base_config_manager.factory_defaults
+        return super()._parse_factory_defaults()
 
     def apply_language(self, lang_id: str):
         """Dynamically switch the active language and re-apply translations to ui_map."""

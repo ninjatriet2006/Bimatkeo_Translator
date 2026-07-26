@@ -15,14 +15,15 @@ class ThemeHandlersMixin:
     def theme_manager(self):
         if not hasattr(self, '_theme_manager_obj'):
             from app.core.desktop.logic.theme_manager import ThemeManager
-            self._theme_manager_obj = ThemeManager(self)
+            base_dir = getattr(self, 'project_base_dir', '.')
+            self._theme_manager_obj = ThemeManager(base_dir)
         return self._theme_manager_obj
 
     def _load_themes(self):
-        return self.theme_manager.load_themes()
+        return self.theme_manager.load_themes(main_window=self)
 
     def _apply_theme(self, theme_name: str):
-        return self.theme_manager.apply_theme(theme_name)
+        return self.theme_manager.apply_theme(theme_name, main_window=self)
 
     def _on_font_scale_changed(self, text: str):
         current_theme_name = self.theme_combobox.currentText()

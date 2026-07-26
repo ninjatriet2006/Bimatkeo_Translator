@@ -2,10 +2,10 @@
 =============================================================================
 INTEGRITY NOTES (For AI Agents):
 - MODULE: app.core.desktop.main_window
-- RESPONSIBILITY: main_window.py module logic.
-- CALLED BY: Various
-- CALLS TO: Various
-- IN = OUT: Defines logic for app.core.desktop.main_window.
+- RESPONSIBILITY: Main application window container (TranslatorStudioApp) using explicit controller composition.
+- CALLED BY: main.py, app_run scripts
+- CALLS TO: app.core.desktop.logic.core_handlers.HandlersController, app.core.desktop.config.ConfigLoader, logic managers
+- IN = OUT: PySide6 QMainWindow initializing UI components and delegating logic to controllers.
 =============================================================================
 """
 # type: ignore
@@ -52,8 +52,12 @@ from app.core.desktop.components.widgets_helper import (
 )
 
 from app.core.desktop.logic.job_runner import JobRunnerMixin
-from app.core.desktop.logic.core_handlers import HandlersMixin
+from app.core.desktop.logic.core_handlers import HandlersController
 from app.core.desktop.components.settings_panel import WidgetBuildersMixin
+from app.core.desktop.logic.api_profile.manager import ApiProfileManager
+from app.core.desktop.logic.config_sync.manager import ConfigSyncManager
+from app.core.desktop.logic.job_queue_manager import JobQueueUIManager
+from app.core.desktop.logic.theme_manager import ThemeManager
 
 # Note: ConsoleMixin was removed.
 from app.core.desktop.components.console_widget import ConsoleWidget
@@ -68,7 +72,7 @@ TRANSLATOR_GROUPS = {}
 LOG_COLORS = {}
 
 
-class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QMainWindow):
+class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, QMainWindow):
 
     log_signal = Signal(str, str)
     translator_log_signal = Signal(str, str)
@@ -100,7 +104,14 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         
         self.config_loader = ConfigLoader(self.project_base_dir)
         self.app_logger = AppLogger(self.config_loader, self)
-        
+
+        # Explicit controller & manager composition
+        self.api_profile_manager = ApiProfileManager(self.project_base_dir)
+        self.config_sync_manager = ConfigSyncManager(self.config_loader, self.project_base_dir)
+        self.job_queue_manager = JobQueueUIManager(self.project_base_dir)
+        self.theme_manager = ThemeManager(self.project_base_dir)
+        self.handlers_controller = HandlersController(self)
+
         # Verify language files (reports missing/orphan keys to standard logger)
         self.config_loader.language_manager.run_verification(self.config_loader.ui_map, target_lang=getattr(self.config_loader, 'app_language', 'en'))
         
@@ -377,15 +388,44 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         toolbar_layout.setSpacing(10)
         
         btn_queue = QPushButton("📋 Job Queue")
+        btn_queue.setProperty("lang_id", "ui_btn_queue")
+        btn_queue.setProperty("lang_type", "ui")
+        
         btn_log = QPushButton("📜 Console Log")
+        btn_log.setProperty("lang_id", "ui_btn_log")
+        btn_log.setProperty("lang_type", "ui")
+        
         btn_history = QPushButton("🕒 History")
+        btn_history.setProperty("lang_id", "ui_btn_history")
+        btn_history.setProperty("lang_type", "ui")
+        
         btn_preview = QPushButton("🔍 Preview Tester")
+        btn_preview.setProperty("lang_id", "ui_btn_preview")
+        btn_preview.setProperty("lang_type", "ui")
+        
         btn_standalone_trans = QPushButton("🌐 Translator Tool")
+        btn_standalone_trans.setProperty("lang_id", "ui_btn_standalone_trans")
+        btn_standalone_trans.setProperty("lang_type", "ui")
+        
         btn_standalone_ocr = QPushButton("📝 OCR Tool")
+        btn_standalone_ocr.setProperty("lang_id", "ui_btn_standalone_ocr")
+        btn_standalone_ocr.setProperty("lang_type", "ui")
+        
         btn_standalone_inpaint = QPushButton("🖌️ Inpaint Tool")
+        btn_standalone_inpaint.setProperty("lang_id", "ui_btn_standalone_inpaint")
+        btn_standalone_inpaint.setProperty("lang_type", "ui")
+        
         btn_standalone_diffusion = QPushButton("✨ Diffusion Tool")
+        btn_standalone_diffusion.setProperty("lang_id", "ui_btn_standalone_diffusion")
+        btn_standalone_diffusion.setProperty("lang_type", "ui")
+        
         btn_standalone_render = QPushButton("🎨 Render Tool")
+        btn_standalone_render.setProperty("lang_id", "ui_btn_standalone_render")
+        btn_standalone_render.setProperty("lang_type", "ui")
+        
         btn_close_all_standalone = QPushButton("❌ Close Standalones")
+        btn_close_all_standalone.setProperty("lang_id", "ui_btn_close_all_standalone")
+        btn_close_all_standalone.setProperty("lang_type", "ui")
         
         btn_queue.clicked.connect(lambda: self._show_standalone_window(self.queue_window))
         btn_log.clicked.connect(lambda: self._show_standalone_window(self.log_window))
@@ -577,6 +617,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             self.app_logger.log_signal.connect(self.log_viewer.insert_log)
             self.app_logger.flush_early_logs()
         self.log_window = StandaloneToolWindow(self, "Console Log", self.log_viewer, 600, 400)
+        self.log_window.setProperty("lang_id", "ui_log_title")
+        self.log_window.setProperty("lang_type", "ui")
         self.log("SUCCESS", "Console Log window created.")
 
         # 4. Preview Tester Window
@@ -687,3 +729,15 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
     def log(self, level: str, message: str):
         if hasattr(self, 'app_logger'):
             self.app_logger.log(level, message)
+
+    def __getattr__(self, name):
+        handlers = self.__dict__.get('handlers_controller')
+        if handlers is not None:
+            for cls in type(handlers).__mro__:
+                if name in cls.__dict__:
+                    return getattr(handlers, name)
+            if name in handlers.__dict__:
+                return handlers.__dict__[name]
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+

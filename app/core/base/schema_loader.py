@@ -16,12 +16,18 @@ from typing import Any, Optional
 from .io import load_yaml_file
 
 def load_backend_schema(cache_path: str, fallback_path: str = "") -> Optional[dict[str, Any]]:
-    if os.path.exists(cache_path):
+    if cache_path and os.path.exists(cache_path):
         try:
             with open(cache_path, 'r', encoding='utf-8') as f:
                 print("[ConfigLoader] Loading schema from cache...")
                 return json.load(f)
         except (json.JSONDecodeError, OSError):
+            pass
+
+    if fallback_path and os.path.exists(fallback_path):
+        try:
+            return load_yaml_file(fallback_path)
+        except Exception:
             pass
 
     return None

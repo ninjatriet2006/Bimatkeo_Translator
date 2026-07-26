@@ -23,10 +23,14 @@ class InspectorPanel(QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
 
         self.lbl_title = QLabel("<b>Box Inspector</b>")
+        self.lbl_title.setProperty("lang_id", "ui_box_inspector")
+        self.lbl_title.setProperty("lang_type", "ui")
         layout.addWidget(self.lbl_title)
 
         # Geometry Group
         geom_group = QGroupBox("Geometry")
+        geom_group.setProperty("lang_id", "ui_geometry")
+        geom_group.setProperty("lang_type", "ui")
         geom_layout = QFormLayout(geom_group)
         self.le_x = QLineEdit()
         self.le_y = QLineEdit()
@@ -40,13 +44,21 @@ class InspectorPanel(QWidget):
 
         # Text Group
         text_group = QGroupBox("Text Data")
+        text_group.setProperty("lang_id", "ui_text_data")
+        text_group.setProperty("lang_type", "ui")
         text_layout = QVBoxLayout(text_group)
-        text_layout.addWidget(QLabel("OCR Text:"))
+        lbl_ocr = QLabel("OCR Text:")
+        lbl_ocr.setProperty("lang_id", "ui_ocr_text")
+        lbl_ocr.setProperty("lang_type", "ui")
+        text_layout.addWidget(lbl_ocr)
         self.te_ocr = QTextEdit()
         self.te_ocr.setMaximumHeight(80)
         text_layout.addWidget(self.te_ocr)
         
-        text_layout.addWidget(QLabel("Translated Text:"))
+        lbl_trans = QLabel("Translated Text:")
+        lbl_trans.setProperty("lang_id", "ui_translated_text")
+        lbl_trans.setProperty("lang_type", "ui")
+        text_layout.addWidget(lbl_trans)
         self.te_translated = QTextEdit()
         self.te_translated.setMaximumHeight(80)
         text_layout.addWidget(self.te_translated)
@@ -54,10 +66,18 @@ class InspectorPanel(QWidget):
 
         # Actions Group
         action_group = QGroupBox("Live Actions")
+        action_group.setProperty("lang_id", "ui_live_actions")
+        action_group.setProperty("lang_type", "ui")
         action_layout = QVBoxLayout(action_group)
         self.btn_rerun_ocr = QPushButton("Rerun OCR")
+        self.btn_rerun_ocr.setProperty("lang_id", "ui_btn_rerun_ocr")
+        self.btn_rerun_ocr.setProperty("lang_type", "ui")
         self.btn_rerun_trans = QPushButton("Rerun Translation")
+        self.btn_rerun_trans.setProperty("lang_id", "ui_btn_rerun_trans")
+        self.btn_rerun_trans.setProperty("lang_type", "ui")
         self.btn_render_box = QPushButton("Live Render Box")
+        self.btn_render_box.setProperty("lang_id", "ui_btn_render_box")
+        self.btn_render_box.setProperty("lang_type", "ui")
         action_layout.addWidget(self.btn_rerun_ocr)
         action_layout.addWidget(self.btn_rerun_trans)
         action_layout.addWidget(self.btn_render_box)

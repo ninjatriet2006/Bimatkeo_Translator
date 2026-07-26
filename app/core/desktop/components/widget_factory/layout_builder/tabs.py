@@ -82,7 +82,12 @@ class TabsBuilderMixin:
         current_tab_idx = self.mw.settings_tab_view.currentIndex()
         self.mw.settings_tab_view.clear()
         
-        self.mw.config_loader.apply_language(self.mw.current_settings.get('app_language', 'English'))
+        raw_lang = self.mw.current_settings.get('app_language', 'en')
+        if hasattr(self.mw.config_loader, 'language_manager'):
+            lang_code = self.mw.config_loader.language_manager.resolve_app_language({'app_language': raw_lang})
+        else:
+            lang_code = 'vi' if raw_lang in ['vi', 'Tiếng Việt'] else 'en'
+        self.mw.config_loader.apply_language(lang_code)
         self.mw.config_loader.full_config_data = self.mw.config_loader._build_full_config_data()
         
         self.populate_all_tabs()
