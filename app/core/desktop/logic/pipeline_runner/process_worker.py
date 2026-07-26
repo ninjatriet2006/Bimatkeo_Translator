@@ -56,7 +56,14 @@ class ProcessWorker:
             while True:
                 try:
                     level, msg = log_queue.get_nowait()
-                    self.mw.log(level, msg)
+                    if msg.startswith("[TRANSLATE_WORKER]"):
+                        msg = msg.replace("[TRANSLATE_WORKER]", "").strip()
+                        if hasattr(self.mw, 'translator_log_signal'):
+                            self.mw.translator_log_signal.emit(level, msg)
+                        else:
+                            self.mw.log(level, msg)
+                    else:
+                        self.mw.log(level, msg)
                 except queue.Empty:
                     break
                     
@@ -72,7 +79,14 @@ class ProcessWorker:
         while True:
             try:
                 level, msg = log_queue.get_nowait()
-                self.mw.log(level, msg)
+                if msg.startswith("[TRANSLATE_WORKER]"):
+                    msg = msg.replace("[TRANSLATE_WORKER]", "").strip()
+                    if hasattr(self.mw, 'translator_log_signal'):
+                        self.mw.translator_log_signal.emit(level, msg)
+                    else:
+                        self.mw.log(level, msg)
+                else:
+                    self.mw.log(level, msg)
             except queue.Empty:
                 break
                 

@@ -174,10 +174,10 @@ class SpecializedWidgetFactory:
 
         def _get_api_name():
             api_name = ""
-            if api_name_field in self.mw.setting_widgets:
-                api_name = self.mw.setting_widgets[api_name_field].currentData()
+            if api_name_field in self.mw.widget_references:
+                api_name = self.mw.widget_references[api_name_field].currentData()
                 if not api_name:
-                    api_name = self.mw.setting_widgets[api_name_field].currentText()
+                    api_name = self.mw.widget_references[api_name_field].currentText()
             return api_name
 
         def _get_endpoint():
@@ -190,6 +190,10 @@ class SpecializedWidgetFactory:
             from app.core.desktop.components.standalone.translator_widget import TranslatorStandaloneWidget
             if not hasattr(self.mw, '_temp_standalone_widget'):
                 self.mw._temp_standalone_widget = TranslatorStandaloneWidget()
+                # Route standalone logs to studio logs with an ID
+                self.mw._temp_standalone_widget.log_signal.connect(
+                    lambda lvl, msg: self.mw.translator_log_signal.emit(lvl, f"[EMBEDDED_TRANSLATOR] {msg}")
+                )
             
             standalone = self.mw._temp_standalone_widget
             api_name = _get_api_name()
@@ -214,6 +218,9 @@ class SpecializedWidgetFactory:
                     else:
                         combo.setCurrentText("Auto")
             
+            def handle_fetch_fail(err):
+                pass
+            
             try:
                 standalone.fetch_success_signal.disconnect()
                 standalone.fetch_fail_signal.disconnect()
@@ -222,7 +229,9 @@ class SpecializedWidgetFactory:
                 
             standalone.fetch_success_signal.connect(standalone._on_fetch_success)
             standalone.fetch_fail_signal.connect(standalone._on_fetch_fail)
+            
             standalone.fetch_success_signal.connect(handle_fetch_success)
+            standalone.fetch_fail_signal.connect(handle_fetch_fail)
             
             standalone._on_fetch_models()
             
@@ -230,6 +239,10 @@ class SpecializedWidgetFactory:
             from app.core.desktop.components.standalone.translator_widget import TranslatorStandaloneWidget
             if not hasattr(self.mw, '_temp_standalone_widget'):
                 self.mw._temp_standalone_widget = TranslatorStandaloneWidget()
+                # Route standalone logs to studio logs with an ID
+                self.mw._temp_standalone_widget.log_signal.connect(
+                    lambda lvl, msg: self.mw.translator_log_signal.emit(lvl, f"[EMBEDDED_TRANSLATOR] {msg}")
+                )
             
             standalone = self.mw._temp_standalone_widget
             api_name = _get_api_name()
@@ -243,11 +256,16 @@ class SpecializedWidgetFactory:
             standalone.txt_key.setText(_get_key())
             standalone.txt_model.setCurrentText(combo.currentText())
             
+            def handle_test_result(success, message):
+                pass
+            
             try:
                 standalone.test_result_signal.disconnect()
             except Exception:
                 pass
+                
             standalone.test_result_signal.connect(standalone._on_test_result)
+            standalone.test_result_signal.connect(handle_test_result)
             
             standalone._on_test_api()
 

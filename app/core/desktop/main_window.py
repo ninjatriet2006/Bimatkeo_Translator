@@ -71,10 +71,12 @@ LOG_COLORS = {}
 class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QMainWindow):
 
     log_signal = Signal(str, str)
+    translator_log_signal = Signal(str, str)
     pipeline_finished_signal = Signal()
     pipeline_progress_signal = Signal(int, int, str)
     visual_test_finished_signal = Signal()
     visual_test_result_signal = Signal(str)
+    standalone_ready_signal = Signal(object, str)
 
     GOOGLE_FONTS = [
         "Comic Neue",
@@ -136,6 +138,8 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         TRANSLATOR_GROUPS[CAT_OFFLINE_MODELS] = offline_list
         TRANSLATOR_GROUPS[CAT_API_BASED] = api_list
         TRANSLATOR_GROUPS[CAT_OTHER_ACTIONS] = other_list
+
+        self.translator_log_signal.connect(self._relay_translator_to_global)
 
 
         # Update LOG_COLORS dynamically from the dynamic YAML config loader
@@ -211,6 +215,7 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         self.pipeline_progress_signal.connect(self._update_progress_bar)
         self.visual_test_finished_signal.connect(self._on_visual_test_finished)
         self.visual_test_result_signal.connect(self._display_test_result)
+        self.standalone_ready_signal.connect(self._reset_standalone_btn)
         # Apply saved theme if exists
         saved_theme = self.config_loader.oldsession_config.get("theme", "Default Qt")
         self._apply_theme(saved_theme)
@@ -414,6 +419,11 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         main_layout.addWidget(settings_panel, stretch=1)
         main_layout.addWidget(bottom_panel)
 
+    def _reset_standalone_btn(self, button, original_text):
+        if button:
+            button.setText(original_text)
+            button.setEnabled(True)
+
     def launch_standalone_tool(self, tool_name: str, button=None):
         import subprocess
         import sys
@@ -436,19 +446,11 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
         python_exe = getattr(self.config_loader, 'python_executable', sys.executable)
         
         reset_btn = None
+        original_text = ""
         if button:
             original_text = button.text()
             button.setText("Loading...")
             button.setEnabled(False)
-            
-            reset_btn_called = [False]
-            def reset_btn_func():
-                if not reset_btn_called[0]:
-                    reset_btn_called[0] = True
-                    button.setText(original_text)
-                    button.setEnabled(True)
-                
-            reset_btn = reset_btn_func
         
         try:
             # Spawn the tool in a completely separate process using module import to fix sys.path
@@ -475,22 +477,54 @@ class TranslatorStudioApp(WidgetBuildersMixin, JobRunnerMixin, HandlersMixin, QM
             if not hasattr(self, 'standalone_processes'):
                 self.standalone_processes = []
             self.standalone_processes.append(proc)
-            
-            if reset_btn:
-                def wait_for_ready():
-                    if proc.stdout:
-                        for line in iter(proc.stdout.readline, ''):
-                            if "STANDALONE_READY" in line:
-                                break
-                    QTimer.singleShot(0, reset_btn)
-                
-                threading.Thread(target=wait_for_ready, daemon=True).start()
+            def read_stdout():
+                ready = False
+                if proc.stdout:
+                    for line in iter(proc.stdout.readline, ''):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        if not ready and "STANDALONE_READY" in line:
+                            ready = True
+                            if button:
+                                self.standalone_ready_signal.emit(button, original_text)
+                            continue
+                        
+                        if tool_name == "translator":
+                            target_signal = self.translator_log_signal
+                        else:
+                            target_signal = self.log_signal
+                            
+                        # Emit the log back to the studio
+                        if line.startswith("[") and "]" in line:
+                            # It's already formatted, just emit as is
+                            # Try to extract level
+                            parts = line.split("]", 1)
+                            level = parts[0].strip("[")
+                            msg = parts[1].strip()
+                            target_signal.emit(level, f"[{tool_name.upper()}-{proc.pid}] {msg}")
+                        else:
+                            target_signal.emit("INFO", f"[{tool_name.upper()}-{proc.pid}] {line}")
+                            
+                # Process exited or stdout closed. Ensure button resets if it didn't already.
+                if button and not ready:
+                    self.standalone_ready_signal.emit(button, original_text)
+
+            import threading
+            threading.Thread(target=read_stdout, daemon=True).start()
                 
             self.log("INFO", f"Launched standalone tool: {tool_name}")
         except Exception as e:
             self.log("ERROR", f"Failed to launch standalone tool: {e}")
-            if reset_btn:
-                reset_btn()
+            if button:
+                self.standalone_ready_signal.emit(button, original_text)
+
+    def _relay_translator_to_global(self, level, msg):
+        # Relay only summaries/high-level logs to global (Tier 3)
+        summary_keywords = ["successfully", "test result", "started", "finished", "failed"]
+        msg_lower = msg.lower()
+        if any(k in msg_lower for k in summary_keywords):
+            self.log_signal.emit(level, msg)
 
     def close_all_standalones(self):
         if not hasattr(self, 'standalone_processes'):

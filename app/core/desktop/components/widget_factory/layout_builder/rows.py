@@ -39,6 +39,26 @@ class RowsBuilderMixin:
                 self.mw.setting_rows[info['key']] = row_widget
             return row_widget
 
+        if widget_type == "embedded_console":
+            from PySide6.QtWidgets import QTextEdit
+            console = QTextEdit()
+            console.setReadOnly(True)
+            console.setStyleSheet("background-color: #1e1e1e; color: #00ff00; font-family: monospace;")
+            console.setMinimumHeight(150)
+            
+            # Connect the translator log signal to this console
+            if hasattr(self.mw, 'translator_log_signal'):
+                self.mw.translator_log_signal.connect(lambda level, msg: console.append(f"[{level}] {msg}"))
+            else:
+                self.mw.log_signal.connect(lambda level, msg: console.append(f"[{level}] {msg}"))
+            
+            row_layout.addWidget(console)
+            
+            if not context_key:
+                self.mw.setting_widgets[info['key']] = console
+                self.mw.setting_rows[info['key']] = row_widget
+            return row_widget
+
         if widget_type == "translator_chain_builder":
             widget = self.mw.specialized_widgets.create_translator_chain_builder(info)
             row_layout.addWidget(widget)

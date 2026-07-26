@@ -94,7 +94,7 @@ class TranslateWorker(multiprocessing.Process):
 
     def run(self):
         def _log(level, msg):
-            self.log_queue.put((level, msg))
+            self.log_queue.put((level, f"[TRANSLATE_WORKER] {msg}"))
             
         _log("INFO", "Translate Worker Process Started.")
         

@@ -183,6 +183,7 @@ class TranslatorStandaloneWidget(QWidget):
 
     def _log(self, level: str, msg: str):
         self.log_signal.emit(level, msg)
+        print(f"[{level}] {msg}", flush=True)
 
     def _on_log(self, level: str, msg: str):
         self.txt_console.append(f"[{level}] {msg}")
@@ -409,8 +410,10 @@ class TranslatorStandaloneWidget(QWidget):
 
         self.btn_fetch.setEnabled(False)
         self.btn_fetch.setText("...")
+        self._log("INFO", f"Initializing model fetch for {ai_provider}...")
 
         def _fetch():
+            self._log("INFO", f"Executing fetch request to {ai_provider.upper()} API...")
             from app.core.api.manager import fetch_remote_ai_models
             try:
                 models = fetch_remote_ai_models(endpoint, key, ai_provider)
@@ -432,13 +435,16 @@ class TranslatorStandaloneWidget(QWidget):
                 self.txt_model.setCurrentText(current_text)
             else:
                 self.txt_model.setCurrentText("Auto")
+            self._log("INFO", f"Fetched {len(models)} models successfully.")
             QMessageBox.information(self, "Success", f"Fetched {len(models)} models successfully.")
         else:
+            self._log("WARNING", "No models found.")
             QMessageBox.warning(self, "Warning", "No models found.")
 
     def _on_fetch_fail(self, error_msg: str):
         self.btn_fetch.setEnabled(True)
         self.btn_fetch.setText("Fetch")
+        self._log("ERROR", f"Fetch failed: {error_msg}")
         QMessageBox.critical(self, "Error", f"Failed to fetch models:\n{error_msg}")
 
     def _on_test_api(self):
@@ -464,8 +470,10 @@ class TranslatorStandaloneWidget(QWidget):
 
         self.btn_test.setEnabled(False)
         self.btn_test.setText("...")
+        self._log("INFO", f"Initializing connection test for model '{model_name}'...")
 
         def _test():
+            self._log("INFO", f"Executing connection test for model '{model_name}' via {ai_provider.upper()}...")
             from app.core.shared_registry import TranslatorFactory
             try:
 
@@ -487,8 +495,10 @@ class TranslatorStandaloneWidget(QWidget):
         self.btn_test.setEnabled(True)
         self.btn_test.setText("Test")
         if success:
+            self._log("INFO", f"Test Result: {message}")
             QMessageBox.information(self, "Success", message)
         else:
+            self._log("ERROR", f"Test Result: {message}")
             QMessageBox.critical(self, "Error", message)
 
 if __name__ == "__main__":
