@@ -36,6 +36,9 @@ settings:
     label: 'Processing Device:'
     tooltip: Use CPU for universal compatibility or NVIDIA GPU for significantly
       faster processing (requires a compatible card and setup).
+  source_lang:
+    label: 'Source Language:'
+    tooltip: The language of the source text to translate from.
   target_lang:
     label: 'Target Language:'
     tooltip: The language to translate the text into.
@@ -82,6 +85,9 @@ settings:
     label: 'Skip Translating from these Languages:'
     tooltip: Open the skip_languages.yaml configuration file to select which 
       languages should be skipped during translation.
+  translator_console:
+    label: 'Translator Console Output:'
+    tooltip: Live console logs and execution details for translation processes.
   dict_profile:
     label: 'Dict & GPT Profile:'
     tooltip: Select an embedded dictionary and GPT profile containing 

@@ -36,6 +36,9 @@ settings:
     label: 'Thiết bị xử lý:'
     tooltip: Sử dụng CPU để tương thích mọi thiết bị hoặc NVIDIA GPU để xử lý 
       nhanh hơn đáng kể (yêu cầu cài đặt driver và card đồ họa tương thích).
+  source_lang:
+    label: 'Ngôn ngữ nguồn:'
+    tooltip: Ngôn ngữ nguồn của văn bản cần dịch.
   target_lang:
     label: 'Ngôn ngữ đích:'
     tooltip: Ngôn ngữ đích muốn dịch văn bản sang.
@@ -83,6 +86,9 @@ settings:
     label: 'Ngôn ngữ bỏ qua dịch:'
     tooltip: Mở tệp cấu hình skip_languages.yaml để thiết lập các ngôn ngữ cần 
       bỏ qua không dịch.
+  translator_console:
+    label: 'Nhật ký bộ dịch:'
+    tooltip: Hiển thị nhật ký log và chi tiết quá trình xử lý dịch thuật trực tiếp.
   dict_profile:
     label: 'Cấu hình Từ điển & GPT:'
     tooltip: Chọn cấu hình từ điển nhúng (bao gồm sửa lỗi OCR, sửa lỗi dịch và 
