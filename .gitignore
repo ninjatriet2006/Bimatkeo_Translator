@@ -29,3 +29,7 @@ fonts/
 
 # Temp directories
 temp/
+
+# Log files
+*.log
+
